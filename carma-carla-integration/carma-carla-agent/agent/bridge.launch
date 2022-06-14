@@ -74,18 +74,18 @@
     # localization #
     Extract the pose, twist from carla odometry.
   -->
-  <node pkg='carla_carma_bridge' type='carla_to_carma_localization' name='carla_to_carma_localization' output='screen'>
+  <node pkg='carma_carla_bridge' type='carla_to_carma_localization' name='carla_to_carma_localization' output='screen'>
     <param name='role_name' type="str" value="$(arg role_name)"/>
   </node>
   <!--
     # external objects
     Extract the external objects from carla ObjectArray
   -->>
-  <node pkg='carla_carma_bridge' type='carla_to_carma_external_objects' name='carla_to_carma_external_objects' output='screen'>
+  <node pkg='carma_carla_bridge' type='carla_to_carma_external_objects' name='carla_to_carma_external_objects' output='screen'>
     <param name='role_name' type="str" value="$(arg role_name)"/>
   </node>
   <!-- convert vehicle command to carla ackermann drive-->
-  <node pkg='carla_carma_bridge' type='carma_to_carla_ackermann_cmd' name='carma_to_carla_ackermann_cmd' output='screen'>
+  <node pkg='carma_carla_bridge' type='carma_to_carla_ackermann_cmd' name='carma_to_carla_ackermann_cmd' output='screen'>
     <param name='role_name' type="str" value="$(arg role_name)"/>
     <param name="init_speed" type="double" value="$(arg init_speed)"/>
     <param name="init_acceleration" type="double" value="$(arg init_acceleration)"/>
@@ -94,16 +94,16 @@
   </node>
 
   <!-- convert the vehicle status from carla to carma -->
-  <node pkg='carla_carma_bridge' type='carla_to_carma_vehicle_status' name='carla_to_carma_vehicle_status' output='screen'>
+  <node pkg='carma_carla_bridge' type='carla_to_carma_vehicle_status' name='carla_to_carma_vehicle_status' output='screen'>
     <param name='role_name' type="str" value="$(arg role_name)"/>
     <param name='max_steering_degree' type="double" value="$(arg max_steering_degree)"/>
   </node>
 
-  <node pkg='carla_carma_bridge' type='carma_carla_robot_status' name='carla_to_carma_robot_status' output='screen'>
+  <node pkg='carma_carla_bridge' type='carma_carla_robot_status' name='carla_to_carma_robot_status' output='screen'>
     <param name='robot_status_pub_rate' type="double" value="$(arg robot_status_pub_rate)"/>
   </node>
 
-  <node pkg='carla_carma_bridge' type='carma_carla_driver_status' name='carla_to_carma_driver_status' output='screen'>
+  <node pkg='carma_carla_bridge' type='carma_carla_driver_status' name='carla_to_carma_driver_status' output='screen'>
     <param name='driver_status_pub_rate' type="double" value="$(arg driver_status_pub_rate)"/>
     <param name='lidar_enabled' type="bool" value="$(arg lidar_enabled)"/>
     <param name='controller_enabled' type="bool" value="$(arg controller_enabled)"/>

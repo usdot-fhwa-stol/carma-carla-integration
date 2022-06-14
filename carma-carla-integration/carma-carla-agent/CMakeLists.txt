@@ -3,7 +3,7 @@
 # For a copy, see <https://opensource.org/licenses/MIT>.
 
 cmake_minimum_required(VERSION 2.8.3)
-project(carla_carma_agent)
+project(carma_carla_agent)
 
 find_package(catkin REQUIRED COMPONENTS
   roslaunch

@@ -38,10 +38,10 @@ RUN apt-get update && apt-get install -y \
 # CARLA ROS Bridge
 RUN git clone --depth 1 -b '0.9.10.1' --recurse-submodules https://github.com/carla-simulator/ros-bridge.git
 
-# CARLA-CARMA integration tool copy from local
-COPY . ./carla-carma-integration
+# CARMA-CARLA integration tool copy from local
+COPY carma-carla-integration ./carma-carla-integration
 
-# CARLA-CARMA integration tool necessary package and msgs
+# CARMA-CARLA integration tool necessary package and msgs
 RUN apt-get install -y --no-install-recommends \
     python-pip \
     python-wheel \
@@ -67,17 +67,17 @@ RUN cd msgs \
 		&& git clone -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/autoware.ai.git \
 		&& git clone -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-msgs.git
 
-# Catkin make for both ros-bridge and carla-carma-integration
-RUN mkdir -p carla_carma_ws/src/msgs
+# Catkin make for both ros-bridge and carma-carla-integration
+RUN mkdir -p carma_carla_ws/src/msgs
 
-RUN cd carla_carma_ws/src/msgs \
+RUN cd carma_carla_ws/src/msgs \
 		&& ln -s ../../../msgs/carma-msgs/j2735_msgs \
 		&& ln -s ../../../msgs/carma-msgs/cav_msgs \
 		&& ln -s ../../../msgs/autoware.ai/messages/autoware_msgs
 
-RUN cd carla_carma_ws/src \
+RUN cd carma_carla_ws/src \
     && ln -s ../../ros-bridge \
-    && ln -s ../../carla-carma-integration \
+    && ln -s ../../carma-carla-integration \
     && cd .. \
     && /bin/bash -c '. /opt/ros/kinetic/setup.bash; catkin_make'
 

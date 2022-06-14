@@ -77,7 +77,7 @@
     ##  CARLA CARMA bridge  ##
     ##########################
   -->
-  <include file='$(find carla_carma_bridge)/launch/carla_carma_bridge.launch'>
+  <include file='$(find carma_carla_bridge)/launch/carma_carla_bridge.launch'>
     <arg name='host' value='$(arg host)'/>
     <arg name='port' value='$(arg port)'/>
     <arg name='vehicle_filter' value='$(arg vehicle_model)'/>
@@ -96,7 +96,7 @@
     ## Agent bridge ##
     ##################
   -->
-  <include file='$(find carla_carma_agent)/$(arg agent)/bridge.launch'>
+  <include file='$(find carma_carla_agent)/$(arg agent)/bridge.launch'>
     <arg name='role_name' value='$(arg role_name)'/>
     <arg name='wheelbase' value='$(arg vehicle_wheelbase)'/>
     <arg name='init_speed' value='$(arg init_speed)'/>

@@ -9,6 +9,6 @@ else
 fi
 docker run \
        -it --rm\
-       --name carla_carma_integration \
+       --name carma-carla-integration \
        --net=host \
-       usdotfhwastol/carla-carma-integration:latest
+       usdotfhwastol/carma-carla-integration:latest

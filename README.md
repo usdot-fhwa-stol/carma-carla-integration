@@ -1,5 +1,5 @@
 # CARAL-CARMA Integration Tool
-This user guide provides step-by-step user instructions on how to build the CARLA-CARMA integration tool on Docker, setup configuration for both CARMA platform and CARLA-CARMA integration tool and run that with CARMA platform.
+This user guide provides step-by-step user instructions on how to build the CARMA-CARLA integration tool on Docker, setup configuration for both CARMA platform and CARMA-CARLA integration tool and run that with CARMA platform.
 
 ##  Requirement
 -  Docker (19.03+)
@@ -7,18 +7,18 @@ This user guide provides step-by-step user instructions on how to build the CARL
 -  [CARMA Platform](https://usdot-carma.atlassian.net/wiki/spaces/CRMPLT/pages/486178827/Development+Environment+Setup) (3.9.0)
 
 ## Setup
-### CARLA-CARMA Integration tool
+### CARMA-CARLA Integration tool
 1. clone the CARMA simulation repository:
 
 ```
-git clone https://github.com/usdot-fhwa-stol/carma-simulation.git
+git clone https://github.com/usdot-fhwa-stol/carma-carla-integration.git
 ```
 2. build image from Dockerfile by using following command:
 
 ```sh
-cd carma-simulation/carla-carma-integration && ./build-image.sh
+cd docker && ./build-image.sh
 ```
-After built the image successfully, the CARLA-CARMA integration tool docker image will be generated.
+After built the image successfully, the CARMA-CARLA integration tool docker image will be generated.
 
 ### CARMA Platform config
 The CARMA Config for the simulation currently cannot be pulled from docker hub. It requires local docker build for the image.
@@ -27,16 +27,19 @@ The CARMA Config for the simulation currently cannot be pulled from docker hub. 
 ```sh
 git clone https://github.com/usdot-fhwa-stol/carma-config.git
 ```
-2. Go to the directory /carla_integration under CARMA config and build the docker image. Remember the image name
+2. Switch branch.
 ```sh
-cd ~/carma-config/carla_integration/
-./build-image.sh
+git switch Update/carla_integration
 ```
-3. SetupCARMA config of the simulation
+3. Go to the directory /carla_integration under CARMA config and build the docker image. Remember the image name
+```sh
+cd carla_integration/ && ./build-image.sh
+```
+4. Setup CARMA config of the simulation
 ```sh
 carma config set usdotfhwastol/carma-config:[tag]
 ```
-## Run CARLA-CARMA integration tool with CARMA Platform
+## Run CARMA-CARLA integration tool with CARMA Platform
 1. Run CARLA server
 
 ```
@@ -47,17 +50,17 @@ carma config set usdotfhwastol/carma-config:[tag]
 carma start all
 ```
 
-3. Run CARLA-CAMRA integration tool docker image by using run.sh file in the direction **`carma-simulation/carla-carma-integration`**, setting the catkin source and Python path, and launch the tool when get into container
+3. Run CARLA-CAMRA integration tool docker image by using run.sh file in the direction **`carma-carla-integration/docker`**, setting the catkin source and Python path, and launch the tool when get into container
 ```
 ./run.sh
 ```
 ```
-export PYTHONPATH=$PYTHONPATH:/home/PythonAPI/carla-0.9.10-py2.7-linux-x86_64.egg && source /home/carla_carma_ws/devel/setup.bash
+export PYTHONPATH=$PYTHONPATH:/home/PythonAPI/carla-0.9.10-py2.7-linux-x86_64.egg && source /home/carma_carla_ws/devel/setup.bash
 ```
 ```
-roslaunch carla_carma_agent carla_carma_agent.launch
+roslaunch carma_carla_agent carma_carla_agent.launch town:='your_map_name' spawn_point:='spawn_point_info'
 ```
-Once CARLA-CARMA integration tool has been launched, the CARMA corresponding CARLA vehicle will be generated in CARLA server.
+Once CARMA-CARLA integration tool has been launched, the CARMA corresponding CARLA vehicle will be generated in CARLA server.
 
 4. Open CARMA-Web-UI for selecting route and plugins via Chromium Web Browser then click the circle button at the left bottom corner.
 
@@ -68,7 +71,7 @@ Afterward, the corresponding CARLA vehicle will start to receive control command
 ## Usage instruction
 The usage instruction including what parameter could be parsed to CALRA-CARMA integration tool launch file and the description of these parameters
 
-### CARLA-CARMA Integration parameters
+### CARMA-CARLA Integration parameters
 | Parameters| **Description**|*Default*|
 | ------------------- | ------------------------------------------------------------ |----------|
 |host|CARLA server IP address|127.0.0.1|
@@ -90,4 +93,3 @@ The usage instruction including what parameter could be parsed to CALRA-CARMA in
 |init_acceleration| To specify the initial vehicle acceleration |1|
 |init_steering_angle| To specify the initial vehicle steering wheel angle, it range from 0.7(left) to -0.7(right)|0|
 |init_jerk| To specify the initial vehicle jerk value|0|
-|driver_name| To specify the name to the topic of `/hardware_interface/driver_discovery`. This name should be configured exact same with `required_drivers` in VehicleConfigParams.yaml in CARMA config| /hardware/carla_driver|
