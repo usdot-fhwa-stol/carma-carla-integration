@@ -153,7 +153,7 @@ def convert_objects():
     main loop
     """
     rospy.init_node('carla_to_carma_external_objects', anonymous=True)
-    role_name = rospy.get_param('/role_name', 'ego_vehicle')
+    role_name = rospy.get_param('~role_name', 'ego_vehicle')
     rospy.Subscriber('/carla/{}/objects'.format(role_name), ObjectArray, external_objects_callback)
     rospy.spin()
 
