@@ -1,4 +1,4 @@
-# CARAL-CARMA Integration Tool
+# CARMA-CARLA Integration Tool
 This user guide provides step-by-step user instructions on how to build the CARMA-CARLA integration tool on Docker, setup configuration for both CARMA platform and CARMA-CARLA integration tool and run that with CARMA platform.
 
 ##  Requirement
