@@ -11,4 +11,4 @@ docker run \
        -it --rm\
        --name carma-carla-integration \
        --net=host \
-       usdotfhwastol/carma-carla-integration:latest
+       usdotfhwastol/carma-carla-integration:carma-carla-1.0.0

@@ -5,20 +5,27 @@ This user guide provides step-by-step user instructions on how to build the CARM
 -  Docker (19.03+)
 -  [Nvidia Docker](https://github.com/NVIDIA/nvidia-docker)
 -  [CARMA Platform](https://usdot-carma.atlassian.net/wiki/spaces/CRMPLT/pages/486178827/Development+Environment+Setup) (3.9.0)
+-  [CARLA Simulation](https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.10.1.tar.gz) (0.9.10.1)
 
 ## Setup
-### CARMA-CARLA Integration tool
-1. clone the CARMA simulation repository:
+### Build CARMA-CARLA Integration Docker Image
+1. Clone the CARMA simulation repository:
 
 ```
 git clone https://github.com/usdot-fhwa-stol/carma-carla-integration.git
 ```
-2. build image from Dockerfile by using following command:
+Option 1. Build image from Dockerfile by using following command:
 
 ```sh
 cd docker && ./build-image.sh
 ```
-After built the image successfully, the CARMA-CARLA integration tool docker image will be generated.
+
+Option 2. Pull image from DockerHub by using following command:
+
+```sh
+docker pull usdotfhwastol/carma-carla-integration:carma-carla-[version]
+```
+
 
 ### CARMA Platform config
 The CARMA Config for the simulation currently cannot be pulled from docker hub. It requires local docker build for the image.
@@ -40,14 +47,15 @@ cd carla_integration/ && ./build-image.sh
 carma config set usdotfhwastol/carma-config:[tag]
 ```
 ## Run CARMA-CARLA integration tool with CARMA Platform
-1. Run CARLA server
 
-```
-./CarlaUE4.sh
-```
-2. Run CARMA Platform with separated terminal
+1. Run CARMA Platform with separated terminal
 ```
 carma start all
+```
+
+2. Run CARLA server
+```
+./CarlaUE4.sh
 ```
 
 3. Run CARLA-CAMRA integration tool docker image by using run.sh file in the direction **`carma-carla-integration/docker`**, setting the catkin source and Python path, and launch the tool when get into container
@@ -62,7 +70,7 @@ roslaunch carma_carla_agent carma_carla_agent.launch town:='your_map_name' spawn
 ```
 Once CARMA-CARLA integration tool has been launched, the CARMA corresponding CARLA vehicle will be generated in CARLA server.
 
-4. Open CARMA-Web-UI for selecting route and plugins via Chromium Web Browser then click the circle button at the left bottom corner.
+4. Open CARMA-Web-UI to select route and plugins via Chromium Web Browser incognito window then click the circle button at the left bottom corner.
 
 ![CARMA-Web-UI](docs/images/CARMA-Web-UI.png)
 
