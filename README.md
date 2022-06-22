@@ -46,6 +46,7 @@ cd carla_integration/ && ./build-image.sh
 ```sh
 carma config set usdotfhwastol/carma-config:[tag]
 ```
+
 ## Run CARMA-CARLA integration tool with CARMA Platform
 
 1. Run CARMA Platform with separated terminal
@@ -57,29 +58,35 @@ carma start all
 ```
 ./CarlaUE4.sh
 ```
+3. Change the map to match with the CARMA Platform vector map (initial setting is Town02) by using the python script provided by CARLA in the path : **`CARLA_0.9.10/PythonAPI/util/config.py`**.
+```
+python config.py -m <map>
+```
 
-3. Run CARLA-CAMRA integration tool docker image by using run.sh file in the direction **`carma-carla-integration/docker`**, setting the catkin source and Python path, and launch the tool when get into container
-```
-./run.sh
-```
-```
-export PYTHONPATH=$PYTHONPATH:/home/PythonAPI/carla-0.9.10-py2.7-linux-x86_64.egg && source /home/carma_carla_ws/devel/setup.bash
-```
-```
-roslaunch carma_carla_agent carma_carla_agent.launch town:='your_map_name' spawn_point:='spawn_point_info'
-```
+&emsp;4.1 Run the carma-carla docker container
+  ```
+  ./run.sh
+  ```
+&emsp;4.2 Setting the catkin source and Python path
+  ```
+  export PYTHONPATH=$PYTHONPATH:/home/PythonAPI/carla-0.9.10-py2.7-linux-x86_64.egg && source /home/carma_carla_ws/devel/setup.bash
+  ```
+&emsp;4.3 Launch the CARMA-CARLA integration tool
+  ```
+  roslaunch carma_carla_agent carma_carla_agent.launch town:='your_map_name' spawn_point:='spawn_point_info'
+  ```
 
 ***Note: step 3 must be completed within 20 seconds after step 2 being completed***
 
 
-4. Open CARMA-Web-UI to select route and plugins via Chromium Web Browser **`incognito window`** then click the circle button at the left bottom corner.
+5. Open CARMA-Web-UI to select route and plugins via Chromium Web Browser **`incognito window`** then click the circle button at the left bottom corner.
 
 ![CARMA-Web-UI](docs/images/CARMA-Web-UI.png)
 
 Afterward, the corresponding CARLA vehicle will start to receive control command from CARMA-Platform and start to following the selected route to move
 
 ## Usage instruction
-The usage instruction including what parameter could be parsed to CALRA-CARMA integration tool launch file and the description of these parameters
+The usage instruction includes what parameter could be parsed to CARMA-CARLA integration and the description of these parameters
 
 ### CARMA-CARLA Integration parameters
 | Parameters| **Description**|*Default*|
@@ -95,7 +102,7 @@ The usage instruction including what parameter could be parsed to CALRA-CARMA in
 |vehicle_wheelbase|To specify the size of wheelbase for the vehicle|2.79|
 |speed_Kp| Speed proportional value for the vehicle. The current default value was setup for Town02 with vehicle speed limit 20 MPH|0.05|
 |speed_Ki| Speed integral value for the vehicle. The current default value was setup for Town02 with vehicle speed limit 20 MPH|0.018|
-|speed_Kp| Speed derivative value for the vehicle. The current default value was setup for Town02 with vehicle speed limit 20 MPH|0.4|
+|speed_Kd| Speed derivative value for the vehicle. The current default value was setup for Town02 with vehicle speed limit 20 MPH|0.4|
 |accel_Kp| Acceleration proportional value for the vehicle. The current default value was setup for Town02 with vehicle speed limit 20 MPH|0.053|
 |accel_Ki| Acceleration integral value for the vehicle. The current default value was setup for Town02 with vehicle speed limit 20 MPH|0.0|
 |accel_Kd| Acceleration derivative value for the vehicle. The current default value was setup for Town02 with vehicle speed limit 20 MPH|0.052|
