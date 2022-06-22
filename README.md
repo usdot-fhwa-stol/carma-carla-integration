@@ -8,7 +8,7 @@ This user guide provides step-by-step user instructions on how to build the CARM
 -  [CARLA Simulation](https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.10.1.tar.gz) (0.9.10.1)
 
 ## Setup
-### Build CARMA-CARLA Integration Docker Image
+### CARMA-CARLA Integration Docker Image
 1. Clone the CARMA simulation repository:
 
 ```
@@ -68,9 +68,11 @@ export PYTHONPATH=$PYTHONPATH:/home/PythonAPI/carla-0.9.10-py2.7-linux-x86_64.eg
 ```
 roslaunch carma_carla_agent carma_carla_agent.launch town:='your_map_name' spawn_point:='spawn_point_info'
 ```
-Once CARMA-CARLA integration tool has been launched, the CARMA corresponding CARLA vehicle will be generated in CARLA server.
 
-4. Open CARMA-Web-UI to select route and plugins via Chromium Web Browser incognito window then click the circle button at the left bottom corner.
+***Note: step 3 must be completed within 20 seconds after step 2 being completed***
+
+
+4. Open CARMA-Web-UI to select route and plugins via Chromium Web Browser **`incognito window`** then click the circle button at the left bottom corner.
 
 ![CARMA-Web-UI](docs/images/CARMA-Web-UI.png)
 
@@ -87,7 +89,7 @@ The usage instruction including what parameter could be parsed to CALRA-CARMA in
 |town|To specify which scenario for CARLA server to load. The scenario should be matched with executed CARMA Platform vector_map|Town02|
 |spawn_point|To specify where to spawn CARLA vehicle|N/A|
 |role_name|Assign the name of the CARLA vehicle. It currently only supports the name range from hero0 to hero9 and ego_vehicle|ego_vehicle|
-|vehicle_modle|To specify what vehicle model should be generated in CARLA server|vehicle.toyota.prius|
+|vehicle_model|To specify what vehicle model should be generated in CARLA server|vehicle.toyota.prius|
 |vehicle_length|To specify the length of vehicle|5.00|
 |vehicle_width|To specify the width of vehicle|3.00|
 |vehicle_wheelbase|To specify the size of wheelbase for the vehicle|2.79|
