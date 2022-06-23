@@ -1,5 +1,5 @@
 # CARMA-CARLA Integration Tool
-This user guide provides step-by-step user instructions on how to build the CARMA-CARLA integration tool on Docker, setup configuration for both CARMA platform and CARMA-CARLA integration tool and run that with CARMA platform.
+This user guide provides step-by-step user instructions on how to build CARMA-CARLA integration tool on Docker, setup configuration for both CARMA platform and CARMA-CARLA integration tool and run that with CARMA platform.
 
 ##  Requirement
 -  Docker (19.03+)
@@ -9,7 +9,7 @@ This user guide provides step-by-step user instructions on how to build the CARM
 
 ## Setup
 ### CARMA-CARLA Integration Docker Image
-1. Clone the CARMA simulation repository:
+1. Clone CARMA simulation repository:
 
 ```
 git clone https://github.com/usdot-fhwa-stol/carma-carla-integration.git
@@ -27,8 +27,8 @@ docker pull usdotfhwastol/carma-carla-integration:carma-carla-[version]
 ```
 
 
-### CARMA Platform config
-The CARMA Config for the simulation currently cannot be pulled from docker hub. It requires local docker build for the image.
+### CARMA Platform Config
+CARMA Config for the simulation currently cannot be pulled from docker hub. It requires local docker build for the image.
 
 1. Clone the source code of CARMA config from github:
 ```sh
@@ -47,7 +47,7 @@ cd carla_integration/ && ./build-image.sh
 carma config set usdotfhwastol/carma-config:[tag]
 ```
 
-## Run CARMA-CARLA integration tool with CARMA Platform
+## Run CARMA-CARLA Integration Tool with CARMA Platform
 
 1. Run CARMA Platform with separated terminal
 ```
@@ -58,12 +58,12 @@ carma start all
 ```
 ./CarlaUE4.sh
 ```
-3. Change the map to match with the CARMA Platform vector map (initial setting is Town02) by using the python script provided by CARLA in the path : **`CARLA_0.9.10/PythonAPI/util/config.py`**.
+3. Change the map to match with CARMA Platform vector map (initial setting is Town02) by using the python script provided by CARLA in the path : **`CARLA_0.9.10/PythonAPI/util/config.py`**.
 ```
 python config.py -m <map>
 ```
 
-&emsp;4.1 Run the carma-carla docker container
+&emsp;4.1 Run carma-carla docker container
   ```
   ./run.sh
   ```
@@ -71,7 +71,7 @@ python config.py -m <map>
   ```
   export PYTHONPATH=$PYTHONPATH:/home/PythonAPI/carla-0.9.10-py2.7-linux-x86_64.egg && source /home/carma_carla_ws/devel/setup.bash
   ```
-&emsp;4.3 Launch the CARMA-CARLA integration tool
+&emsp;4.3 Launch CARMA-CARLA integration tool
   ```
   roslaunch carma_carla_agent carma_carla_agent.launch town:='your_map_name' spawn_point:='spawn_point_info'
   ```
@@ -85,10 +85,10 @@ python config.py -m <map>
 
 Afterward, the corresponding CARLA vehicle will start to receive control command from CARMA-Platform and start to following the selected route to move
 
-## Usage instruction
-The usage instruction includes what parameter could be parsed to CARMA-CARLA integration and the description of these parameters
+## Usage Instruction
+The usage instruction includes what parameter could be parsed to CARMA-CARLA integration, the description of these parameters and CARMA parameters
 
-### CARMA-CARLA Integration parameters
+### CARMA-CARLA Integration Parameters
 | Parameters| **Description**|*Default*|
 | ------------------- | ------------------------------------------------------------ |----------|
 |host|CARLA server IP address|127.0.0.1|
@@ -110,3 +110,11 @@ The usage instruction includes what parameter could be parsed to CARMA-CARLA int
 |init_acceleration| To specify the initial vehicle acceleration |1|
 |init_steering_angle| To specify the initial vehicle steering wheel angle, it range from 0.7(left) to -0.7(right)|0|
 |init_jerk| To specify the initial vehicle jerk value|0|
+
+### CARMA Maps
+After CARMA platform installed successfully, the default **`vector_map.osm`** and **`pcd_map.pcd`** are Town02 stored in the folder **`/opt/carma/maps/`**. CARMA platform will load vector map (lanelet) and point cloud map when it has been launched.
+The vector map could be converted from open drive (.xodr) by using the [opendrive2lanelet](https://github.com/usdot-fhwa-stol/opendrive2lanelet) tool.
+Also, CARLA simulation provides several available Town maps to download from [autoware-contents](https://bitbucket.org/carla-simulator/autoware-contents/src/master/maps/)
+
+### CARMA Routes
+After CARMA platform installed successfully, there is a default Town02 route file located in the folder **`/opt/carma/route/`**. To customize a route, here is the instruction of [creating a new route file](https://usdot-carma.atlassian.net/wiki/spaces/CRMPLT/pages/1716060161/Creating+a+New+Route+File)
