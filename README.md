@@ -8,8 +8,11 @@ This user guide provides step-by-step user instructions on how to build CARMA-CA
 -  [CARLA Simulation](https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.10.1.tar.gz) (0.9.10.1)
 
 ## Setup
-### CARMA-CARLA Integration Docker Image
-1. Clone CARMA simulation repository:
+### CARMA-CARLA Integration Setup
+
+1. Getting CARMA-CARLA integration docker mage:
+
+There are two ways to get CARMA-CARLA docker image. You can either choose to pull the co-simulation tool docker image from DockerHub or build the image by yourself.
 
 ```
 git clone https://github.com/usdot-fhwa-stol/carma-carla-integration.git
@@ -23,9 +26,23 @@ cd docker && ./build-image.sh
 Option 2. Pull image from DockerHub by using following command:
 
 ```sh
-docker pull usdotfhwastol/carma-carla-integration:carma-carla-[version]
+docker pull usdotfhwastol/carma-carla-integration:[tag]
 ```
 
+The tag information could be found from [usdotfhwastol Dockerhub](https://hub.docker.com/repository/docker/usdotfhwastol/carma-carla-integration)
+
+2. Modify CARLA ROS bridge (skipped if running with co-simulation tool):
+If the CAMRA-CARLA integration is runing alone without co-simulation tool. The synchronous mode parameter should be enabled.
+
+##### Step 1: Launched the CARMA-CARLA docker container:
+```sh
+cd <path-to-carma-carla-integration>/docker && ./run.sh
+```
+##### Step 2: Modify the parameter synchronous_mode value to true
+
+```
+sudo nano ros-bridge/carla_ros_bridge/config/settings.yaml
+```
 
 ### CARMA Platform Config
 CARMA Config for the simulation currently cannot be pulled from docker hub. It requires local docker build for the image.
@@ -64,10 +81,10 @@ python config.py -m <map>
 ```
 
 &emsp;4.1 Run carma-carla docker container
+  ```sh
+  cd <path-to-carma-carla-integration>/docker && ./run.sh
   ```
-  ./run.sh
-  ```
-&emsp;4.2 Setting the catkin source and Python path
+&emsp;4.2 Set the catkin source and CARLA python path
   ```
   export PYTHONPATH=$PYTHONPATH:/home/PythonAPI/carla-0.9.10-py2.7-linux-x86_64.egg && source /home/carma_carla_ws/devel/setup.bash
   ```
@@ -84,6 +101,32 @@ python config.py -m <map>
 ![CARMA-Web-UI](docs/images/CARMA-Web-UI.png)
 
 Afterward, the corresponding CARLA vehicle will start to receive control command from CARMA-Platform and start to following the selected route to move
+
+## Run CARMA-CARLA Integration Tool with CARMA Platform and Co-Simulation tool
+1. To run the with the co-simulation tool, the carma-xil-cosimulation docker image must be pulled firstly.
+
+```
+docker pull usdotfhwastol/carma-xil-cosimulation:[tag]
+```
+
+The tag information could be found from [carma-xil-cosimulation docker repositories](https://hub.docker.com/repository/registry-1.docker.io/usdotfhwastol/carma-xil-cosimulation/tags?page=1&ordering=last_updated)
+
+2. Run CARMA platform
+
+```
+carma start all
+```
+
+3. Run docker-compose.yml at the directory ```<path-to-carma-carla-integration>/docker/```.
+
+
+```
+docker-compose up
+```
+
+***The default setting of the scenario in docker-compose.yml is Town04 for both CARMA-CARLA and co-simulation. It must be edited to test different scenario***
+
+
 
 ## Usage Instruction
 The usage instruction includes what parameter could be parsed to CARMA-CARLA integration, the description of these parameters and CARMA parameters
