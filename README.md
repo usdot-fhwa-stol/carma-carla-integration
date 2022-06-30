@@ -20,7 +20,7 @@ git clone https://github.com/usdot-fhwa-stol/carma-carla-integration.git
 Option 1. Build image from Dockerfile by using following command:
 
 ```sh
-cd docker && ./build-image.sh
+cd docker && ./build-image.sh -v [version]
 ```
 
 Option 2. Pull image from DockerHub by using following command:
@@ -36,7 +36,7 @@ If the CAMRA-CARLA integration is runing alone without co-simulation tool. The s
 
 ##### Step 1: Launched the CARMA-CARLA docker container:
 ```sh
-cd <path-to-carma-carla-integration>/docker && ./run.sh
+cd <path-to-carma-carla-integration>/docker && ./run.sh -v [version]
 ```
 ##### Step 2: Modify the parameter synchronous_mode value to true
 
@@ -82,7 +82,7 @@ python config.py -m <map>
 
 &emsp;4.1 Run carma-carla docker container
   ```sh
-  cd <path-to-carma-carla-integration>/docker && ./run.sh
+  cd <path-to-carma-carla-integration>/docker && ./run.sh -v [version]
   ```
 &emsp;4.2 Set the catkin source and CARLA python path
   ```
