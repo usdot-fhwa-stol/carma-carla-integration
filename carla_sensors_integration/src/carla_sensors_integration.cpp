@@ -17,6 +17,7 @@ namespace carla_sensors
         image_rect_pub_ = nh_.advertise<sensor_msgs::Image>("image_rect", 1);
         camera_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>("camera_info", 1);
 
+
         gnss_fixed_fused_pub_ = nh_.advertise<gps_common::GPSFix>("gnss_fix_fused");
 
 
@@ -30,16 +31,18 @@ namespace carla_sensors
 
     }
 
-    void CarlaSensors::spin()
+    void CarlaSensors::run()
     {
-
+        initialize();
+        ros::CARMANodeHandle::setSpinRate(spin_rate_);
+        ros::CARMANodeHandle::spin();
     }
 
     void CarlaSensors::point_cloud_cb(sensor_msgs::PointCloud2 point_cloud)
     {
         if (point_cloud.data.size() == 0)
         {
-            ROS_ERROR_STREAM("Empty point cloud data");
+             throw std::invalid_argument(" Invalid LIDAR Point Cloud Data");
             exit(0);
         }
         point_cloud_msg.data = point_cloud.data;
@@ -60,7 +63,7 @@ namespace carla_sensors
 
         if (image_raw.data.size() == 0)
         {
-            ROS_ERROR_STREAM("Invalid image");
+             throw std::invalid_argument("Invalid image data");
         }
 
         image_raw_msg.data = image_raw.data;
@@ -78,7 +81,7 @@ namespace carla_sensors
     {
          if (image_raw.data.size() == 0)
         {
-            ROS_ERROR_STREAM("Invalid image");
+             throw std::invalid_argument("Invalid image data");
         }
 
         image_color_msg.data = image_color.data;
@@ -96,7 +99,7 @@ namespace carla_sensors
     {
          if (image_raw.data.size() == 0)
         {
-            ROS_ERROR_STREAM("Invalid image");
+             throw std::invalid_argument("Invalid image data");
         }
 
         image_rect_msg.data = image_rect.data;

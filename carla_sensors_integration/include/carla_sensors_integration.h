@@ -37,6 +37,7 @@ namespace carla_sensors
             void publish();
             void initialize();
             void spin();
+            void run();
 
             void point_cloud_cb(sensor_msgs::PointCloud2 point_cloud);
             void image_raw_cb(sensor_msgs::Image image_raw);
@@ -56,7 +57,6 @@ namespace carla_sensors
 
             //CARMA ROS node handles
             ros::CARMANodeHandle nh_;
-            
             /*Publishers and Subscribers*/
 
             ros::Subscriber point_cloud_sub_;
@@ -78,6 +78,8 @@ namespace carla_sensors
             sensor_msgs::Image image_color_msg;
             sensor_msgs::Image image_rect_msg;
             gps_common::GPSFix gnss_fixed_msg;
+
+            double spin_rate_ = 10.0;
 
 
 
