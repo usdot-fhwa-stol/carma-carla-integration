@@ -12,6 +12,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+
 """
 Subscribe from CARMA :geometry_msgs::PoseStamped
     Topic: /localization/current_pose
@@ -86,7 +87,10 @@ def initialize():
     main loop
     """
     rospy.init_node("carma_carla_route")
-    selected_route_id = rospy.get_param('/selected_route')
+    selected_route_id = rospy.get_param('~selected_route')
+    if selected_route_id == '':
+        rospy.logerr("No input route found, please check the config file at /opt/carma/simulation/vehicle_config.json")
+        return
     available_route_ids = get_available_route_ids()
     # sleep the node for n second to make sure current_pose has been set to CARMA platform properly
     rospy.sleep(2)

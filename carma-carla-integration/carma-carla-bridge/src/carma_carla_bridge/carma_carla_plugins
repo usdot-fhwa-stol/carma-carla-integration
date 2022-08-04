@@ -56,13 +56,12 @@ def initialize():
     main loop
     """
     rospy.init_node("carma_carla_plugins")
-    # get selected plugins from carla_carma_bridge parameters
-    selected_plugins = rospy.get_param('/selected_plugins')
-    required_plugins = rospy.get_param('/required_plugins')
 
-    # concat selected plugins with required plugins and remove duplicate elements if there is a one
-    plugin_list = list(set(selected_plugins) - set(required_plugins)) + required_plugins
-
+    # get selected plugins
+    plugin_list = rospy.get_param('~selected_plugins').split(',')
+    if len(plugin_list) == 0:
+        rospy.logerr("No input plugin found, please check the config file at /opt/carma/simulation/vehicle_config.json")
+        return
     # initialize ROS service
     activation_srv = rospy.ServiceProxy("/guidance/plugins/activate_plugin", PluginActivation)
     registered_plugins_serv = rospy.ServiceProxy('/guidance/plugins/get_registered_plugins', PluginList)
