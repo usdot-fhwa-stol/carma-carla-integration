@@ -17,16 +17,20 @@ namespace carla_sensors
         image_rect_pub_ = nh_.advertise<sensor_msgs::Image>("image_rect", 1);
         camera_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>("camera_info", 1);
 
+        pnh_ = pnh_.reset(new ros::CARMANodeHandle());
+
+        pnh_.getParam("role_name", carla_vehicle_role_);
+
 
         gnss_fixed_fused_pub_ = nh_.advertise<gps_common::GPSFix>("gnss_fix_fused");
 
 
         //Subscribers
         point_cloud_sub_ = nh_.subscribe<sensor_msgs::PointCloud2>("points_cloud", 10, CarlaSensors::point_cloud_cb);
-        image_raw_sub_ = nh_.subscribe<sensor_msgs::Image>("/carla/{}/camera/image", 10, CarlaSensors::image_raw_cb);
-        image_color_sub_ = nh_.subscribe<sensor_msgs::Image>("/carla/{}/camera/image_color", 10, CarlaSensors::image_color_cb);
-        image_rect_sub_ = nh_.subscribe<sensor_msgs::Image>("/carla/{}/camera/image_rect", 10, CarlaSensors::image_rect_cb);
-        gnss_fixed_fused_sub_ = nh_.subscribe<sensor_msgs::NavSatFix>("/carla/{}/gnss/gnss_fix_fused", 10, CarlaSensors::gnss_fixed_fused_cb);
+        image_raw_sub_ = nh_.subscribe<sensor_msgs::Image>("/carla/" + carla_vehicle_role_ + "/camera/image", 10, CarlaSensors::image_raw_cb);
+        image_color_sub_ = nh_.subscribe<sensor_msgs::Image>("/carla/" + carla_vehicle_role_ + "/camera/image_color", 10, CarlaSensors::image_color_cb);
+        image_rect_sub_ = nh_.subscribe<sensor_msgs::Image>("/carla/" + carla_vehicle_role_ + "/camera/image_rect", 10, CarlaSensors::image_rect_cb);
+        gnss_fixed_fused_sub_ = nh_.subscribe<sensor_msgs::NavSatFix>("/carla/" + carla_vehicle_role_ + "/gnss/gnss_fix_fused", 10, CarlaSensors::gnss_fixed_fused_cb);
 
 
     }

@@ -57,6 +57,7 @@ namespace carla_sensors
 
             //CARMA ROS node handles
             ros::CARMANodeHandle nh_;
+            ros::CARMANodeHandle pnh_;
             /*Publishers and Subscribers*/
 
             ros::Subscriber point_cloud_sub_;
@@ -80,6 +81,8 @@ namespace carla_sensors
             gps_common::GPSFix gnss_fixed_msg;
 
             double spin_rate_ = 10.0;
+
+            std::string carla_vehicle_role_;
 
 
 
