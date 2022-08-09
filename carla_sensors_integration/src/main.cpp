@@ -14,7 +14,7 @@
  * the License.
  */
 
-#include <include/carla_sensors_integration.h>
+#include <carla_sensors_integration.h>
 
 int main(int argc, char**argv)
 {

@@ -30,8 +30,9 @@ namespace carla_sensors
     {
         public:
 
-            CarlaSensors();
-        
+        CarlaSensors(int argc, char** argv);
+
+    
         //TODO: add @brief for each callback function
              
             void publish();
@@ -56,8 +57,9 @@ namespace carla_sensors
         private:
 
             //CARMA ROS node handles
-            ros::CARMANodeHandle nh_;
-            ros::CARMANodeHandle pnh_;
+            std::shared_ptr<ros::NodeHandle> nh_, pnh_;
+            //ros::CARMANodeHandle nh_;
+            //ros::CARMANodeHandle pnh_;
             /*Publishers and Subscribers*/
 
             ros::Subscriber point_cloud_sub_;
@@ -88,6 +90,6 @@ namespace carla_sensors
 
 
 
-    }
+    };
 
 }
