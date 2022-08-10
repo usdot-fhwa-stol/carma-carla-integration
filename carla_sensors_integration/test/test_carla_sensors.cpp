@@ -55,7 +55,7 @@ TEST(CarlaSensorsTest, testLIDARCallback)
 
     ASSERT_FALSE(result_msg.data.size() == 0);
     ASSERT_EQ(result_msg.data.size(), 3);
-    ASSERT_EQ(result_msg.fields.size, 0);
+    ASSERT_EQ(result_msg.fields.size(), 0);
     
 
 

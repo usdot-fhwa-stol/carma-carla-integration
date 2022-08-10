@@ -136,11 +136,11 @@ install(DIRECTORY launch
 ## Testing ##
 #############
 ## Add gtest based cpp test target and link libraries
-#catkin_add_gtest(${PROJECT_NAME}-test
-#  test/test_carla_sensors.cpp)
-#if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME}_library)
-#endif()
+catkin_add_gtest(${PROJECT_NAME}-test
+  test/test_carla_sensors.cpp)
+if(TARGET ${PROJECT_NAME}-test)
+   target_link_libraries(${PROJECT_NAME}-test carla_sensors_integration_library)
+endif()
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
