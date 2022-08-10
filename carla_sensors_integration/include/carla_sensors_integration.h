@@ -29,9 +29,6 @@ namespace carla_sensors
     class CarlaSensors
     {
         public:
-
-        CarlaSensors(int argc, char** argv);
-
     
         //TODO: add @brief for each callback function
              

@@ -15,11 +15,13 @@
  */
 
 #include <carla_sensors_integration.h>
+#include <ros/ros.h>
 
 int main(int argc, char**argv)
 {
-    carla_sensors::CarlaSensors app(argc,argv);
-    app.run();
-
+    ros::init(argc, argv, "carla_sensors_integration");
+    carla_sensors::CarlaSensors node;
+    node.run();
+    return (0);
     
 }

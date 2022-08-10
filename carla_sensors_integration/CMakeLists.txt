@@ -15,7 +15,7 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(carla_sensors_integration)
 
-find_package(catkin REQUIRED COMPONENTS
+set(CATKIN_DEPS
   roscpp
   rospy
   std_msgs
@@ -23,6 +23,11 @@ find_package(catkin REQUIRED COMPONENTS
   cav_msgs
   carma_utils
   sensor_msgs
+)
+
+## Find catkin macros and libraries
+find_package(catkin REQUIRED COMPONENTS
+ ${CATKIN_DEPS}
 )
 
 
@@ -37,9 +42,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES carla_sensors_integration
-  CATKIN_DEPENDS roscpp rospy std_msgs gps_common cav_msgs carma_utils sensor_msgs
-  DEPENDS system_lib
+  CATKIN_DEPENDS ${CATKIN_DEPS}
 )
 
 
@@ -69,48 +72,43 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(${PROJECT_NAME}
-src/carla_sensors_integration.cpp
-src/main.cpp)
-
-## Declare a C++ library
-add_library(${PROJECT_NAME}_library
+  src/main.cpp
   src/carla_sensors_integration.cpp
-  src/main.cpp)
-
+)
+## Declare a C++ library
+add_library(carla_sensors_integration_library
+  src/main.cpp
+  src/carla_sensors_integration.cpp
+)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}_library
-  ${catkin_LIBRARIES}
-)
+target_link_libraries(${PROJECT_NAME} carla_sensors_integration_library ${catkin_LIBRARIES})
+add_dependencies(${PROJECT_NAME} carla_sensors_integration_library ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(${PROJECT_NAME}
-  ${PROJECT_NAME}_library
-)
+target_link_libraries(carla_sensors_integration_library ${catkin_LIBRARIES})
+add_dependencies(carla_sensors_integration_library ${catkin_EXPORTED_TARGETS})
 
-add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS})
-add_dependencies(${PROJECT_NAME}_library ${catkin_EXPORTED_TARGETS})
 
 #############
 ## Install ##
 #############
+install(DIRECTORY include
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+)
 
-# all install targets should use catkin DESTINATION variables
-# See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
-
-## Mark executable scripts (Python etc.) for installation
-## in contrast to setup.py, you can choose the destination
-# catkin_install_python(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
 
 ## Mark executables for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
-install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_library
+install(TARGETS ${PROJECT_NAME} carla_sensors_integration_library
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
+
+ ## Install Other Resources
+install(DIRECTORY launch 
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
@@ -121,25 +119,25 @@ install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_library
 #)
 
 ## Mark cpp header files for installation
-install(DIRECTORY include/
-   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-   FILES_MATCHING PATTERN "*.h"
-   PATTERN ".svn" EXCLUDE
-)
+#install(DIRECTORY include/
+#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+#   FILES_MATCHING PATTERN "*.h"
+#   PATTERN ".svn" EXCLUDE
+#)
 
 # Mark other files for installation (e.g. launch and bag files, etc.)
-install(DIRECTORY
-  launch
-  config
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
+#install(DIRECTORY
+#  launch
+#  config
+#  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+#)
 
 #############
 ## Testing ##
 #############
 ## Add gtest based cpp test target and link libraries
-catkin_add_gtest(${PROJECT_NAME}-test
-  test/test_carla_sensors.cpp)
+#catkin_add_gtest(${PROJECT_NAME}-test
+#  test/test_carla_sensors.cpp)
 #if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME}_library)
 #endif()
