@@ -26,7 +26,7 @@
 
 namespace carla_sensors
 {
-    class CarlaSensors
+    class CarlaSensorsWorker
     {
         public:
     

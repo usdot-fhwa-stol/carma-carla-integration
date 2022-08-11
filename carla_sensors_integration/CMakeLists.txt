@@ -73,12 +73,14 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(${PROJECT_NAME}
   src/main.cpp
-  src/carla_sensors_integration.cpp
+  src/carla_sensors_integration_worker.cpp
+  src/carla_sensors_integration_node.cpp
 )
 ## Declare a C++ library
 add_library(carla_sensors_integration_library
   src/main.cpp
-  src/carla_sensors_integration.cpp
+  src/carla_sensors_integration_worker.cpp
+  src/carla_sensors_integration_node.cpp
 )
 
 ## Specify libraries to link a library or executable target against
@@ -135,12 +137,13 @@ install(DIRECTORY launch
 #############
 ## Testing ##
 #############
+
+
 ## Add gtest based cpp test target and link libraries
 catkin_add_gtest(${PROJECT_NAME}-test
-  test/test_carla_sensors.cpp)
+  test/test_carla_sensors.cpp
+  test/test_main.cpp)
 if(TARGET ${PROJECT_NAME}-test)
    target_link_libraries(${PROJECT_NAME}-test carla_sensors_integration_library)
 endif()
 
-## Add folders to be run by python nosetests
-# catkin_add_nosetests(test)
