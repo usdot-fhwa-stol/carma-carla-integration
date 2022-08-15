@@ -20,7 +20,7 @@ docker_compose_generater() {
     elif [[ $line =~ .'town'. ]]; then
       [[ $line =~ :[[:blank:]]+\"(.*)\" ]] && TOWN=( "${BASH_REMATCH[1]}" )
     fi
-  done < ../simulation/global_config.json
+  done < ../config/global_config.json
 
   declare -a VEHICLE_CONFIG_ARR
   while read -r line; do
@@ -28,10 +28,10 @@ docker_compose_generater() {
     if [[ $line =~ .'role_name'. ]]; then
       let "INSTANCES+=1"
     fi
-  done < ../vehicle_config.json
+  done < ../config/vehicle_config.json
 
   if [ $INSTANCES == 0 ]; then
-    echo "No vehicle config detected, check the vehicle config file at /simulation"
+    echo "No vehicle config detected, check the vehicle config file at /carma-carla-integration/config/"
     exit -1
   fi
 
@@ -168,10 +168,9 @@ BLOCK
 }
 
 carma__start_sim_mode(){
-
   docker_compose_generater | cat > docker-compose.yml
   echo "Starting CARMA Platform foreground processes..."
-  docker run -v /home/yuan/docker-compose.yml:/opt/carma/vehicle/config/docker-compose.yml --rm --volumes-from carma-config:ro --entrypoint sh busybox:latest -c \
+  docker run -v docker-compose.yml:/opt/carma/vehicle/config/docker-compose.yml --rm --volumes-from carma-config:ro --entrypoint sh busybox:latest -c \
   'cat /opt/carma/vehicle/config/docker-compose.yml' | \
   docker-compose -f - -p carma up $@
   rm docker-compose.yml
