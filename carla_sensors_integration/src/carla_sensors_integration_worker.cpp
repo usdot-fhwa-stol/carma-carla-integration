@@ -7,7 +7,7 @@ namespace carla_sensors
 
     void CarlaSensorsWorker::initialize()
     {
-        nh_.reset(new ros::CARMANodeHandle());
+        /*nh_.reset(new ros::CARMANodeHandle());
         points_raw_pub_ = nh_->advertise<sensor_msgs::PointCloud2>("points_raw", 1);
         image_raw_pub_= nh_->advertise<sensor_msgs::Image>("image_raw", 1);
         image_color_pub_ = nh_->advertise<sensor_msgs::Image>("image_color",1);
@@ -19,7 +19,7 @@ namespace carla_sensors
         pnh_->getParam("role_name", carla_vehicle_role_);
 
 
-        gnss_fixed_fused_pub_ = nh_->advertise<gps_common::GPSFix>("gnss_fix_fused", 1);
+        gnss_fixed_fused_pub_ = nh_->advertise<gps_common::GPSFix>("gnss_fix_fused", 1);*/
 
 
         /*/Subscribers
@@ -117,6 +117,23 @@ namespace carla_sensors
 
     }
 
+    void CarlaSensorsWorker::camera_info_cb(sensor_msgs::CameraInfo camera_info)
+    {
+        camera_info_msg.height = camera_info.height;
+        camera_info_msg.width = camera_info.width;
+        camera_info_msg.distortion_model = camera_info.distortion_model;
+        camera_info_msg.D = camera_info.D;
+        camera_info_msg.K = camera_info.K;
+        camera_info_msg.R = camera_info.R;
+        camera_info_msg.P = camera_info.P;
+        camera_info_msg.binning_x = camera_info.binning_x;
+        camera_info_msg.binning_y = camera_info.binning_y;
+        camera_info_msg.roi = camera_info.roi;
+
+
+
+    }
+
     void CarlaSensorsWorker::gnss_fixed_fused_cb(sensor_msgs::NavSatFix gnss_fixed)
     {
         gnss_fixed_msg.altitude = gnss_fixed.altitude;
@@ -147,6 +164,13 @@ namespace carla_sensors
     {
         return image_rect_msg;
     }
+
+    sensor_msgs::CameraInfo CarlaSensorsWorker::get_camera_info()
+    {
+        return camera_info_msg;
+    }
+
+
     gps_common::GPSFix CarlaSensorsWorker::get_gnss_fixed_msg()
     {
         return gnss_fixed_msg;

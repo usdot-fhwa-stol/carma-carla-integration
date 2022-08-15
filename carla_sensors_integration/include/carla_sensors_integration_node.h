@@ -40,6 +40,7 @@ namespace carla_sensors
             void image_raw_cb(sensor_msgs::Image image_raw);
             void image_color_cb(sensor_msgs::Image image_color);
             void image_rect_cb(sensor_msgs::Image image_rect);
+            void camera_info_cb(sensor_msgs::CameraInfo camera_info);
             void gnss_fixed_fused_cb(sensor_msgs::NavSatFix gnss_fixed);
 
         private:
@@ -70,6 +71,8 @@ namespace carla_sensors
             sensor_msgs::Image image_color_msg;
             sensor_msgs::Image image_rect_msg;
             gps_common::GPSFix gnss_fixed_msg;
+            sensor_msgs::CameraInfo camera_info_msg;
+
 
             double spin_rate_ = 10.0;
 

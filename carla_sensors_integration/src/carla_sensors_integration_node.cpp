@@ -22,10 +22,11 @@ namespace carla_sensors
 
         //Subscribers
         point_cloud_sub_ = nh_->subscribe<sensor_msgs::PointCloud2>("points_cloud", 10, &CarlaSensorsNode::point_cloud_cb, this);
-        image_raw_sub_ = nh_->subscribe<sensor_msgs::Image>("/carla/" + carla_vehicle_role_ + "/camera/image", 10, &CarlaSensorsNode::image_raw_cb, this);
-        image_color_sub_ = nh_->subscribe<sensor_msgs::Image>("/carla/" + carla_vehicle_role_ + "/camera/image_color", 10, &CarlaSensorsNode::image_color_cb, this);
-        image_rect_sub_ = nh_->subscribe<sensor_msgs::Image>("/carla/" + carla_vehicle_role_ + "/camera/image_rect", 10, &CarlaSensorsNode::image_rect_cb, this);
-        gnss_fixed_fused_sub_ = nh_->subscribe<sensor_msgs::NavSatFix>("/carla/" + carla_vehicle_role_ + "/gnss/gnss_fix_fused", 10, &CarlaSensorsNode::gnss_fixed_fused_cb, this);
+        image_raw_sub_ = nh_->subscribe<sensor_msgs::Image>("/carla/" + carla_vehicle_role_ + "/camera/rgb/front/image", 10, &CarlaSensorsNode::image_raw_cb, this);
+        image_color_sub_ = nh_->subscribe<sensor_msgs::Image>("/carla/" + carla_vehicle_role_ + "/camera/rgb/front/image_color", 10, &CarlaSensorsNode::image_color_cb, this);
+        image_rect_sub_ = nh_->subscribe<sensor_msgs::Image>("/carla/" + carla_vehicle_role_ + "/camera/rgb/front/image_rect", 10, &CarlaSensorsNode::image_rect_cb, this);
+        gnss_fixed_fused_sub_ = nh_->subscribe<sensor_msgs::NavSatFix>("/carla/" + carla_vehicle_role_ + "/gnss/novatel_gnss/fix", 10, &CarlaSensorsNode::gnss_fixed_fused_cb, this);
+        camera_info_sub_ = nh_->subscribe<sensor_msgs::CameraInfo>("/carla/" + carla_vehicle_role_ + "/camera/rgb/front/camera_info", 10, &CarlaSensorsNode::camera_info_cb, this);
 
 
     }
@@ -90,6 +91,14 @@ namespace carla_sensors
         carla_worker_.image_rect_cb(image_rect);
         image_rect_msg = carla_worker_.get_image_rect_msg();
         image_rect_pub_.publish(image_rect_msg);
+
+    }
+
+    void CarlaSensorsNode::camera_info_cb(sensor_msgs::CameraInfo camera_info)
+    {
+        carla_worker_.camera_info_cb(camera_info);
+
+        camera_info_msg = carla_worker_.get_camera_info(); 
 
     }
 
