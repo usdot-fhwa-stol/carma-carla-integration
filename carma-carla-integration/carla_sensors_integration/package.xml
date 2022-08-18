@@ -59,7 +59,6 @@
   <exec_depend>rospy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
   <depend>sensor_msgs</depend>
-  <depend>gps_common</depend>
   <depend>cav_msgs</depend>
   <depend>carma_utils</depend>
 

@@ -19,7 +19,6 @@ set(CATKIN_DEPS
   roscpp
   rospy
   std_msgs
-  gps_common
   cav_msgs
   carma_utils
   sensor_msgs
