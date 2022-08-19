@@ -62,7 +62,7 @@ RUN ln -sf /opt/cmake-3.13.0/bin/* /usr/bin/
 RUN rm cmake-3.13.0-Linux-x86_64.tar.gz
 
 #CARMA Utils package
-RUN  git clone --depth=1 https://github.com/usdot-fhwa-stol/carma-utils.git
+RUN  git clone -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-utils.git
 
 # Clone ROS message
 RUN mkdir -p msgs
