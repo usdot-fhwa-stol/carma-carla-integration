@@ -61,6 +61,9 @@ RUN mv cmake-3.13.0-Linux-x86_64 /opt/cmake-3.13.0
 RUN ln -sf /opt/cmake-3.13.0/bin/* /usr/bin/
 RUN rm cmake-3.13.0-Linux-x86_64.tar.gz
 
+#CARMA Utils package
+RUN  git clone --depth=1 https://github.com/usdot-fhwa-stol/carma-utils.git
+
 # Clone ROS message
 RUN mkdir -p msgs
 RUN cd msgs \
@@ -78,6 +81,7 @@ RUN cd carma_carla_ws/src/msgs \
 RUN cd carma_carla_ws/src \
     && ln -s ../../ros-bridge \
     && ln -s ../../carma-carla-integration \
+	&& ln -s ../../carma-utils \
     && cd .. \
     && /bin/bash -c '. /opt/ros/kinetic/setup.bash; catkin_make'
 
