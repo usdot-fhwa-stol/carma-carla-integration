@@ -1,3 +1,3 @@
-#!/bin/sh
-cd ..
-docker build -t usdotfhwastol/carma-carla-integration -f Dockerfile . "$@"
+#!/bin/bash
+cd "$(dirname "$0")"/..
+docker build --no-cache -t usdotfhwastol/carma-carla-integration -f Dockerfile . "$@"

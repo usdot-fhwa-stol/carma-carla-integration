@@ -71,14 +71,14 @@ RUN sudo rm cmake-3.13.0-Linux-x86_64.tar.gz
 # Clone ROS message
 RUN sudo mkdir -p msgs
 RUN cd msgs \
-		&& sudo git clone -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/autoware.ai.git \
-		&& sudo git clone -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-msgs.git
+		&& sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/autoware.ai.git \
+		&& sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-msgs.git
 
 #CARMA Utils package
 #CARMA Utils package
 RUN sudo mkdir -p utils
 RUN  cd utils \
-		&& sudo git clone -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-utils.git
+		&& sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-utils.git
 
 #GPS Common
 RUN sudo mkdir -p gps
@@ -90,16 +90,18 @@ RUN sudo mkdir -p carma_carla_ws/src/msgs
 RUN  cd carma_carla_ws/src/msgs \
 		&& sudo ln -s ../../../msgs/carma-msgs/j2735_msgs \
 		&& sudo ln -s ../../../msgs/carma-msgs/cav_msgs \
+		&& sudo ln -s ../../../msgs/carma-msgs/can_msgs \
+		&& sudo ln -s ../../../msgs/carma-msgs/cav_srvs \
 		&& sudo ln -s ../../../msgs/autoware.ai/messages/autoware_msgs
 
 RUN sudo mkdir -p carma_carla_ws/src/utils \
-		&& sudo ln -s ../../../carma_utils
+		&& cd carma_carla_ws/src/utils \
+		&& sudo ln -s /home/utils/carma-utils/carma_utils
 
 
 RUN cd carma_carla_ws/src \
     && sudo ln -s ../../ros-bridge \
     && sudo ln -s ../../carma-carla-integration \
-	&& sudo ln -s ../../carma_utils \
     && cd .. \
     && sudo /bin/bash -c '. /opt/ros/noetic/setup.bash; catkin_make'
 
