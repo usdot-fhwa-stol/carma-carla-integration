@@ -17,10 +17,10 @@ project(carla_sensors_integration)
 
 set(CATKIN_DEPS
   roscpp
-  rospy
   std_msgs
   cav_msgs
   carma_utils
+  gps_common
   sensor_msgs
 )
 

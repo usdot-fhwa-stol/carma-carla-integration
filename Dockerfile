@@ -43,9 +43,6 @@ RUN sudo git clone --depth 1 -b '0.9.10.1' --recurse-submodules https://github.c
 # CARMA-CARLA integration tool copy from local
 COPY carma-carla-integration ./carma-carla-integration
 
-# CARMA-CARLA integration tool copy from local
-COPY carla_sensors_integration ./carla_sensors_integration
-
 #COPY carma_utils ./../carma-utils/carma_utils
 
 # CARMA-CARLA integration tool necessary package and msgs
@@ -61,6 +58,9 @@ COPY carla_sensors_integration ./carla_sensors_integration
 #		ros-kinetic-pcl-ros \
 #		ros-kinetic-cv-bridge
 
+RUN sudo apt-get install -y ros-noetic-derived-object-msgs \
+	libgps-dev
+
 # Upgrade CMake to 3.13
 RUN sudo wget https://cmake.org/files/v3.13/cmake-3.13.0-Linux-x86_64.tar.gz
 RUN sudo tar -xzvf cmake-3.13.0-Linux-x86_64.tar.gz
@@ -75,10 +75,15 @@ RUN cd msgs \
 		&& sudo git clone -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-msgs.git
 
 #CARMA Utils package
+#CARMA Utils package
 RUN sudo mkdir -p utils
 RUN  cd utils \
 		&& sudo git clone -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-utils.git
 
+#GPS Common
+RUN sudo mkdir -p gps
+RUN cd gps \
+	&& sudo git clone https://github.com/swri-robotics/gps_umd.git
 # Catkin make for both ros-bridge and carma-carla-integration
 RUN sudo mkdir -p carma_carla_ws/src/msgs
 
@@ -88,13 +93,15 @@ RUN  cd carma_carla_ws/src/msgs \
 		&& sudo ln -s ../../../msgs/autoware.ai/messages/autoware_msgs
 
 RUN sudo mkdir -p carma_carla_ws/src/utils \
-		&& sudo ln -s ../../carma_utils
+		&& sudo ln -s ../../../carma_utils
+
 
 RUN cd carma_carla_ws/src \
     && sudo ln -s ../../ros-bridge \
     && sudo ln -s ../../carma-carla-integration \
+	&& sudo ln -s ../../carma_utils \
     && cd .. \
-    && sudo /bin/bash -c '. /opt/ros/kinetic/setup.bash; catkin_make'
+    && sudo /bin/bash -c '. /opt/ros/noetic/setup.bash; catkin_make'
 
 RUN sudo pip install simple-pid
 

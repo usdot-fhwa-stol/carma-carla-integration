@@ -26,11 +26,11 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <depend>roscpp</depend>
-  <depend>rospy</depend>
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>cav_msgs</depend>
   <depend>carma_utils</depend>
+  <depend>gps_common</depend>
 
 
 </package>

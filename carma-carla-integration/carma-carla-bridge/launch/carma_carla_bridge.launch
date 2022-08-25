@@ -67,11 +67,6 @@
     <param name='accel_Kd' type='double' value='$(arg accel_Kd)' />
   </node>
 
-  <!-- carma-utils node
-  <group>
-    <include file='$(find carma_utils)/launch/carma_utils.launch'>
-    </include>
-  </group>-->
 
   <!-- carla_sensors_integration node-->
   <group>
