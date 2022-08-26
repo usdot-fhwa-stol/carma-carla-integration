@@ -16,9 +16,20 @@ WORKDIR /home
 
 ARG CARMA_VERSION="carma-system-3.9.0"
 
+
+#PYTHON 3.7 
+RUN sudo add-apt-repository ppa:deadsnakes/ppa -y
+RUN sudo apt update
+RUN sudo apt install python3.7 -y
+RUN sudo apt-get install python3.7-distutils -y
+RUN sudo python3.7 -m pip install numpy --upgrade
+RUN alias python='/usr/bin/python3.7'
+
 # CARLA PythonAPI
 RUN sudo mkdir ./PythonAPI
+COPY PythonAPI ./PythonAPI
 ADD https://carla-releases.s3.eu-west-3.amazonaws.com/Backup/carla-0.9.10-py2.7-linux-x86_64.egg ./PythonAPI
+
 
 #RUN sudo apt-get update && apt-get install -y \
 #		git \
@@ -70,9 +81,6 @@ RUN sudo apt-get install -y --no-install-recommends \
     ros-noetic-jsk-recognition-msgs \
 	ros-noetic-rqt \
 	ros-noetic-rviz 
-
-RUN sudo pip install numpy
-	
 
 # Upgrade CMake to 3.13
 RUN sudo wget https://cmake.org/files/v3.13/cmake-3.13.0-Linux-x86_64.tar.gz
