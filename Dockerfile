@@ -16,10 +16,6 @@ WORKDIR /home
 
 ARG CARMA_VERSION="carma-system-3.9.0"
 
-# CARLA PythonAPI
-RUN mkdir ./PythonAPI
-ADD https://carla-releases.s3.eu-west-3.amazonaws.com/Backup/carla-0.9.10-py2.7-linux-x86_64.egg ./PythonAPI
-
 RUN apt-get update && apt-get install -y \
 		git \
 		curl \
