@@ -58,8 +58,21 @@ COPY carma-carla-integration ./carma-carla-integration
 #		ros-kinetic-pcl-ros \
 #		ros-kinetic-cv-bridge
 
-RUN sudo apt-get install -y ros-noetic-derived-object-msgs \
-	libgps-dev
+RUN sudo apt-get install -y --no-install-recommends \
+    python3-pip \
+#    python-wheel \
+	python \
+	python3 \
+	python3-numpy \
+	libgps-dev \
+    ros-noetic-ackermann-msgs \
+    ros-noetic-derived-object-msgs \
+    ros-noetic-jsk-recognition-msgs \
+	ros-noetic-rqt \
+	ros-noetic-rviz 
+
+RUN sudo pip install numpy
+	
 
 # Upgrade CMake to 3.13
 RUN sudo wget https://cmake.org/files/v3.13/cmake-3.13.0-Linux-x86_64.tar.gz
