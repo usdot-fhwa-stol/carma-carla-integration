@@ -13,7 +13,7 @@
 #  License for the specific language governing permissions and limitations under
 #  the License.
 
-docker_compose_str_generater() {
+docker_compose_generator() {
   local CARLA_SIM_VERSION=""
   local CARMA_CARLA_VERSION=""
   local CARMA_VERSION=""
@@ -33,7 +33,7 @@ docker_compose_str_generater() {
     elif [[ $line =~ .'town'. ]]; then
       [[ $line =~ :[[:blank:]]+\"(.*)\" ]] && TOWN=( "${BASH_REMATCH[1]}" )
     fi
-  done < /opt/carma/simulation/global_config.json
+  done < /opt/carma-simulation/global_config.json
 
   declare -a VEHICLE_CONFIG_ARR
   while read -r line; do
@@ -41,7 +41,7 @@ docker_compose_str_generater() {
     if [[ $line =~ .'role_name'. ]]; then
       let "INSTANCES+=1"
     fi
-  done < /opt/carma/simulation/vehicle_config.json
+  done < /opt/carma-simulation/vehicle_config.json
 
   if [ $INSTANCES == 0 ]; then
     echo "No vehicle config detected, check the vehicle config file at /carma-carla-integration/config/"
@@ -137,7 +137,7 @@ BLOCK
     environment:
       - ROS_IP=172.$(($i+2)).0.4
       - ROS_MASTER_URI=http://172.$(($i+2)).0.2:11311/
-    command: bash -c "export PYTHONPATH=$PYTHONPATH:/home/PythonAPI/carla/dist/carla-0.9.10-py2.7-linux-x86_64.egg &&
+    command: bash -c "export /home/carma_carla_ws/devel/lib/python2.7/dist-packages:/opt/ros/kinetic/lib/python2.7/dist-packages:/home/PythonAPI/carla/dist/carla-0.9.10-py2.7-linux-x86_64.egg &&
                       source /home/carma_carla_ws/devel/setup.bash &&
                       ./wait-for-it.sh 172.$(($i+2)).0.3:11311 --
                       roslaunch carma_carla_agent carma_carla_agent.launch role_name:='${VEHICLE_CONFIG_ARR[ $(( $(($i - 1)) * 15)) ]}'
@@ -179,19 +179,3 @@ BLOCK
 BLOCK
   done
 }
-
-docker_compose_generater(){
-  if [ ! -d '/opt/carma/simulation' ]; then
-    echo "Simulation not found in carma folder, creating simulation folder to /opt/carma/ "
-    sudo mkdir -m 777 -p /opt/carma/simulation
-    echo "Simulation folder has been created"
-  fi
-
-  echo "Copying config to /opt/carma/simulation..."
-  cp ../config/global_config.json /opt/carma/simulation
-  cp ../config/vehicle_config.json /opt/carma/simulation
-  echo "Generating docker-compose.yml to /opt/carma/simulation..."
-  docker_compose_str_generater | cat > /opt/carma/simulation/docker-compose.yml
-}
-
-docker_compose_generater

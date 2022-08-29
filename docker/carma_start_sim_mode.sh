@@ -14,12 +14,26 @@
 #  the License.
 
 carma__start_sim_mode(){
-  bash ./docker_compose_generator.sh
+  source ./docker_compose_generator.sh
+  # check if folder exists
+  if [ ! -d '/opt/carma-simulation' ]; then
+    echo "Simulation not found in carma folder, creating carma-simulation folder"
+    sudo mkdir -m 777 -p /opt/carma-simulation
+    echo "Done"
+  fi
+
+  echo "Copying config to /opt/carma-simulation..."
+  cp ../config/global_config.json /opt/carma-simulation
+  cp ../config/vehicle_config.json /opt/carma-simulation
+  echo "Done"
+  echo "Generating docker-compose.yml to /opt/carma/simulation..."
+  docker_compose_generator | cat > /opt/carma-simulation/docker-compose.yml
+  echo "Done"
+
   echo "Starting CARMA Platform foreground processes..."
-  docker run -v /opt/carma/simulation/docker-compose.yml:/opt/carma/vehicle/config/docker-compose.yml --rm --volumes-from carma-config:ro --entrypoint sh busybox:latest -c \
+  docker run -v /opt/carma-simulation/docker-compose.yml:/opt/carma/vehicle/config/docker-compose.yml --rm --volumes-from carma-config:ro --entrypoint sh busybox:latest -c \
   'cat /opt/carma/vehicle/config/docker-compose.yml' | \
   docker-compose -f - -p carma up $@
 }
-
 
 carma__start_sim_mode
