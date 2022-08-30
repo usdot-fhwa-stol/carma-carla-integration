@@ -21,7 +21,7 @@ namespace carla_sensors
 
 
         //Subscribers
-        point_cloud_sub_ = nh_->subscribe<sensor_msgs::PointCloud2>("points_cloud", 10, &CarlaSensorsNode::point_cloud_cb, this);
+        point_cloud_sub_ = nh_->subscribe<sensor_msgs::PointCloud2>("/carla/" + carla_vehicle_role_ +"/lidar/lidar/point_cloud", 10, &CarlaSensorsNode::point_cloud_cb, this);
         image_raw_sub_ = nh_->subscribe<sensor_msgs::Image>("/carla/" + carla_vehicle_role_ + "/camera/rgb/front/image", 10, &CarlaSensorsNode::image_raw_cb, this);
         image_color_sub_ = nh_->subscribe<sensor_msgs::Image>("/carla/" + carla_vehicle_role_ + "/camera/rgb/front/image_color", 10, &CarlaSensorsNode::image_color_cb, this);
         image_rect_sub_ = nh_->subscribe<sensor_msgs::Image>("/carla/" + carla_vehicle_role_ + "/camera/rgb/front/image_rect", 10, &CarlaSensorsNode::image_rect_cb, this);
