@@ -16,10 +16,6 @@ WORKDIR /home
 
 ARG CARMA_VERSION="carma-system-3.9.0"
 
-# CARLA PythonAPI
-RUN mkdir ./PythonAPI
-ADD https://carla-releases.s3.eu-west-3.amazonaws.com/Backup/carla-0.9.10-py2.7-linux-x86_64.egg ./PythonAPI
-
 RUN apt-get update && apt-get install -y \
 		git \
 		curl \
@@ -38,8 +34,19 @@ RUN apt-get update && apt-get install -y \
 # CARLA ROS Bridge
 RUN git clone --depth 1 -b '0.9.10.1' --recurse-submodules https://github.com/carla-simulator/ros-bridge.git
 
+# wait-for-it
+RUN git clone https://github.com/vishnubob/wait-for-it.git
+
+RUN cd wait-for-it \
+		&& cp wait-for-it.sh /home \
+		&& cd ../ \
+		&& rm -r wait-for-it
+
 # CARMA-CARLA integration tool copy from local
 COPY carma-carla-integration ./carma-carla-integration
+
+# CARLA python API copy from local
+COPY PythonAPI ./PythonAPI
 
 # CARMA-CARLA integration tool necessary package and msgs
 RUN apt-get install -y --no-install-recommends \
@@ -61,7 +68,7 @@ RUN mv cmake-3.13.0-Linux-x86_64 /opt/cmake-3.13.0
 RUN ln -sf /opt/cmake-3.13.0/bin/* /usr/bin/
 RUN rm cmake-3.13.0-Linux-x86_64.tar.gz
 
-# Clone ROS message
+# Clone ROS messages
 RUN mkdir -p msgs
 RUN cd msgs \
 		&& git clone -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/autoware.ai.git \
@@ -73,6 +80,7 @@ RUN mkdir -p carma_carla_ws/src/msgs
 RUN cd carma_carla_ws/src/msgs \
 		&& ln -s ../../../msgs/carma-msgs/j2735_msgs \
 		&& ln -s ../../../msgs/carma-msgs/cav_msgs \
+		&& ln -s ../../../msgs/carma-msgs/cav_srvs \
 		&& ln -s ../../../msgs/autoware.ai/messages/autoware_msgs
 
 RUN cd carma_carla_ws/src \
