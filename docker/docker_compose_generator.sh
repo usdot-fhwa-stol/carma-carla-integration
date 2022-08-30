@@ -137,7 +137,7 @@ BLOCK
     environment:
       - ROS_IP=172.$(($i+2)).0.4
       - ROS_MASTER_URI=http://172.$(($i+2)).0.2:11311/
-    command: bash -c "export /home/carma_carla_ws/devel/lib/python2.7/dist-packages:/opt/ros/kinetic/lib/python2.7/dist-packages:/home/PythonAPI/carla/dist/carla-0.9.10-py2.7-linux-x86_64.egg &&
+    command: bash -c "export PYTHONPATH=/home/carma_carla_ws/devel/lib/python2.7/dist-packages:/opt/ros/kinetic/lib/python2.7/dist-packages:/home/PythonAPI/carla/dist/carla-0.9.10-py2.7-linux-x86_64.egg &&
                       source /home/carma_carla_ws/devel/setup.bash &&
                       ./wait-for-it.sh 172.$(($i+2)).0.3:11311 --
                       roslaunch carma_carla_agent carma_carla_agent.launch role_name:='${VEHICLE_CONFIG_ARR[ $(( $(($i - 1)) * 15)) ]}'
@@ -179,3 +179,5 @@ BLOCK
 BLOCK
   done
 }
+
+docker_compose_generator
