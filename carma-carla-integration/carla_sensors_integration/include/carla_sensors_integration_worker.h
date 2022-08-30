@@ -31,11 +31,6 @@ namespace carla_sensors
         public:
     
         //TODO: add @brief for each callback function
-             
-            void publish();
-            void initialize();
-            void spin();
-            void run();
 
             void point_cloud_cb(sensor_msgs::PointCloud2 point_cloud);
             void image_raw_cb(sensor_msgs::Image image_raw);
@@ -57,9 +52,6 @@ namespace carla_sensors
 
             //CARMA ROS node handles
             std::shared_ptr<ros::NodeHandle> nh_, pnh_;
-            //ros::CARMANodeHandle nh_;
-            //ros::CARMANodeHandle pnh_;
-            /*Publishers and Subscribers*/
 
             ros::Subscriber point_cloud_sub_;
             ros::Subscriber image_raw_sub_;

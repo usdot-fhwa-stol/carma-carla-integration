@@ -99,6 +99,7 @@ namespace carla_sensors
         carla_worker_.camera_info_cb(camera_info);
 
         camera_info_msg = carla_worker_.get_camera_info(); 
+        camera_info_pub_.publish(camera_info_msg);
 
     }
 
