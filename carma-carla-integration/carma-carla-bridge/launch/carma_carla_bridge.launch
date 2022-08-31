@@ -68,4 +68,10 @@
   </node>
 
 
+  <!-- carla_sensors_integration node-->
+  <group>
+    <include file='$(find carla_sensors_integration)/launch/carla_sensors_integration.launch'>
+    </include>
+  </group>
+
 </launch>

@@ -123,4 +123,10 @@
     <arg name='selected_route' value='$(arg selected_route)'/>
     <arg name='selected_plugins' value='$(arg selected_plugins)'/>
   </include>
+
+  <!-- carla_sensors_integration node
+  <group>
+    <include file='$(find carla_sensors_integration)/launch/carla_sensors_integration.launch'>
+    </include>
+  </group>-->
 </launch>

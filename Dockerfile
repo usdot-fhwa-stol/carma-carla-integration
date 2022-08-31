@@ -11,84 +11,83 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-FROM ros:kinetic
+FROM usdotfhwastol/carma-base:carma-system-4.2.0
 WORKDIR /home
 
 ARG CARMA_VERSION="carma-system-3.9.0"
 
-RUN apt-get update && apt-get install -y \
-		git \
-		curl \
-		wget \
-		nano \
-		libpng16-16 \
-		libsdl2-2.0 \
-		software-properties-common
+# CARLA PythonAPI
+COPY PythonAPI ./PythonAPI
 
-# Update gcc and g++
-RUN add-apt-repository ppa:ubuntu-toolchain-r/test
-RUN apt-get update && apt-get install -y \
-		gcc-6 \
-		g++-6
+RUN sudo add-apt-repository ppa:deadsnakes/ppa -y
 
 # CARLA ROS Bridge
-RUN git clone --depth 1 -b '0.9.10.1' --recurse-submodules https://github.com/carla-simulator/ros-bridge.git
-
-# wait-for-it
-RUN git clone https://github.com/vishnubob/wait-for-it.git
-
-RUN cd wait-for-it \
-		&& cp wait-for-it.sh /home \
-		&& cd ../ \
-		&& rm -r wait-for-it
+RUN sudo git clone --depth 1 -b '0.9.10.1' --recurse-submodules https://github.com/carla-simulator/ros-bridge.git
 
 # CARMA-CARLA integration tool copy from local
 COPY carma-carla-integration ./carma-carla-integration
 
-# CARLA python API copy from local
-COPY PythonAPI ./PythonAPI
+RUN sudo apt-get install -y --no-install-recommends \
+    python3.7 \
+    python3.7-distutils \
+    python3-pip \
+    python3-wheel \
+  	python3 \
+  	python3-numpy \
+  	libgps-dev \
+    ros-noetic-ackermann-msgs \
+    ros-noetic-derived-object-msgs \
+    ros-noetic-jsk-recognition-msgs \
+  	ros-noetic-rqt \
+  	ros-noetic-rviz
 
-# CARMA-CARLA integration tool necessary package and msgs
-RUN apt-get install -y --no-install-recommends \
-    python-pip \
-    python-wheel \
-    ros-kinetic-ackermann-msgs \
-    ros-kinetic-derived-object-msgs \
-    ros-kinetic-jsk-recognition-msgs \
-		ros-kinetic-rqt \
-		ros-kinetic-rviz \
-		ros-kinetic-pcl-conversions \
-		ros-kinetic-pcl-ros \
-		ros-kinetic-cv-bridge
+RUN sudo python3.7 -m pip install simple-pid
+RUN sudo python3.7 -m pip install numpy --upgrade
+RUN sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
+RUN alias python='/usr/bin/python3.7'
+
 
 # Upgrade CMake to 3.13
-RUN wget https://cmake.org/files/v3.13/cmake-3.13.0-Linux-x86_64.tar.gz
-RUN tar -xzvf cmake-3.13.0-Linux-x86_64.tar.gz
-RUN mv cmake-3.13.0-Linux-x86_64 /opt/cmake-3.13.0
-RUN ln -sf /opt/cmake-3.13.0/bin/* /usr/bin/
-RUN rm cmake-3.13.0-Linux-x86_64.tar.gz
+RUN sudo wget https://cmake.org/files/v3.13/cmake-3.13.0-Linux-x86_64.tar.gz
+RUN sudo tar -xzvf cmake-3.13.0-Linux-x86_64.tar.gz
+RUN sudo mv cmake-3.13.0-Linux-x86_64 /opt/cmake-3.13.0
+RUN sudo ln -sf /opt/cmake-3.13.0/bin/* /usr/bin/
+RUN sudo rm cmake-3.13.0-Linux-x86_64.tar.gz
 
-# Clone ROS messages
-RUN mkdir -p msgs
+# Clone ROS message
+RUN sudo mkdir -p msgs
 RUN cd msgs \
-		&& git clone -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/autoware.ai.git \
-		&& git clone -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-msgs.git
+		&& sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/autoware.ai.git \
+		&& sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-msgs.git
 
+#CARMA Utils package
+RUN sudo mkdir -p utils
+RUN  cd utils \
+		&& sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-utils.git
+
+#GPS Common
+RUN sudo mkdir -p gps
+RUN cd gps \
+	&& sudo git clone https://github.com/swri-robotics/gps_umd.git
 # Catkin make for both ros-bridge and carma-carla-integration
-RUN mkdir -p carma_carla_ws/src/msgs
+RUN sudo mkdir -p carma_carla_ws/src/msgs
 
-RUN cd carma_carla_ws/src/msgs \
-		&& ln -s ../../../msgs/carma-msgs/j2735_msgs \
-		&& ln -s ../../../msgs/carma-msgs/cav_msgs \
-		&& ln -s ../../../msgs/carma-msgs/cav_srvs \
-		&& ln -s ../../../msgs/autoware.ai/messages/autoware_msgs
+RUN  cd carma_carla_ws/src/msgs \
+		&& sudo ln -s ../../../msgs/carma-msgs/j2735_msgs \
+		&& sudo ln -s ../../../msgs/carma-msgs/cav_msgs \
+		&& sudo ln -s ../../../msgs/carma-msgs/can_msgs \
+		&& sudo ln -s ../../../msgs/carma-msgs/cav_srvs \
+		&& sudo ln -s ../../../msgs/autoware.ai/messages/autoware_msgs
+
+RUN sudo mkdir -p carma_carla_ws/src/utils \
+		&& cd carma_carla_ws/src/utils \
+		&& sudo ln -s /home/utils/carma-utils/carma_utils
+
 
 RUN cd carma_carla_ws/src \
-    && ln -s ../../ros-bridge \
-    && ln -s ../../carma-carla-integration \
+    && sudo ln -s ../../ros-bridge \
+    && sudo ln -s ../../carma-carla-integration \
     && cd .. \
-    && /bin/bash -c '. /opt/ros/kinetic/setup.bash; catkin_make'
-
-RUN pip install simple-pid
+    && sudo /bin/bash -c '. /opt/ros/noetic/setup.bash; catkin_make'
 
 CMD ["/bin/bash"]
