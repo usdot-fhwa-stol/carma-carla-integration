@@ -72,6 +72,10 @@
   <!-- robot status params -->
   <arg name='robot_status_pub_rate' default='10'/>
 
+  <!-- route and plugins params -->
+  <arg name='selected_route'/>
+  <arg name='selected_plugins'/>
+
   <!--
     ##########################
     ##  CARLA CARMA bridge  ##
@@ -114,6 +118,10 @@
 
     <!-- robot status params -->
     <arg name='robot_status_pub_rate' value='$(arg robot_status_pub_rate)'/>
+
+    <!-- route and plugins params-->
+    <arg name='selected_route' value='$(arg selected_route)'/>
+    <arg name='selected_plugins' value='$(arg selected_plugins)'/>
   </include>
 
   <!-- carla_sensors_integration node

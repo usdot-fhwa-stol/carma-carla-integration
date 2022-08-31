@@ -22,6 +22,9 @@ catkin_install_python(PROGRAMS
     src/carma_carla_bridge/carla_to_carma_localization
     src/carma_carla_bridge/carma_to_carla_ackermann_cmd
     src/carma_carla_bridge/carla_to_carma_external_objects
+    src/carma_carla_bridge/carma_carla_route
+    src/carma_carla_bridge/carma_carla_plugins
+    src/carma_carla_bridge/carma_carla_guidance
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

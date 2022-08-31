@@ -57,7 +57,7 @@
   </include>
 
   <!-- tune carla ackermann controller parameters -->
-  <node name='$(anon dynparam)' pkg='dynamic_reconfigure' type='dynparam' args='set_from_parameters carla/ego_vehicle/ackermann_control'>
+  <node name='$(anon dynparam)' pkg='dynamic_reconfigure' type='dynparam' args='set_from_parameters carla/$(arg role_name)/ackermann_control'>
     <param name='speed_Kp' type='double' value='$(arg speed_Kp)' />
     <param name='speed_Ki' type='double' value='$(arg speed_Ki)' />
     <param name='speed_Kd' type='double' value='$(arg speed_Kd)' />
