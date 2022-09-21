@@ -30,7 +30,7 @@ Loads parameters and configures logging for the node
     <remap from="image_color" to="/hardware_interface/camera/image_color"/>
     <remap from="image_rect" to="/hardware_interface/camera/image_rects"/>
     <remap from="camera_info" to="/hardware_interface/camera/camera_info"/>
-    <remap from="gnss_fix_fused" to="/hardware_interface/gnss/gnss_fix_fused"/>
+    <remap from="gnss_fix_fused" to="/hardware_interface/gnss_fix_fused"/>
     
     <node name="carla_sensors_integration" pkg="carla_sensors_integration" type="carla_sensors_integration"/>
 
