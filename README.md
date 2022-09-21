@@ -31,100 +31,23 @@ docker pull usdotfhwastol/carma-carla-integration:[tag]
 
 The tag information could be found from [usdotfhwastol Dockerhub](https://hub.docker.com/repository/docker/usdotfhwastol/carma-carla-integration)
 
-2. Modify CARLA ROS bridge (skipped if running with co-simulation tool):
-If the CAMRA-CARLA integration is runing alone without co-simulation tool. The synchronous mode parameter should be enabled.
+2. Edit configuration files
 
-##### Step 1: Launched the CARMA-CARLA docker container:
-```sh
-cd <path-to-carma-carla-integration>/docker && ./run.sh -v [version]
-```
-##### Step 2: Modify the parameter synchronous_mode value to true
+#### Vehicle Configuration
+Vehicle configuration is a json file. The number of CARMA instances in a run will be determined by how many elements in the ``Instances`` json list.
 
-```
-sudo nano ros-bridge/carla_ros_bridge/config/settings.yaml
-```
+#### Global Config
+Global configuration is a json file. It includes every docker image tag and CARLA map information which will be pared when tool being launched.
 
-### CARMA Platform Config
-CARMA Config for the simulation currently cannot be pulled from docker hub. It requires local docker build for the image.
+***Note: Both of the configuration files could be edited under the path ``<path-to-carma-carla-integration>/config`` before first run, then it will be copied and only being read from ``/opt/carma-simulation``***
 
-1. Clone the source code of CARMA config from github:
-```sh
-git clone https://github.com/usdot-fhwa-stol/carma-config.git
-```
-2. Switch branch.
-```sh
-git switch Update/carla_integration
-```
-3. Go to the directory /carla_integration under CARMA config and build the docker image. Remember the image name
-```sh
-cd carla_integration/ && ./build-image.sh
-```
-4. Setup CARMA config of the simulation
-```sh
-carma config set usdotfhwastol/carma-config:[tag]
-```
+
 
 ## Run CARMA-CARLA Integration Tool with CARMA Platform
-
-1. Run CARMA Platform with separated terminal
+Run carma_start_sim_mode.sh
+```sh
+cd <path-to-carma-carla-integration>/docker && ./carma_start_sim_mode.sh
 ```
-carma start all
-```
-
-2. Run CARLA server
-```
-./CarlaUE4.sh
-```
-3. Change the map to match with CARMA Platform vector map (initial setting is Town02) by using the python script provided by CARLA in the path : **`CARLA_0.9.10/PythonAPI/util/config.py`**.
-```
-python config.py -m <map>
-```
-
-&emsp;4.1 Run carma-carla docker container
-  ```sh
-  cd <path-to-carma-carla-integration>/docker && ./run.sh -v [version]
-  ```
-&emsp;4.2 Set the catkin source and CARLA python path
-  ```
-  export PYTHONPATH=$PYTHONPATH:/home/PythonAPI/carla-0.9.10-py2.7-linux-x86_64.egg && source /home/carma_carla_ws/devel/setup.bash
-  ```
-&emsp;4.3 Launch CARMA-CARLA integration tool
-  ```
-  roslaunch carma_carla_agent carma_carla_agent.launch town:='your_map_name' spawn_point:='spawn_point_info'
-  ```
-
-***Note: step 3 must be completed within 20 seconds after step 2 being completed***
-
-
-5. Open CARMA-Web-UI to select route and plugins via Chromium Web Browser **`incognito window`** then click the circle button at the left bottom corner.
-
-![CARMA-Web-UI](docs/images/CARMA-Web-UI.png)
-
-Afterward, the corresponding CARLA vehicle will start to receive control command from CARMA-Platform and start to following the selected route to move
-
-## Run CARMA-CARLA Integration Tool with CARMA Platform and Co-Simulation tool
-1. To run the with the co-simulation tool, the carma-xil-cosimulation docker image must be pulled firstly.
-
-```
-docker pull usdotfhwastol/carma-xil-cosimulation:[tag]
-```
-
-The tag information could be found from [carma-xil-cosimulation docker repositories](https://hub.docker.com/repository/registry-1.docker.io/usdotfhwastol/carma-xil-cosimulation/tags?page=1&ordering=last_updated)
-
-2. Run CARMA platform
-
-```
-carma start all
-```
-
-3. Run docker-compose.yml at the directory ```<path-to-carma-carla-integration>/docker/```.
-
-
-```
-docker-compose up
-```
-
-***The default setting of the scenario in docker-compose.yml is Town04 for both CARMA-CARLA and co-simulation. It must be edited to test different scenario***
 
 
 
@@ -134,15 +57,10 @@ The usage instruction includes what parameter could be parsed to CARMA-CARLA int
 ### CARMA-CARLA Integration Parameters
 | Parameters| **Description**|*Default*|
 | ------------------- | ------------------------------------------------------------ |----------|
-|host|CARLA server IP address|127.0.0.1|
-|port|CARLA server port number|2000|
-|town|To specify which scenario for CARLA server to load. The scenario should be matched with executed CARMA Platform vector_map|Town02|
 |spawn_point|To specify where to spawn CARLA vehicle|N/A|
 |role_name|Assign the name of the CARLA vehicle. It currently only supports the name range from hero0 to hero9 and ego_vehicle|ego_vehicle|
-|vehicle_model|To specify what vehicle model should be generated in CARLA server|vehicle.toyota.prius|
-|vehicle_length|To specify the length of vehicle|5.00|
-|vehicle_width|To specify the width of vehicle|3.00|
-|vehicle_wheelbase|To specify the size of wheelbase for the vehicle|2.79|
+|selected_route|To specify route file for CARMA platform. Route file could be found in the path ``/opt/carma/route/`` |N/A|
+|selected_plugin|To specify plugins for CARMA platform. Required plugins are ``RouteFollowingPlugin``, ``InLaneCruisingPlugin``, ``StopAndWaitPlugin``, ``Pure Pursuit``|N/A|
 |speed_Kp| Speed proportional value for the vehicle. The current default value was setup for Town02 with vehicle speed limit 20 MPH|0.05|
 |speed_Ki| Speed integral value for the vehicle. The current default value was setup for Town02 with vehicle speed limit 20 MPH|0.018|
 |speed_Kd| Speed derivative value for the vehicle. The current default value was setup for Town02 with vehicle speed limit 20 MPH|0.4|
@@ -153,6 +71,7 @@ The usage instruction includes what parameter could be parsed to CARMA-CARLA int
 |init_acceleration| To specify the initial vehicle acceleration |1|
 |init_steering_angle| To specify the initial vehicle steering wheel angle, it range from 0.7(left) to -0.7(right)|0|
 |init_jerk| To specify the initial vehicle jerk value|0|
+
 
 ### CARMA Maps
 After CARMA platform installed successfully, the default **`vector_map.osm`** and **`pcd_map.pcd`** are Town02 stored in the folder **`/opt/carma/maps/`**. CARMA platform will load vector map (lanelet) and point cloud map when it has been launched.
