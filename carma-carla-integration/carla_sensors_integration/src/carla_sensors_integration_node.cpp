@@ -34,7 +34,6 @@ namespace carla_sensors
     void CarlaSensorsNode::run()
     {
         initialize();
-        ros::CARMANodeHandle::setSpinRate(spin_rate_);
         ros::CARMANodeHandle::spin();
     }
 
@@ -46,6 +45,10 @@ namespace carla_sensors
         {
              throw std::invalid_argument(" Invalid LIDAR Point Cloud Data");
             exit(0);
+        }
+        if (point_cloud.header.stamp == point_cloud_msg.header.stamp && point_cloud_msg.header.seq != 0)
+        {
+            return;
         }
 
         carla_worker_.point_cloud_cb(point_cloud);
