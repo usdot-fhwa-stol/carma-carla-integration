@@ -74,4 +74,10 @@
     </include>
   </group>
 
+  <!-- data_stream_toggle node-->
+  <group>
+    <include file='$(find data_stream_toggle)/launch/data_stream_toggle.launch'>
+    </include>
+  </group>
+
 </launch>

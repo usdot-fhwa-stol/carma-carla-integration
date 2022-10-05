@@ -31,6 +31,12 @@ Loads parameters and configures logging for the node
     <remap from="image_rect" to="/hardware_interface/camera/image_rects"/>
     <remap from="camera_info" to="/hardware_interface/camera/camera_info"/>
     <remap from="gnss_fix_fused" to="/hardware_interface/gnss_fix_fused"/>
+
+    <!-- data_stream_toggle node-->
+    <group>
+      <include file='$(find data_stream_toggle)/launch/data_stream_toggle.launch'>
+      </include>
+    </group>
     
     <node name="carla_sensors_integration" pkg="carla_sensors_integration" type="carla_sensors_integration"/>
 
