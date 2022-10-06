@@ -154,6 +154,11 @@ def convert_objects():
     """
     rospy.init_node('carla_to_carma_external_objects', anonymous=True)
     role_name = rospy.get_param('~role_name', 'ego_vehicle')
+    object_detection_stream = rospy.get_param('/object_detection_stream')
+    if localization_stream != True:
+        rospy.logerr("Ground truth localization has been disabled")
+        return
+    
     rospy.Subscriber('/carla/{}/objects'.format(role_name), ObjectArray, external_objects_callback)
     rospy.spin()
 
