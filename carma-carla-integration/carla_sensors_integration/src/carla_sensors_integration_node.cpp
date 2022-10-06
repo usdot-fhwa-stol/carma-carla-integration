@@ -15,11 +15,11 @@ namespace carla_sensors
 
         pnh_.reset(new ros::CARMANodeHandle());
         pnh_->getParam("role_name", carla_vehicle_role_);
-         pnh_->getParam("/object_detection_stream", object_detection_stream_enabled);
-        pnh_->getParam("/localization_stream", localization_stream_enabled);
-        pnh_->getParam("/carla_lidar_stream", carla_lidar_stream_enabled);
-        pnh_->getParam("/carla_camera_stream", carla_camera_stream_enabled);
-        pnh_->getParam("/carla_gnss_stream", carla_gnss_stream_enabled);
+        pnh_->getParam("object_detection_stream", object_detection_stream_enabled);
+        pnh_->getParam("localization_stream", localization_stream_enabled);
+        pnh_->getParam("carla_lidar_stream", carla_lidar_stream_enabled);
+        pnh_->getParam("carla_camera_stream", carla_camera_stream_enabled);
+        pnh_->getParam("carla_gnss_stream", carla_gnss_stream_enabled);
 
         //Subscribers
         point_cloud_sub_ = nh_->subscribe<sensor_msgs::PointCloud2>("/carla/" + carla_vehicle_role_ +"/lidar/lidar/point_cloud", 10, &CarlaSensorsNode::point_cloud_cb, this);

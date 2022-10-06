@@ -75,17 +75,11 @@
   </group>
 
   <!-- data_stream_toggle node-->
-  <!-- Directory of vehicle config parameters -->
-    <arg name="vehicle_config_dir" default="/opt/carma/vehicle/config" doc="The directory continaing vehicle config type parameters"/>
-    
-    <!-- Load Vehicle Characteristics -->
-    <rosparam command="load" file="$(arg vehicle_config_dir)/VehicleConfigParams.yaml"/>
-
-    <!-- Parameter Remapping -->
-    <remap from="object_detection_stream" to="/object_detection_stream"/>
-    <remap from="localization_stream" to="/localization_stream"/>
-    <remap from="carla_lidar_stream" to="/carla_lidar_stream"/>
-    <remap from="carla_camera_stream" to="/carla_camera_stream"/>
-    <remap from="carla_gnss_stream" to="/carla_gnss_stream"/>
+     <!-- Parameter Remapping -->
+    <arg name="object_detection_stream" default='false'/>
+    <arg name="localization_stream" default='false'/>
+    <arg name="carla_lidar_stream" default='true'/>
+    <arg name="carla_camera_stream" default='true'/>
+    <arg name="carla_gnss_stream" default='true'/>
 
 </launch>
