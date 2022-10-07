@@ -68,10 +68,10 @@ def convert_odometry():
     """
     rospy.init_node('carla_to_carma_localization', anonymous=True)
     role_name = rospy.get_param('~role_name', 'ego_vehicle')
-    localization_stream = rospy.get_param('~localization_stream')
-    if localization_stream != True:
-        rospy.logerr("Ground truth localization has been disabled")
-        return
+    #localization_stream = rospy.get_param('~localization_stream')
+    #if localization_stream != True:
+    #    rospy.logerr("Ground truth localization has been disabled")
+    #    return
     
     rospy.Subscriber('/carla/{}/odometry'.format(role_name), Odometry, odometry_callback, queue_size=10)
     rospy.spin()

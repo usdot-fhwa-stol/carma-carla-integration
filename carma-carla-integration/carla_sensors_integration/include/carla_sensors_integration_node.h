@@ -74,11 +74,11 @@ namespace carla_sensors
             sensor_msgs::CameraInfo camera_info_msg;
 
 
-            bool object_detection_stream_enabled;
-            bool localization_stream_enabled;
-            bool carla_lidar_stream_enabled;
-            bool carla_camera_stream_enabled;
-            bool carla_gnss_stream_enabled;
+            std::string object_detection_stream_enabled;
+            std::string localization_stream_enabled;
+            std::string carla_lidar_stream_enabled;
+            std::string carla_camera_stream_enabled;
+            std::string carla_gnss_stream_enabled;
             std::string carla_vehicle_role_;
 
     };

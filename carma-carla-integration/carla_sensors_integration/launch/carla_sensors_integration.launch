@@ -35,11 +35,11 @@ Loads parameters and configures logging for the node
     <!-- data_stream_toggle -->
 
     <!-- Parameter Remapping -->
-    <arg name="object_detection_stream" default='false'/>
-    <arg name="localization_stream" default='false'/>
-    <arg name="carla_lidar_stream" default='true'/>
-    <arg name="carla_camera_stream" default='true'/>
-    <arg name="carla_gnss_stream" default='true'/>
+    <arg name="object_detection_stream" default="off"/>
+    <arg name="localization_stream" default="off"/>
+    <arg name="carla_lidar_stream" default="on"/>
+    <arg name="carla_camera_stream" default="on"/>
+    <arg name="carla_gnss_stream" default="on"/>
     
     <node name="carla_sensors_integration" pkg="carla_sensors_integration" type="carla_sensors_integration"/>
 
