@@ -25,6 +25,7 @@ Loads parameters and configures logging for the node
 
     <arg name='role_name' default='ego_vehicle'/>
 
+
     <remap from="points_raw" to="/hardware_interface/lidar/points_raw"/>
     <remap from="image_raw" to="/hardware_interface/camera/image_raw"/>
     <remap from="image_color" to="/hardware_interface/camera/image_color"/>
@@ -34,13 +35,17 @@ Loads parameters and configures logging for the node
 
     <!-- data_stream_toggle -->
 
-    <!-- Parameter Remapping -->
+    <!-- Parameter Remapping 
     <arg name="object_detection_stream" default="off"/>
-    <arg name="localization_stream" default="off"/>
+    <arg name="localization_stream" default="off"/>-->
     <arg name="carla_lidar_stream" default="on"/>
     <arg name="carla_camera_stream" default="on"/>
     <arg name="carla_gnss_stream" default="on"/>
-    
+
+   <include if="$(eval carla_lidar_stream == 'true')" >
+      <!-- Activate node -->
+   </include>
+
     <node name="carla_sensors_integration" pkg="carla_sensors_integration" type="carla_sensors_integration"/>
 
 

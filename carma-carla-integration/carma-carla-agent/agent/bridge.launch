@@ -45,6 +45,10 @@
   <arg name='init_jerk' default='0'/>
   <arg name='max_steering_degree' default='70'/>
 
+  <!--enable ground truth sensor stream nodes-->
+  <arg name="object_detection_stream" default='off'/>
+  <arg name="localization_stream" default='off'/>
+
 
   <!--
     ##################
@@ -80,16 +84,25 @@
     # localization #
     Extract the pose, twist from carla odometry.
   -->
-  <node pkg='carma_carla_bridge' type='carla_to_carma_localization' name='carla_to_carma_localization' output='screen'>
-    <param name='role_name' type="str" value="$(arg role_name)"/>
-  </node>
+  <include if="$(eval localization_stream == 'on')" >
+      <!-- Activate node -->
+      <node pkg='carma_carla_bridge' type='carla_to_carma_localization' name='carla_to_carma_localization' output='screen'>
+        <param name='role_name' type="str" value="$(arg role_name)"/>
+      </node>
+   </include>
+  
   <!--
     # external objects
     Extract the external objects from carla ObjectArray
-  -->>
-  <node pkg='carma_carla_bridge' type='carla_to_carma_external_objects' name='carla_to_carma_external_objects' output='screen'>
-    <param name='role_name' type="str" value="$(arg role_name)"/>
-  </node>
+  -->
+  <include if="$(eval object_detection_stream == 'on')" >
+      <!-- Activate node -->
+      <node pkg='carma_carla_bridge' type='carla_to_carma_external_objects' name='carla_to_carma_external_objects' output='screen'>
+        <param name='role_name' type="str" value="$(arg role_name)"/>
+      </node>
+  </include>
+  
+
   <!-- convert vehicle command to carla ackermann drive-->
   <node pkg='carma_carla_bridge' type='carma_to_carla_ackermann_cmd' name='carma_to_carla_ackermann_cmd' output='screen'>
     <param name='role_name' type="str" value="$(arg role_name)"/>
