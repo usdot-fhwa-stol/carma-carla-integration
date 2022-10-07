@@ -15,6 +15,7 @@ FROM usdotfhwastol/carma-base:carma-system-4.2.0
 WORKDIR /home
 
 ARG CARMA_VERSION="carma-system-3.9.0"
+ARG CARMA_CONFIG_BRANCH="feature/add_datastream_toggle"
 
 # CARLA PythonAPI
 COPY PythonAPI ./PythonAPI
@@ -69,6 +70,12 @@ RUN  cd utils \
 RUN sudo mkdir -p gps
 RUN cd gps \
 	&& sudo git clone https://github.com/swri-robotics/gps_umd.git
+
+#Carma-Config
+RUN sudo mkdir -p config
+RUN cd config \
+	&& sudo git clone --depth 1 --single-branch -b ${CARMA_CONFIG_BRANCH} https://github.com/usdot-fhwa-stol/carma-config.git
+
 # Catkin make for both ros-bridge and carma-carla-integration
 RUN sudo mkdir -p carma_carla_ws/src/msgs
 
@@ -83,6 +90,10 @@ RUN sudo mkdir -p carma_carla_ws/src/utils \
 		&& cd carma_carla_ws/src/utils \
 		&& sudo ln -s /home/utils/carma-utils/carma_utils
 
+#Config
+RUN sudo mkdir -p carma_carla_ws/src/config \
+		&& cd carma_carla_ws/src/config \
+		&& sudo ln -s /home/config/carma-config/carma_config
 
 RUN cd carma_carla_ws/src \
     && sudo ln -s ../../ros-bridge \
