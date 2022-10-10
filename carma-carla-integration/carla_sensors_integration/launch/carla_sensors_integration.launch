@@ -36,11 +36,40 @@ Loads parameters and configures logging for the node
     <!-- data_stream_toggle -->
 
     <!-- Parameter Remapping -->
-    <arg name="object_detection_stream" default="off"/>
-    <arg name="localization_stream" default="off"/>
-    <arg name="carla_lidar_stream" default="on"/>
-    <arg name="carla_camera_stream" default="on"/>
-    <arg name="carla_gnss_stream" default="on"/>
+    
+
+    <!--
+      # localization #
+      Extract the pose, twist from carla odometry.
+    -->
+    <param name="localization_stream" value="false" type="bool"/>
+    <arg name='loc_ground_truth_enabled' value="false"/>
+    
+    <group if="$(eval loc_ground_truth_enabled == 'true')"> 
+      <node pkg='carma_carla_bridge' type='carla_to_carma_localization' name='carla_to_carma_localization' output='screen'>
+        <param name='role_name' type="str" value="$(arg role_name)"/>
+        <param name="localization_stream" value="true" type="bool"/>
+      </node>
+    </group>
+
+    <!--
+      # external objects
+      Extract the external objects from carla ObjectArray
+    -->
+    <param name="object_detection_stream" value="false" type="bool"/>
+    <arg name='obj_ground_truth_enabled' value="false"/>
+
+    <group if="$(eval obj_ground_truth_enabled == 'true')">
+      <node pkg='carma_carla_bridge' type='carla_to_carma_external_objects' name='carla_to_carma_external_objects' output='screen'>
+        <param name='role_name' type="str" value="$(arg role_name)"/>
+        <param name="object_detection_stream" value="true" type="bool"/>
+      </node>
+    </group>
+
+
+    <param name="carla_lidar_stream" value="true" type="bool"/>
+    <param name="carla_camera_stream" value="true" type="bool"/>
+    <param name="carla_gnss_stream" value="true" type="bool"/>
 
     <node name="carla_sensors_integration" pkg="carla_sensors_integration" type="carla_sensors_integration"/>
 

@@ -79,19 +79,19 @@
   <!--
     # localization #
     Extract the pose, twist from carla odometry.
-  -->
+  
   <arg name="localization_stream" default='false'/>
   <node if="$(arg localization_stream)" pkg='carma_carla_bridge' type='carla_to_carma_localization' name='carla_to_carma_localization' output='screen'>
     <param name='role_name' type="str" value="$(arg role_name)"/>
-  </node>
+  </node>-->
   <!--
     # external objects
     Extract the external objects from carla ObjectArray
-  -->
+  
   <arg name="object_detection_stream" default='false'/>
   <node if="$(arg object_detection_stream)" pkg='carma_carla_bridge' type='carla_to_carma_external_objects' name='carla_to_carma_external_objects' output='screen'>
     <param name='role_name' type="str" value="$(arg role_name)"/>
-  </node>
+  </node>-->
   <!-- convert vehicle command to carla ackermann drive-->
   <node pkg='carma_carla_bridge' type='carma_to_carla_ackermann_cmd' name='carma_to_carla_ackermann_cmd' output='screen'>
     <param name='role_name' type="str" value="$(arg role_name)"/>
