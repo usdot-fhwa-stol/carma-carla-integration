@@ -42,10 +42,6 @@ Loads parameters and configures logging for the node
     <arg name="carla_camera_stream" default="on"/>
     <arg name="carla_gnss_stream" default="on"/>
 
-   <include if="$(eval carla_lidar_stream == 'true')" >
-      <!-- Activate node -->
-   </include>
-
     <node name="carla_sensors_integration" pkg="carla_sensors_integration" type="carla_sensors_integration"/>
 
 
