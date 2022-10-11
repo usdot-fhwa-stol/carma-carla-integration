@@ -45,6 +45,11 @@ namespace carla_sensors
             ROS_ERROR_STREAM("CARLA LIDAR data stream is disabled");
             return;
         }
+        if (carla_lidar_stream_enabled == true)
+        {
+            if (localization_stream_enabled == true && object_detection_stream_enabled == true)
+                throw std::invalid_argument("CARLA LIDAR sensor and both ground truth data streams cannot be enabled at the same time");
+        }
         if (point_cloud.data.size() == 0)
         {
              throw std::invalid_argument(" Invalid LIDAR Point Cloud Data");
