@@ -22,11 +22,35 @@ namespace carla_sensors
         pnh_->getParam("carla_gnss_stream", carla_gnss_stream_enabled);
 
         //Subscribers
-        point_cloud_sub_ = nh_->subscribe<sensor_msgs::PointCloud2>("/carla/" + carla_vehicle_role_ +"/lidar/lidar/point_cloud", 10, &CarlaSensorsNode::point_cloud_cb, this);
-        image_raw_sub_ = nh_->subscribe<sensor_msgs::Image>("/carla/" + carla_vehicle_role_ + "/camera/rgb/front/image", 10, &CarlaSensorsNode::image_raw_cb, this);
-        image_color_sub_ = nh_->subscribe<sensor_msgs::Image>("/carla/" + carla_vehicle_role_ + "/camera/rgb/front/image_color", 10, &CarlaSensorsNode::image_color_cb, this);
-        image_rect_sub_ = nh_->subscribe<sensor_msgs::Image>("/carla/" + carla_vehicle_role_ + "/camera/rgb/front/image_rect", 10, &CarlaSensorsNode::image_rect_cb, this);
-        gnss_fixed_fused_sub_ = nh_->subscribe<sensor_msgs::NavSatFix>("/carla/" + carla_vehicle_role_ + "/gnss/novatel_gnss/fix", 10, &CarlaSensorsNode::gnss_fixed_fused_cb, this);
+
+        /*Lidar*/
+        if (!carla_lidar_stream_enabled)
+            ROS_ERROR_STREAM("CARLA LIDAR data stream is disabled");
+        else if (localization_stream_enabled == true && object_detection_stream_enabled == true)
+            throw std::invalid_argument("CARLA LIDAR sensor and both ground truth data streams cannot be enabled at the same time");
+        else
+            point_cloud_sub_ = nh_->subscribe<sensor_msgs::PointCloud2>("/carla/" + carla_vehicle_role_ +"/lidar/lidar/point_cloud", 10, &CarlaSensorsNode::point_cloud_cb, this);
+        
+
+        /*Camera*/
+        if (!carla_camera_stream_enabled)
+            ROS_ERROR_STREAM("CARLA camera data stream is disabled");
+        else if (carla_camera_stream_enabled == true && object_detection_stream_enabled == true)
+            throw std::invalid_argument("CARLA Camera sensor and ground truth object detection cannot be enabled at the same time");
+        else 
+        {
+            image_raw_sub_ = nh_->subscribe<sensor_msgs::Image>("/carla/" + carla_vehicle_role_ + "/camera/rgb/front/image", 10, &CarlaSensorsNode::image_raw_cb, this);
+            image_color_sub_ = nh_->subscribe<sensor_msgs::Image>("/carla/" + carla_vehicle_role_ + "/camera/rgb/front/image_color", 10, &CarlaSensorsNode::image_color_cb, this);
+            image_rect_sub_ = nh_->subscribe<sensor_msgs::Image>("/carla/" + carla_vehicle_role_ + "/camera/rgb/front/image_rect", 10, &CarlaSensorsNode::image_rect_cb, this);
+        }
+        /*GNSS*/
+        if (!carla_gnss_stream_enabled)
+            ROS_ERROR_STREAM("CARLA camera data stream is disabled");
+        else if (carla_gnss_stream_enabled == true && localization_stream_enabled == true )
+            throw std::invalid_argument("CARLA GNSS sensor and ground truth localization cannot be enabled at the same time");
+        else
+            gnss_fixed_fused_sub_ = nh_->subscribe<sensor_msgs::NavSatFix>("/carla/" + carla_vehicle_role_ + "/gnss/novatel_gnss/fix", 10, &CarlaSensorsNode::gnss_fixed_fused_cb, this);
+        
         camera_info_sub_ = nh_->subscribe<sensor_msgs::CameraInfo>("/carla/" + carla_vehicle_role_ + "/camera/rgb/front/camera_info", 10, &CarlaSensorsNode::camera_info_cb, this);
 
 
@@ -40,16 +64,6 @@ namespace carla_sensors
 
     void CarlaSensorsNode::point_cloud_cb(sensor_msgs::PointCloud2 point_cloud)
     {
-        if (carla_lidar_stream_enabled == false)
-        {
-            ROS_ERROR_STREAM("CARLA LIDAR data stream is disabled");
-            return;
-        }
-        if (carla_lidar_stream_enabled == true)
-        {
-            if (localization_stream_enabled == true && object_detection_stream_enabled == true)
-                throw std::invalid_argument("CARLA LIDAR sensor and both ground truth data streams cannot be enabled at the same time");
-        }
         if (point_cloud.data.size() == 0)
         {
              throw std::invalid_argument(" Invalid LIDAR Point Cloud Data");
@@ -69,17 +83,6 @@ namespace carla_sensors
 
     void CarlaSensorsNode::image_raw_cb(sensor_msgs::Image image_raw)
     {
-        if (carla_camera_stream_enabled == false)
-        {
-            ROS_ERROR_STREAM("CARLA camera data stream is disabled");
-            return;
-        }
-        else if (carla_camera_stream_enabled == true && object_detection_stream_enabled == true)
-        {
-            throw std::invalid_argument("CARLA Camera sensor and ground truth object detection cannot be enabled at the same time");
-
-        }
-
         if (image_raw.data.size() == 0)
         {
              throw std::invalid_argument("Invalid image data");
@@ -92,16 +95,6 @@ namespace carla_sensors
 
     void CarlaSensorsNode::image_color_cb(sensor_msgs::Image image_color)
     {
-        if (carla_camera_stream_enabled == false)
-        {
-            ROS_ERROR_STREAM("CARLA camera data stream is disabled");
-            return;
-        }
-        else if (carla_camera_stream_enabled == true && object_detection_stream_enabled == true)
-        {
-            throw std::invalid_argument("CARLA Camera sensor and ground truth object detection cannot be enabled at the same time");
-
-        }
 
         if (image_color.data.size() == 0)
         {
@@ -116,17 +109,6 @@ namespace carla_sensors
 
     void CarlaSensorsNode::image_rect_cb(sensor_msgs::Image image_rect)
     {
-        if (carla_camera_stream_enabled == false)
-        {
-            ROS_ERROR_STREAM("CARLA camera data stream is disabled");
-            return;
-        }
-        else if (carla_camera_stream_enabled == true && object_detection_stream_enabled == true)
-        {
-            throw std::invalid_argument("CARLA Camera sensor and ground truth object detection cannot be enabled at the same time");
-
-        }
-        
         if (image_rect.data.size() == 0)
         {
              throw std::invalid_argument("Invalid image data");
@@ -141,17 +123,6 @@ namespace carla_sensors
     void CarlaSensorsNode::camera_info_cb(sensor_msgs::CameraInfo camera_info)
     {
 
-        if (carla_camera_stream_enabled == false)
-        {
-            ROS_ERROR_STREAM("CARLA camera data stream is disabled");
-            return;
-        }
-        else if (carla_camera_stream_enabled == true && object_detection_stream_enabled == true)
-        {
-            throw std::invalid_argument("CARLA Camera sensor and ground truth object detection cannot be enabled at the same time");
-
-        }
-
         carla_worker_.camera_info_cb(camera_info);
 
         camera_info_msg = carla_worker_.get_camera_info(); 
@@ -161,15 +132,7 @@ namespace carla_sensors
 
     void CarlaSensorsNode::gnss_fixed_fused_cb(sensor_msgs::NavSatFix gnss_fixed)
     {
-        if (carla_gnss_stream_enabled == false)
-        {
-            ROS_ERROR_STREAM("CARLA camera data stream is disabled");
-            return;
-        }
-        else if (carla_gnss_stream_enabled == true && localization_stream_enabled == true )
-        {
-            throw std::invalid_argument("CARLA GNSS sensor and ground truth localization cannot be enabled at the same time");
-        }
+        
 
         carla_worker_.gnss_fixed_fused_cb(gnss_fixed);
         gnss_fixed_msg = carla_worker_.get_gnss_fixed_msg();
