@@ -41,4 +41,5 @@ if [[ "$BRANCH" = "develop" ]]; then
 else
       git clone https://github.com/usdot-fhwa-stol/carma-msgs.git ${dir}/src/carma-msgs --branch develop --depth 1
       git clone https://github.com/usdot-fhwa-stol/carma-utils.git ${dir}/src/carma-utils --branch develop --depth 1
+      git clone https://github.com/usdot-fhwa-stol/carma-config.git ${dir}/src/carma-config --branch feature/add_datastream_toggle --depth 1
 fi

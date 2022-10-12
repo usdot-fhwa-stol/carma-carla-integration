@@ -25,6 +25,9 @@
     ## Configuration ##
     ###################
   -->
+  <arg name="vehicle_config_dir" default="/home/config/carma-config/carla_integration"/>
+  <rosparam command="load" file="$(arg vehicle_config_dir)/VehicleConfigParams.yaml"/>
+
   <arg name='agent' default='agent'/>
 
   <!-- connecting default info  -->>

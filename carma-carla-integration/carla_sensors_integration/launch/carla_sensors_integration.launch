@@ -33,10 +33,7 @@ Loads parameters and configures logging for the node
     <remap from="camera_info" to="/hardware_interface/camera/camera_info"/>
     <remap from="gnss_fix_fused" to="/hardware_interface/gnss_fix_fused"/>
 
-    <!-- data_stream_toggle -->
-
-    <!-- Parameter Remapping -->
-    
+    <!-- data_stream_toggle  -->
 
     <!--
       # localization #
@@ -44,7 +41,7 @@ Loads parameters and configures logging for the node
     -->
     <param name="localization_stream" value="false" type="bool"/>
     <arg name='loc_ground_truth_enabled' value="false"/>
-    
+    <remap from="/gt_localization_stream" to="~loc_ground_truth_enabled"/>
     <group if="$(eval loc_ground_truth_enabled == 'true')"> 
       <node pkg='carma_carla_bridge' type='carla_to_carma_localization' name='carla_to_carma_localization' output='screen'>
         <param name='role_name' type="str" value="$(arg role_name)"/>
@@ -58,6 +55,7 @@ Loads parameters and configures logging for the node
     -->
     <param name="object_detection_stream" value="false" type="bool"/>
     <arg name='obj_ground_truth_enabled' value="false"/>
+    <remap from="/gt_object_detection_stream" to="~obj_ground_truth_enabled"/>
 
     <group if="$(eval obj_ground_truth_enabled == 'true')">
       <node pkg='carma_carla_bridge' type='carla_to_carma_external_objects' name='carla_to_carma_external_objects' output='screen'>
@@ -68,8 +66,12 @@ Loads parameters and configures logging for the node
 
 
     <param name="carla_lidar_stream" value="true" type="bool"/>
+    <remap from="/carla_lidar" to="~carla_lidar_stream"/>
     <param name="carla_camera_stream" value="true" type="bool"/>
+    <remap from="/carla_camera" to="~carla_camera_stream"/>
     <param name="carla_gnss_stream" value="true" type="bool"/>
+    <remap from="/carla_gnss" to="~carla_gnss_stream"/>
+
 
     <node name="carla_sensors_integration" pkg="carla_sensors_integration" type="carla_sensors_integration"/>
 

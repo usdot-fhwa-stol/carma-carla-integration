@@ -93,7 +93,7 @@ RUN sudo mkdir -p carma_carla_ws/src/utils \
 #Config
 RUN sudo mkdir -p carma_carla_ws/src/config \
 		&& cd carma_carla_ws/src/config \
-		&& sudo ln -s /home/config/carma-config/carma_config
+		&& sudo ln -s /home/config/carma-config/carla_integration
 
 RUN cd carma_carla_ws/src \
     && sudo ln -s ../../ros-bridge \
