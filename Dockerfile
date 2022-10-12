@@ -15,7 +15,6 @@ FROM usdotfhwastol/carma-base:carma-system-4.2.0
 WORKDIR /home
 
 ARG CARMA_VERSION="carma-system-3.9.0"
-ARG CARMA_CONFIG_BRANCH="feature/add_datastream_toggle"
 
 # CARLA PythonAPI
 COPY PythonAPI ./PythonAPI
