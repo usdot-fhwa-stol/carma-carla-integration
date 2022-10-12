@@ -39,4 +39,5 @@ docker run \
        -it --rm\
        --name carma-carla-integration \
        --net=host \
+       --volumes-from=carma-config \
        $USERNAME/$IMAGE:$COMPONENT_VERSION_STRING

@@ -25,13 +25,54 @@ Loads parameters and configures logging for the node
 
     <arg name='role_name' default='ego_vehicle'/>
 
+
     <remap from="points_raw" to="/hardware_interface/lidar/points_raw"/>
     <remap from="image_raw" to="/hardware_interface/camera/image_raw"/>
     <remap from="image_color" to="/hardware_interface/camera/image_color"/>
     <remap from="image_rect" to="/hardware_interface/camera/image_rects"/>
     <remap from="camera_info" to="/hardware_interface/camera/camera_info"/>
     <remap from="gnss_fix_fused" to="/hardware_interface/gnss_fix_fused"/>
-    
+
+    <!-- data_stream_toggle  -->
+
+    <!--
+      # localization #
+      Extract the pose, twist from carla odometry.
+    -->
+    <param name="localization_stream" value="false" type="bool"/>
+    <arg name='loc_ground_truth_enabled' value="false"/>
+    <remap from="/gt_localization_stream" to="~loc_ground_truth_enabled"/>
+    <group if="$(eval loc_ground_truth_enabled == 'true')"> 
+      <node pkg='carma_carla_bridge' type='carla_to_carma_localization' name='carla_to_carma_localization' output='screen'>
+        <param name='role_name' type="str" value="$(arg role_name)"/>
+        <param name="localization_stream" value="true" type="bool"/>
+      </node>
+    </group>
+
+    <!--
+      # external objects
+      Extract the external objects from carla ObjectArray
+    -->
+    <param name="object_detection_stream" value="false" type="bool"/>
+    <arg name='obj_ground_truth_enabled' value="false"/>
+    <remap from="/gt_object_detection_stream" to="~obj_ground_truth_enabled"/>
+
+    <group if="$(eval obj_ground_truth_enabled == 'true')">
+      <node pkg='carma_carla_bridge' type='carla_to_carma_external_objects' name='carla_to_carma_external_objects' output='screen'>
+        <param name='role_name' type="str" value="$(arg role_name)"/>
+        <param name="object_detection_stream" value="true" type="bool"/>
+      </node>
+    </group>
+
+
+    <param name="carla_lidar_stream" value="true" type="bool"/>
+    <remap from="/carla_lidar" to="~carla_lidar_stream"/>
+    <param name="carla_camera_stream" value="true" type="bool"/>
+    <remap from="/carla_camera" to="~carla_camera_stream"/>
+    <param name="carla_gnss_stream" value="true" type="bool"/>
+    <remap from="/carla_gnss" to="~carla_gnss_stream"/>
+
+
     <node name="carla_sensors_integration" pkg="carla_sensors_integration" type="carla_sensors_integration"/>
 
 

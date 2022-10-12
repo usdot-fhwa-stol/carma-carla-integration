@@ -74,4 +74,12 @@
     </include>
   </group>
 
+  <!-- data_stream_toggle node-->
+     <!-- Parameter Remapping 
+    <arg name="object_detection_stream" default='false'/>
+    <arg name="localization_stream" default='false'/>
+    <arg name="carla_lidar_stream" default='true'/>
+    <arg name="carla_camera_stream" default='true'/>
+    <arg name="carla_gnss_stream" default='true'/>-->
+
 </launch>

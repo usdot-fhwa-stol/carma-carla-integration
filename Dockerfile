@@ -69,7 +69,8 @@ RUN  cd utils \
 RUN sudo mkdir -p gps
 RUN cd gps \
 	&& sudo git clone https://github.com/swri-robotics/gps_umd.git
-# Catkin make for both ros-bridge and carma-carla-integration
+
+
 RUN sudo mkdir -p carma_carla_ws/src/msgs
 
 RUN  cd carma_carla_ws/src/msgs \

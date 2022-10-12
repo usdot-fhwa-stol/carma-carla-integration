@@ -74,8 +74,11 @@ namespace carla_sensors
             sensor_msgs::CameraInfo camera_info_msg;
 
 
-            double spin_rate_ = 10.0;
-
+            bool object_detection_stream_enabled;
+            bool localization_stream_enabled;
+            bool carla_lidar_stream_enabled;
+            bool carla_camera_stream_enabled;
+            bool carla_gnss_stream_enabled;
             std::string carla_vehicle_role_;
 
     };
