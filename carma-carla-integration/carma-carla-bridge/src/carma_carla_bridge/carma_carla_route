@@ -39,9 +39,9 @@ def get_available_route_ids():
     available_route_ids = []
     try:
         resp = service()
-        for i in range(len(resp.availableRoutes)):
-            route_msg = resp.availableRoutes[i]
-            available_route_ids.append(resp.availableRoutes[i].route_id)
+        for i in range(len(resp.available_routes)):
+            route_msg = resp.available_routes[i]
+            available_route_ids.append(resp.available_routes[i].route_id)
         return available_route_ids
     except:
         rospy.logerr("Invalid: /guidance/get_available_routes failed.")
@@ -52,8 +52,8 @@ def set_route(selected_route_id):
     """
     service = rospy.ServiceProxy('/guidance/set_active_route', SetActiveRoute)
     try:
-        resp = service(choice=0, routeID=selected_route_id)
-        if resp.errorStatus != 0:
+        resp = service(choice=0, route_id=selected_route_id)
+        if resp.error_status != 0:
             rospy.logerr('Error status response from /guidance/set_active_route:', resp)
         else:
             rospy.loginfo('Call set active route success!')
@@ -91,9 +91,10 @@ def initialize():
     if selected_route_id == '':
         rospy.logerr("No input route found, please check the config file at /opt/carma/simulation/vehicle_config.json")
         return
-    available_route_ids = get_available_route_ids()
+
     # sleep the node for n second to make sure current_pose has been set to CARMA platform properly
     rospy.sleep(2)
+    available_route_ids = get_available_route_ids()
     rospy.Subscriber('/localization/current_pose', PoseStamped, pose_cb)
     while rospy.is_shutdown() != True:
         if received_pose:
