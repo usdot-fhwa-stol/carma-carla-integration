@@ -74,8 +74,8 @@ def initialize():
         # if not, sleep loop for a second and recall the registered plugin ROS service for updating
         if check_registration_plugin(registered_plugins, plugin_list):
             for plugin in plugin_list:
-                activation = activation_srv(pluginName=plugin, activated=True)
-                if activation.newState:
+                activation = activation_srv(plugin_name=plugin, activated=True)
+                if activation.newstate:
                     rospy.loginfo(str(plugin) + " has been activated")
                 else:
                     rospy.logerr(str(plugin) + " not able to be activated.")

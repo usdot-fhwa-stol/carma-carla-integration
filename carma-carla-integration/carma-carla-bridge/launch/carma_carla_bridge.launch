@@ -39,6 +39,9 @@
   <include file='$(find carla_ros_bridge)/launch/carla_ros_bridge.launch'>
     <arg name='host' value='$(arg host)'/>
     <arg name='port' value='$(arg port)'/>
+    <arg name='synchronous_mode' value='true'/>
+    <arg name='synchronous_mode_wait_for_vehicle_control_command' value='false'/>
+    <arg name='fixed_delta_seconds' value='0.05'/>
   </include>
 
   <!-- carla ego vehicle -->
@@ -69,13 +72,13 @@
 
 
   <!-- carla_sensors_integration node-->
-  <group>
+  <!-- <group>
     <include file='$(find carla_sensors_integration)/launch/carla_sensors_integration.launch'>
     </include>
-  </group>
+  </group> -->
 
   <!-- data_stream_toggle node-->
-     <!-- Parameter Remapping 
+     <!-- Parameter Remapping
     <arg name="object_detection_stream" default='false'/>
     <arg name="localization_stream" default='false'/>
     <arg name="carla_lidar_stream" default='true'/>

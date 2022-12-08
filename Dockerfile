@@ -14,7 +14,7 @@
 FROM usdotfhwastol/carma-base:carma-system-4.2.0
 WORKDIR /home
 
-ARG CARMA_VERSION="carma-system-3.9.0"
+ARG CARMA_VERSION="carma-system-4.2.0"
 
 # CARLA PythonAPI
 COPY PythonAPI ./PythonAPI
@@ -78,7 +78,9 @@ RUN  cd carma_carla_ws/src/msgs \
 		&& sudo ln -s ../../../msgs/carma-msgs/cav_msgs \
 		&& sudo ln -s ../../../msgs/carma-msgs/can_msgs \
 		&& sudo ln -s ../../../msgs/carma-msgs/cav_srvs \
+    && sudo ln -s ../../../msgs/carma-msgs/carma_cmake_common \
 		&& sudo ln -s ../../../msgs/autoware.ai/messages/autoware_msgs
+
 
 RUN sudo mkdir -p carma_carla_ws/src/utils \
 		&& cd carma_carla_ws/src/utils \
