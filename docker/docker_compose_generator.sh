@@ -122,7 +122,7 @@ BLOCK
     environment:
       - ROS_IP=172.$(($i+2)).0.3
       - ROS_MASTER_URI=http://172.$(($i+2)).0.2:11311/
-    command: bash -c 'wait-for-it.sh 172.$(($i+2)).0.2:11311 -- roslaunch /opt/carma/vehicle/config/carma_docker.launch'
+    command: bash -c 'wait-for-it.sh 172.$(($i+2)).0.2:11311 -- roslaunch /opt/carma/vehicle/config/carma_docker.launch simulation_mode:='${VEHICLE_CONFIG_ARR[ $(( $(($i - 1)) * 15 + 15)) ]}' '
 
   carma-carla-integration_$i:
     image: $USERNAME/carma-carla-integration:$CARMA_CARLA_VERSION
