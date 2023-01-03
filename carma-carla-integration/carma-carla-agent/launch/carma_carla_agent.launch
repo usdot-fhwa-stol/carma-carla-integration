@@ -25,9 +25,9 @@
     ## Configuration ##
     ###################
   -->
-  <arg name="vehicle_config_dir" default="/opt/carma/vehicle/config"/>
+  <!-- <arg name="vehicle_config_dir" default="/opt/carma/vehicle/config"/>
 
-  <rosparam command="load" file="$(arg vehicle_config_dir)/VehicleConfigParams.yaml"/>
+  <rosparam command="load" file="$(arg vehicle_config_dir)/VehicleConfigParams.yaml"/> -->
 
   <arg name='agent' default='agent'/>
 
@@ -80,6 +80,13 @@
   <arg name='selected_route'/>
   <arg name='selected_plugins'/>
 
+  <!-- carla sensor params -->
+  <arg name='object_detection_stream' default='true'/>
+  <arg name='localization_stream' default='true'/>
+  <arg name='carla_lidar_stream' default='false'/>
+  <arg name='carla_camera_stream' default='false'/>
+  <arg name='carla_gnss_stream' default='false'/>
+
   <!--
     ##########################
     ##  CARLA CARMA bridge  ##
@@ -128,9 +135,16 @@
     <arg name='selected_plugins' value='$(arg selected_plugins)'/>
   </include>
 
-  <!-- carla_sensors_integration node
+  <!-- carla_sensors_integration node -->
   <group>
     <include file='$(find carla_sensors_integration)/launch/carla_sensors_integration.launch'>
+      <arg name='role_name' value='$(arg role_name)'/>
+      <arg name='object_detection_stream' value='$(arg object_detection_stream)'/>
+      <arg name='localization_stream' value='$(arg localization_stream)'/>
+      <arg name='carla_lidar_stream' value='$(arg carla_lidar_stream)'/>
+      <arg name='carla_camera_stream' value='$(arg carla_camera_stream)'/>
+      <arg name='carla_gnss_stream' value='$(arg carla_gnss_stream)'/>
     </include>
-  </group>-->
+  </group>
+
 </launch>

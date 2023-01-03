@@ -76,21 +76,6 @@
     #############################################
   -->
 
-  <!--
-    # localization #
-    Extract the pose, twist from carla odometry.
-  -->
-  <node pkg='carma_carla_bridge' type='carla_to_carma_localization' name='carla_to_carma_localization' output='screen'>
-    <param name='role_name' type="str" value="$(arg role_name)"/>
-  </node>
-  <!--
-    # external objects
-    Extract the external objects from carla ObjectArray
-  -->>
-  <node pkg='carma_carla_bridge' type='carla_to_carma_external_objects' name='carla_to_carma_external_objects' output='screen'>
-    <param name='role_name' type="str" value="$(arg role_name)"/>
-  </node>
-
   <!-- convert vehicle command to carla ackermann drive-->
   <node pkg='carma_carla_bridge' type='carma_to_carla_ackermann_cmd' name='carma_to_carla_ackermann_cmd' output='screen'>
     <param name='role_name' type="str" value="$(arg role_name)"/>
@@ -133,7 +118,6 @@
   <node pkg='carma_carla_bridge' type='carma_carla_plugins' name='carma_carla_plugins' output='screen'>
     <param name='selected_plugins' type='str' value="$(arg selected_plugins)"/>
   </node>
-
 
   <!--
     # guidance #
