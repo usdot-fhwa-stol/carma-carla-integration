@@ -41,7 +41,7 @@ Loads parameters and configures logging for the node
       # localization #
       Extract the pose, twist from carla odometry.
     -->
-    <group if="$(eval arg('localization_stream') == 'true')">
+    <group if="$(arg localization_stream)">
       <node pkg='carma_carla_bridge' type='carla_to_carma_localization' name='carla_to_carma_localization' output='screen'>
         <param name='role_name' type="str" value="$(arg role_name)"/>
       </node>
@@ -51,7 +51,7 @@ Loads parameters and configures logging for the node
       # external objects
       Extract the external objects from carla ObjectArray
     -->
-    <group if="$(eval arg('object_detection_stream') == 'true')">
+    <group if="$(arg object_detection_stream)">
       <node pkg='carma_carla_bridge' type='carla_to_carma_external_objects' name='carla_to_carma_external_objects' output='screen'>
         <param name='role_name' type="str" value="$(arg role_name)"/>
         <param name="object_detection_stream" value="true" type="bool"/>
