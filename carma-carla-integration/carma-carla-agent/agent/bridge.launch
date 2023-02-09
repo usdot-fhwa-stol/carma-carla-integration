@@ -59,13 +59,13 @@
 
   <!-- ego_vehicle to base_link tf -->
   <!-- Disabled as it gets published by ndt_matching -->
-  <!--<node pkg='tf'  type='static_transform_publisher' name='$(arg role_name)_to_baselink' args='0 0 0 0 0 0 /$(arg role_name) /base_link 10' />-->
+  <node pkg='tf'  type='static_transform_publisher' name='$(arg role_name)_to_baselink' args='0 0 0 0 0 0 /$(arg role_name) /base_link 10' />
 
   <!-- ego_vehicle/gnss to gps tf -->
   <node pkg='tf'  type='static_transform_publisher' name='$(arg role_name)gnss_to_gps' args='0 0 0 0 0 0 /$(arg role_name)/gnss/gnss1 /gps 10' />
 
   <!-- ego_vehicle/lidar to velodyne tf -->
-  <node pkg='tf'  type='static_transform_publisher' name='$(arg role_name)lidar_to_velodyne' args='0 0 0 0 0 0 /$(arg role_name)/lidar/lidar1 /velodyne 10' />
+  <node pkg='tf'  type='static_transform_publisher' name='$(arg role_name)lidar_to_velodyne' args='0 0 0 0 0 0 /$(arg role_name)/lidar/lidar /velodyne 10' />
 
   <!-- ego_vehicle/cameraFront to camera tf -->
   <node pkg='tf'  type='static_transform_publisher' name='$(arg role_name)camerafront_to_camera' args='0 0 0 0 0 0 /$(arg role_name)/camera/rgb/front /camera 10' />
@@ -90,6 +90,7 @@
   <node pkg='carma_carla_bridge' type='carla_to_carma_external_objects' name='carla_to_carma_external_objects' output='screen'>
     <param name='role_name' type="str" value="$(arg role_name)"/>
   </node>
+
   <!-- convert vehicle command to carla ackermann drive-->
   <node pkg='carma_carla_bridge' type='carma_to_carla_ackermann_cmd' name='carma_to_carla_ackermann_cmd' output='screen'>
     <param name='role_name' type="str" value="$(arg role_name)"/>

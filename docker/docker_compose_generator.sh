@@ -134,6 +134,8 @@ BLOCK
         ipv4_address: 172.$(($i+2)).0.4
       carma_sim_net:
         ipv4_address: 172.2.0.$(($i+3))
+    volumes_from:
+      - container:carma-config:ro
     environment:
       - ROS_IP=172.$(($i+2)).0.4
       - ROS_MASTER_URI=http://172.$(($i+2)).0.2:11311/

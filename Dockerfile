@@ -11,10 +11,10 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-FROM usdotfhwastol/carma-base:carma-system-4.2.0
+FROM usdotfhwastol/carma-base:carma-system-4.3.0
 WORKDIR /home
 
-ARG CARMA_VERSION="carma-system-3.9.0"
+ARG CARMA_VERSION="carma-system-4.3.0"
 
 # CARLA PythonAPI
 COPY PythonAPI ./PythonAPI
@@ -69,7 +69,8 @@ RUN  cd utils \
 RUN sudo mkdir -p gps
 RUN cd gps \
 	&& sudo git clone https://github.com/swri-robotics/gps_umd.git
-# Catkin make for both ros-bridge and carma-carla-integration
+
+
 RUN sudo mkdir -p carma_carla_ws/src/msgs
 
 RUN  cd carma_carla_ws/src/msgs \
@@ -77,7 +78,9 @@ RUN  cd carma_carla_ws/src/msgs \
 		&& sudo ln -s ../../../msgs/carma-msgs/cav_msgs \
 		&& sudo ln -s ../../../msgs/carma-msgs/can_msgs \
 		&& sudo ln -s ../../../msgs/carma-msgs/cav_srvs \
+    && sudo ln -s ../../../msgs/carma-msgs/carma_cmake_common \
 		&& sudo ln -s ../../../msgs/autoware.ai/messages/autoware_msgs
+
 
 RUN sudo mkdir -p carma_carla_ws/src/utils \
 		&& cd carma_carla_ws/src/utils \
