@@ -11,10 +11,10 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-FROM usdotfhwastol/carma-base:carma-system-4.2.0
+FROM usdotfhwastol/carma-base:carma-system-4.3.0
 WORKDIR /home
 
-ARG CARMA_VERSION="carma-system-4.2.0"
+ARG CARMA_VERSION="carma-system-4.3.0"
 
 # CARLA PythonAPI
 COPY PythonAPI ./PythonAPI
