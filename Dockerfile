@@ -39,7 +39,8 @@ RUN sudo apt-get install -y --no-install-recommends \
     ros-noetic-derived-object-msgs \
     ros-noetic-jsk-recognition-msgs \
   	ros-noetic-rqt \
-  	ros-noetic-rviz
+	ros-noetic-rviz \
+	wget
 
 RUN sudo python3.7 -m pip install simple-pid
 RUN sudo python3.7 -m pip install numpy --upgrade
