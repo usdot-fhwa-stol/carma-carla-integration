@@ -11,10 +11,10 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-FROM usdotfhwastol/carma-base:carma-system-4.2.0
+FROM usdotfhwastoldev/carma-base:develop
 WORKDIR /home
 
-ARG CARMA_VERSION="carma-system-4.2.0"
+ARG CARMA_VERSION="carma-system-4.3.0"
 
 # CARLA PythonAPI
 COPY PythonAPI ./PythonAPI
@@ -39,7 +39,8 @@ RUN sudo apt-get install -y --no-install-recommends \
     ros-noetic-derived-object-msgs \
     ros-noetic-jsk-recognition-msgs \
   	ros-noetic-rqt \
-  	ros-noetic-rviz
+	ros-noetic-rviz \
+	wget
 
 RUN sudo python3.7 -m pip install simple-pid
 RUN sudo python3.7 -m pip install numpy --upgrade
