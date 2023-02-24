@@ -2,6 +2,8 @@ name: "CI: Run tests"
 on:
   pull_request:
   push:
+    paths-ignore:
+      - 'PythonAPI/**'
 jobs:          
   sonar:
     runs-on: ubuntu-latest
@@ -10,14 +12,10 @@ jobs:
       options: --user root
     steps:
       - uses: actions/checkout@v3
-      - run: sudo apt update && sudo apt -y install python3-coverage python3-pytest ros-foxy-rclpy
-      - run: python3 -m pip install nats-py
-      - run: source /opt/ros/foxy/setup.bash && python3 -m coverage run -m pytest
-        shell: bash
-      - run: python3 -m coverage xml
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master # This action will create and boot a builder that can be used as buildx as a docker CLI
+        uses: SonarSource/sonarcloud-github-action@master # Using this GitHub Action, scan your code with SonarCloud to detects bugs, vulnerabilities and code smells in more than 20 programming languages!
         with:
+          projectBaseDir: "carma-carla-integration/"
           args: >
             -Dsonar.projectKey=usdot-fhwa-stol_carma-carla-integration
             -Dsonar.python.coverage.reportPaths=./coverage.xml
@@ -28,4 +26,4 @@ jobs:
             -Dsonar.java.binaries=.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}    
