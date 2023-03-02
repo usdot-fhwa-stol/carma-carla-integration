@@ -19,33 +19,27 @@ ARG CARMA_VERSION="carma-system-4.3.0"
 # CARLA PythonAPI
 COPY PythonAPI ./PythonAPI
 
-RUN sudo add-apt-repository ppa:deadsnakes/ppa -y
-
 # CARLA ROS Bridge
 RUN sudo git clone --depth 1 -b '0.9.10.1' --recurse-submodules https://github.com/carla-simulator/ros-bridge.git
 
 # CARMA-CARLA integration tool copy from local
 COPY carma-carla-integration ./carma-carla-integration
 
-RUN sudo apt-get install -y --no-install-recommends \
-    python3.7 \
-    python3.7-distutils \
+RUN sudo apt-get update && \
+    sudo apt-get install -y --no-install-recommends \
+    python3.8 \
+    python3-distutils \
     python3-pip \
     python3-wheel \
-  	python3 \
-  	python3-numpy \
-  	libgps-dev \
+    python3-numpy \
+    libgps-dev \
     ros-noetic-ackermann-msgs \
     ros-noetic-derived-object-msgs \
     ros-noetic-jsk-recognition-msgs \
-  	ros-noetic-rqt \
-	ros-noetic-rviz \
-	wget
+    ros-noetic-rqt \
+    ros-noetic-rviz
 
-RUN sudo python3.7 -m pip install simple-pid
-RUN sudo python3.7 -m pip install numpy --upgrade
-RUN sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
-RUN alias python='/usr/bin/python3.7'
+RUN sudo python3.8 -m pip install simple-pid
 
 # Clone ROS message
 RUN sudo mkdir -p msgs
