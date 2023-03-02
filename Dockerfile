@@ -47,14 +47,6 @@ RUN sudo python3.7 -m pip install numpy --upgrade
 RUN sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
 RUN alias python='/usr/bin/python3.7'
 
-
-# Upgrade CMake to 3.13
-RUN sudo wget https://cmake.org/files/v3.13/cmake-3.13.0-Linux-x86_64.tar.gz
-RUN sudo tar -xzvf cmake-3.13.0-Linux-x86_64.tar.gz
-RUN sudo mv cmake-3.13.0-Linux-x86_64 /opt/cmake-3.13.0
-RUN sudo ln -sf /opt/cmake-3.13.0/bin/* /usr/bin/
-RUN sudo rm cmake-3.13.0-Linux-x86_64.tar.gz
-
 # Clone ROS message
 RUN sudo mkdir -p msgs
 RUN cd msgs \
