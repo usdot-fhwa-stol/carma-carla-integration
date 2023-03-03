@@ -14,10 +14,10 @@
 FROM usdotfhwastoldev/carma-base:develop
 
 # CARLA PythonAPI
-COPY PythonAPI ./PythonAPI
+COPY PythonAPI /home/PythonAPI
 
 # CARMA-CARLA integration tool copy from local
-COPY carma-carla-integration ./carma-carla-integration
+COPY carma-carla-integration /home/carma-carla-integration
 
 # Avoid interactive prompts during the building of this docker image
 ARG DEBIAN_FRONTEND="noninteractive"
