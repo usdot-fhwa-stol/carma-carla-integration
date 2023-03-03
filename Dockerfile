@@ -12,7 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 FROM usdotfhwastoldev/carma-base:develop
-WORKDIR /home
 
 # CARLA PythonAPI
 COPY PythonAPI ./PythonAPI
@@ -29,54 +28,47 @@ ARG DEPENDENCIES="python3.7 \
     python3.7-distutils \
     python3-pip \
     python3-wheel \
-  	python3 \
-  	python3-numpy \
-  	libgps-dev \
+    python3 \
+    python3-numpy \
+    libgps-dev \
     ros-noetic-ackermann-msgs \
     ros-noetic-derived-object-msgs \
     ros-noetic-jsk-recognition-msgs \
-  	ros-noetic-rqt \
-	ros-noetic-rviz"
+    ros-noetic-rqt \
+    ros-noetic-rviz"
 
 RUN sudo add-apt-repository -u -y ppa:deadsnakes/ppa && \
-	# CARLA ROS Bridge
-	sudo git clone --depth 1 -b '0.9.10.1' --recurse-submodules https://github.com/carla-simulator/ros-bridge.git && \
-	sudo apt-get install -y --no-install-recommends ${DEPENDENCIES} && \
-	# Install Python dependencies
-	sudo python3.7 -m pip install simple-pid && \
-	sudo python3.7 -m pip install numpy --upgrade && \
-	sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10 && \
-	alias python='/usr/bin/python3.7' && \
-	# Clone ROS message
-	sudo mkdir -p msgs && \
-	cd msgs && \
-	sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/autoware.ai.git && \
-	sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-msgs.git && \
-	#CARMA Utils package
-	sudo mkdir -p utils && \
-	cd utils && \
-	sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-utils.git && \
-	#GPS Common
-	sudo mkdir -p gps && \
-	cd gps && \
-	sudo git clone https://github.com/swri-robotics/gps_umd.git && \
-	sudo mkdir -p carma_carla_ws/src/msgs && \
-	# msgs
-	cd carma_carla_ws/src/msgs && \
-	sudo ln -s ../../../msgs/carma-msgs/j2735_msgs && \
-	sudo ln -s ../../../msgs/carma-msgs/cav_msgs && \
-	sudo ln -s ../../../msgs/carma-msgs/can_msgs && \
-	sudo ln -s ../../../msgs/carma-msgs/cav_srvs && \
-	sudo ln -s ../../../msgs/carma-msgs/carma_cmake_common && \
-	sudo ln -s ../../../msgs/autoware.ai/messages/autoware_msgs && \
-	# utils
-	sudo mkdir -p carma_carla_ws/src/utils && \
-	cd carma_carla_ws/src/utils && \
-	sudo ln -s /home/utils/carma-utils/carma_utils && \
-	cd carma_carla_ws/src && \
-    sudo ln -s ../../ros-bridge && \
-    sudo ln -s ../../carma-carla-integration && \
-    cd .. && \
+    sudo apt-get install -y --no-install-recommends ${DEPENDENCIES} && \
+    # Install Python dependencies
+    sudo python3.7 -m pip install simple-pid && \
+    sudo python3.7 -m pip install numpy --upgrade && \
+    sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10 && \
+    alias python='/usr/bin/python3.7' && \
+    # CARLA ROS Bridge
+    sudo git clone --depth 1 -b '0.9.10.1' --recurse-submodules https://github.com/carla-simulator/ros-bridge.git /home/ros-bridge && \
+    # Clone ROS message
+    sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/autoware.ai.git /home/msgs/autoware.ai && \
+    sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-msgs.git /home/msgs/carma-msgs && \
+    #CARMA Utils package
+    sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-utils.git /home/utils/carma-utils && \
+    #GPS Common
+    sudo mkdir -p /home/gps && \
+    cd /home/gps && \
+    sudo git clone https://github.com/swri-robotics/gps_umd.git && \
+    # msgs
+    sudo mkdir -p /home/carma_carla_ws/src/msgs && \
+    sudo ln -s /home/carma_carla_ws/src/msgs/carma-msgs/j2735_msgs /home/carma_carla_ws/src/j2735_msgs && \
+    sudo ln -s /home/carma_carla_ws/src/msgs/carma-msgs/cav_msgs /home/carma_carla_ws/src/cav_msgs && \
+    sudo ln -s /home/carma_carla_ws/src/msgs/carma-msgs/can_msgs /home/carma_carla_ws/src/can_msgs && \
+    sudo ln -s /home/carma_carla_ws/src/msgs/carma-msgs/cav_srvs /home/carma_carla_ws/src/cav_srvs && \
+    sudo ln -s /home/carma_carla_ws/src/msgs/carma-msgs/carma_cmake_common /home/carma_carla_ws/src/carma_cmake_common && \
+    sudo ln -s /home/carma_carla_ws/src/msgs/autoware.ai/messages/autoware_msgs /home/carma_carla_ws/src/autoware_msgs && \
+    # utils
+    sudo mkdir -p /home/carma_carla_ws/src/utils && \
+    sudo ln -s /home/utils/carma-utils/carma_utils && \
+    sudo ln -s /home/carma_carla_ws/ros-bridge /home/carma_carla_ws/src/ros-bridge && \
+    sudo ln -s /home/carma_carla_ws/carma-carla-integration /home/carma_carla_ws/src/carma-carla-integration && \
+    cd /home/carma_carla_ws/ && \
     sudo /bin/bash -c '. /opt/ros/noetic/setup.bash; catkin_make'
 
 CMD ["/bin/bash"]
