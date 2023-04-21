@@ -14,7 +14,7 @@
 FROM usdotfhwastoldev/carma-base:develop
 WORKDIR /home
 
-ARG CARMA_VERSION="carma-system-4.3.0"
+ARG CARMA_VERSION="carma-system-4.2.0"
 
 # CARLA PythonAPI
 COPY PythonAPI ./PythonAPI
