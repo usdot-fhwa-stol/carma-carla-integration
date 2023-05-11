@@ -27,7 +27,7 @@
   -->
 
   <arg name='agent' default='agent'/>
-  <!-- connecting default info  -->>
+  <!-- connecting default info  -->
   <arg name='host' default='127.0.0.1'/>
   <arg name='port' default='2000'/>
   <arg name='town' default='Town02'/>
