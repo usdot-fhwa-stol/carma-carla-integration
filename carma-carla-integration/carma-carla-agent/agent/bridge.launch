@@ -35,8 +35,8 @@
   <arg name='robot_status_pub_rate' default='10'/>
 
   <!-- route and plugins params -->
-  <arg name='selected_route'/>
-  <arg name='selected_plugins'/>
+  <!-- <arg name='selected_route'/>
+  <arg name='selected_plugins'/> -->
 
   <!-- ackermann control params -->
   <arg name='init_speed' default='5'/>
