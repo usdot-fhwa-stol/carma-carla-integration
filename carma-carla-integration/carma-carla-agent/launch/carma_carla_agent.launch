@@ -27,10 +27,10 @@
   -->
 
   <arg name='agent' default='agent'/>
-  <!-- connecting default info  -->>
+  <!-- connecting default info  -->
   <arg name='host' default='127.0.0.1'/>
   <arg name='port' default='2000'/>
-  <arg name='town' default='Town02'/>
+  <arg name='town' default='Town04'/>
 
   <!-- set synchronous_mode to 'true' when carma-carla-integration not running with co-simulation tool -->
   <arg name='synchronous_mode' default='false' />
@@ -38,7 +38,7 @@
   <arg name='fixed_delta_seconds' default='0.05'/>
 
   <!-- use comma separated format "x,y,z,roll,pìtch,yaw" -->
-  <arg name='spawn_point' default=''/>
+  <arg name='spawn_point' default='15.4,-90.1,0,0,0,90'/>
 
   <!-- vehicle info -->
   <arg name='role_name' default='ego_vehicle'/>
@@ -49,8 +49,8 @@
 
   <!-- vehicle speed PID -->
   <arg name='speed_Kp' default='0.4'/>
-  <arg name='speed_Ki' default='0.0'/>
-  <arg name='speed_Kd' default='0.05'/>
+  <arg name='speed_Ki' default='0.03'/>
+  <arg name='speed_Kd' default='0.0'/>
 
   <!-- vehicle acceleration PID -->
   <arg name='accel_Kp' default='0.05'/>
@@ -78,8 +78,8 @@
   <arg name='robot_status_pub_rate' default='10'/>
 
   <!-- route and plugins params -->
-  <arg name='selected_route'/>
-  <arg name='selected_plugins'/>
+  <arg name='selected_route' default="Release_test_case_1"/>
+  <arg name="selected_plugins" default="['RouteFollowingPlugin','InLaneCruisingPlugin','StopAndWaitPlugin','Pure Pursuit','CooperativeLaneChangePlugin']"/>
 
   <!--
     ##########################

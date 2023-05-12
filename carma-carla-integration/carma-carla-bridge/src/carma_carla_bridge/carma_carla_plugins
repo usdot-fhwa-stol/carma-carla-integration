@@ -30,6 +30,7 @@ Call Services from CARMA:
             :/guidance/plugins/activate_plugin
 """
 import rospy
+import ast
 from cav_msgs.msg import Plugin, PluginList, PluginStatus
 from cav_srvs.srv import PluginList, PluginActivation
 
@@ -58,7 +59,8 @@ def initialize():
     rospy.init_node("carma_carla_plugins")
 
     # get selected plugins
-    plugin_list = rospy.get_param('~selected_plugins').split(',')
+    plugin_list_str = rospy.get_param("~selected_plugins")
+    plugin_list = ast.literal_eval(plugin_list_str)
     if len(plugin_list) == 0:
         rospy.logerr("No input plugin found, please check the config file at /opt/carma/simulation/vehicle_config.json")
         return
