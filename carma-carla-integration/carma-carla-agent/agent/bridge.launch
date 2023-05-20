@@ -86,7 +86,7 @@
   <!--
     # external objects
     Extract the external objects from carla ObjectArray
-  -->>
+  -->
   <node pkg='carma_carla_bridge' type='carla_to_carma_external_objects' name='carla_to_carma_external_objects' output='screen'>
     <param name='role_name' type="str" value="$(arg role_name)"/>
   </node>

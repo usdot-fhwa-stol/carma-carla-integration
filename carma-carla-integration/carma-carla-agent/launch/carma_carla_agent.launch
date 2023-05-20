@@ -41,7 +41,7 @@
   <arg name='spawn_point' default='15.4,-90.1,0,0,0,90'/>
 
   <!-- vehicle info -->
-  <arg name='role_name' default='ego_vehicle'/>
+  <arg name='role_name' default='carma_1'/>
   <arg name='vehicle_model' default='vehicle.toyota.prius'/>
   <arg name='vehicle_length' default='5.00'/>
   <arg name='vehicle_width' default='3.00'/>
