@@ -34,7 +34,7 @@ sudo apt-get update && sudo apt-get install -y --no-install-recommends \
 
 python3.7 -m pip install simple-pid
 python3.7 -m pip install numpy --upgrade
-update-alternatives --install /usr/bin/python python /usr/bin/python3 10
+sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
 alias python='/usr/bin/python3.7'
 
 # Clone CARLA ROS bridge
