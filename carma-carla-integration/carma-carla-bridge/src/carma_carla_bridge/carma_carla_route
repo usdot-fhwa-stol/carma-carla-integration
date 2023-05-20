@@ -45,6 +45,7 @@ def get_available_route_ids():
         return available_route_ids
     except:
         rospy.logerr("Invalid: /guidance/get_available_routes failed.")
+    return None
 
 def set_route(selected_route_id):
     """
@@ -71,15 +72,14 @@ def pose_cb(pose_msg):
 
 def check_selected_route(available_route_ids, selected_route_id):
     """
-    Checking the selected route if it can be matched with available route
+    Checking the selected route if it can be matched with available routes.
     """
-    ind_list = [ind for (ind, route_id) in enumerate(available_route_ids) if route_id == selected_route_id]
-    if len(ind_list) == 1:
+    if selected_route_id in set(available_route_ids):
         return selected_route_id
-    elif len(ind_list) > 1:
+    elif available_route_ids.count(selected_route_id) > 1:
         rospy.logerr("Duplicate route files found")
     else:
-        rospy.logerr("Route not found, check selected_route parameter and CARMA route folder")
+        rospy.logerr("Cannot match the selected_route input argument with /guidance/get_available_routes {}.".format(selected_route_id))
     return None
 
 def initialize():
@@ -93,19 +93,26 @@ def initialize():
         return
 
     # sleep the node for n second to make sure current_pose has been set to CARMA platform properly
-    rospy.sleep(2)
-    available_route_ids = get_available_route_ids()
+    max_attempts = 10
+    available_route_ids = None
+    while max_attempts > 0:
+        max_attempts = max_attempts - 1
+        available_route_ids = get_available_route_ids()
+        if available_route_ids is not None:
+            break
+        rospy.loginfo("{} times to get available from CARMA platform".format(max_attempts))
+        rospy.sleep(1)
+    if available_route_ids is None:
+        rospy.logerr("Falied: Reach maximum times to get available routes, check service /guidance/get_available_routes")
+        return
     rospy.Subscriber('/localization/current_pose', PoseStamped, pose_cb)
     while rospy.is_shutdown() != True:
         if received_pose:
-            if available_route_ids == None:
-                rospy.logerr("No routes available, make sure the route folder at /opt/carma/routes has route file")
-            else:
-                if check_selected_route(available_route_ids, selected_route_id):
-                    set_route(selected_route_id)
+            if check_selected_route(available_route_ids, selected_route_id):
+                set_route(selected_route_id)
             break
         else:
-            rospy.loginfo("Localization Incomplete")
+            rospy.loginfo("Localization Incomplete, waiting for carla_to_carma_localztion launching")
         rospy.sleep(1)
 
 if __name__ == '__main__':
