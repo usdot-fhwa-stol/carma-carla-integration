@@ -65,11 +65,11 @@ docker run -it --net=host <carma-carla-integration-image-id> /bin/bash
 ```
 3.2 Set the catkin source and CARLA python path
 ```
-export PYTHONPATH=$PYTHONPATH:/home/PythonAPI/carla/dist/carla-0.9.10-py3.7-linux-x86_64.egg && source /home/carma_carla_ws/devel/setup.bash
+export PYTHONPATH=$PYTHONPATH:~/PythonAPI/carla/dist/carla-0.9.10-py3.7-linux-x86_64.egg && source ~/carma_carla_ws/devel/setup.bash
 ```
 3.3 Launch CARMA-CARLA integration tool
 ```
-roslaunch carma_carla_agent carma_carla_agent.launch spawn_point:='30,-170.1,0,0,0,0' town:='Town04' selected_route:='Release_test_case_1' synchronous_mode:='true'
+roslaunch carma_carla_agent carma_carla_agent.launch synchronous_mode:='true'
 ```
 
 ## Usage Instruction
@@ -80,19 +80,19 @@ The usage instruction includes what parameter could be parsed to CARMA-CARLA int
 | ------------------- | ------------------------------------------------------------ |----------|
 |host|CARLA server IP address|127.0.0.1|
 |port|CARLA server port number|2000|
-|town|To specify which scenario for CARLA server to load. The scenario should be matched with executed CARMA Platform vector_map|Town02|
-|spawn_point|To specify where to spawn CARLA vehicle|N/A|
-|role_name|Assign the name of the CARLA vehicle. It currently only supports the name range from hero0 to hero9 and ego_vehicle|ego_vehicle|
+|town|To specify which scenario for CARLA server to load. The scenario should be matched with executed CARMA Platform vector_map|Town04|
+|spawn_point|To specify where to spawn CARLA vehicle|15.4,-90.1,0,0,0,90|
+|role_name|Assign the name of the CARLA vehicle. It currently supports the name range from carma_1 to carma_12 |carma_1|
 |vehicle_model|To specify what vehicle model should be generated in CARLA server|vehicle.toyota.prius|
 |vehicle_length|To specify the length of vehicle|5.00|
 |vehicle_width|To specify the width of vehicle|3.00|
 |vehicle_wheelbase|To specify the size of wheelbase for the vehicle|2.79|
-|speed_Kp| Speed proportional value for the vehicle. The current default value was setup for Town02 with vehicle speed limit 20 MPH|0.05|
-|speed_Ki| Speed integral value for the vehicle. The current default value was setup for Town02 with vehicle speed limit 20 MPH|0.018|
-|speed_Kd| Speed derivative value for the vehicle. The current default value was setup for Town02 with vehicle speed limit 20 MPH|0.4|
-|accel_Kp| Acceleration proportional value for the vehicle. The current default value was setup for Town02 with vehicle speed limit 20 MPH|0.053|
-|accel_Ki| Acceleration integral value for the vehicle. The current default value was setup for Town02 with vehicle speed limit 20 MPH|0.0|
-|accel_Kd| Acceleration derivative value for the vehicle. The current default value was setup for Town02 with vehicle speed limit 20 MPH|0.052|
+|speed_Kp| Speed proportional value for the vehicle. The current default value was setup for Town04 with vehicle speed limit 20 MPH|0.05|
+|speed_Ki| Speed integral value for the vehicle. The current default value was setup for Town04 with vehicle speed limit 20 MPH|0.018|
+|speed_Kd| Speed derivative value for the vehicle. The current default value was setup for Town04 with vehicle speed limit 20 MPH|0.4|
+|accel_Kp| Acceleration proportional value for the vehicle. The current default value was setup for Town04 with vehicle speed limit 20 MPH|0.053|
+|accel_Ki| Acceleration integral value for the vehicle. The current default value was setup for Town04 with vehicle speed limit 20 MPH|0.0|
+|accel_Kd| Acceleration derivative value for the vehicle. The current default value was setup for Town04 with vehicle speed limit 20 MPH|0.052|
 |init_speed| To specify the initial vehicle speed |5|
 |init_acceleration| To specify the initial vehicle acceleration |1|
 |init_steering_angle| To specify the initial vehicle steering wheel angle, it range from 0.7(left) to -0.7(right)|0|
