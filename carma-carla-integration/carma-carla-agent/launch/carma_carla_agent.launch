@@ -25,22 +25,23 @@
     ## Configuration ##
     ###################
   -->
-  <arg name="vehicle_config_dir" default="/opt/carma/vehicle/config"/>
-
-  <rosparam command="load" file="$(arg vehicle_config_dir)/VehicleConfigParams.yaml"/>
 
   <arg name='agent' default='agent'/>
-
-  <!-- connecting default info  -->>
+  <!-- connecting default info  -->
   <arg name='host' default='127.0.0.1'/>
   <arg name='port' default='2000'/>
-  <arg name='town' default='Town02'/>
+  <arg name='town' default='Town04'/>
+
+  <!-- set synchronous_mode to 'true' when carma-carla-integration not running with co-simulation tool -->
+  <arg name='synchronous_mode' default='false' />
+  <arg name='synchronous_mode_wait_for_vehicle_control_command' default='false'/>
+  <arg name='fixed_delta_seconds' default='0.05'/>
 
   <!-- use comma separated format "x,y,z,roll,pìtch,yaw" -->
-  <arg name='spawn_point' default=''/>
+  <arg name='spawn_point' default='15.4,-90.1,0,0,0,90'/>
 
   <!-- vehicle info -->
-  <arg name='role_name' default='ego_vehicle'/>
+  <arg name='role_name' default='carma_1'/>
   <arg name='vehicle_model' default='vehicle.toyota.prius'/>
   <arg name='vehicle_length' default='5.00'/>
   <arg name='vehicle_width' default='3.00'/>
@@ -48,8 +49,8 @@
 
   <!-- vehicle speed PID -->
   <arg name='speed_Kp' default='0.4'/>
-  <arg name='speed_Ki' default='0.0'/>
-  <arg name='speed_Kd' default='0.05'/>
+  <arg name='speed_Ki' default='0.03'/>
+  <arg name='speed_Kd' default='0.0'/>
 
   <!-- vehicle acceleration PID -->
   <arg name='accel_Kp' default='0.05'/>
@@ -77,8 +78,8 @@
   <arg name='robot_status_pub_rate' default='10'/>
 
   <!-- route and plugins params -->
-  <arg name='selected_route'/>
-  <arg name='selected_plugins'/>
+  <arg name='selected_route' default="Release_test_case_1"/>
+  <arg name="selected_plugins" default="['RouteFollowingPlugin','InLaneCruisingPlugin','StopAndWaitPlugin','Pure Pursuit','CooperativeLaneChangePlugin']"/>
 
   <!--
     ##########################
@@ -97,6 +98,11 @@
     <arg name='accel_Kp' value='$(arg accel_Kp)'/>
     <arg name='accel_Ki' value='$(arg accel_Ki)'/>
     <arg name='accel_Kd' value='$(arg accel_Kd)'/>
+
+    <arg name='synchronous_mode' value='$(arg synchronous_mode)'/>
+    <arg name='synchronous_mode_wait_for_vehicle_control_command' value='$(arg synchronous_mode_wait_for_vehicle_control_command)'/>
+    <arg name='fixed_delta_seconds' value='$(arg fixed_delta_seconds)'/>
+
   </include>
 
   <!--
@@ -127,10 +133,4 @@
     <arg name='selected_route' value='$(arg selected_route)'/>
     <arg name='selected_plugins' value='$(arg selected_plugins)'/>
   </include>
-
-  <!-- carla_sensors_integration node
-  <group>
-    <include file='$(find carla_sensors_integration)/launch/carla_sensors_integration.launch'>
-    </include>
-  </group>-->
 </launch>

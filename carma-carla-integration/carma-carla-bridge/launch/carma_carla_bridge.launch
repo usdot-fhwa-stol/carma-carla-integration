@@ -35,13 +35,17 @@
   <arg name='accel_Ki' default='0.0'/>
   <arg name='accel_Kd' default='0.05'/>
 
+  <arg name='synchronous_mode' default='false'/>
+  <arg name='synchronous_mode_wait_for_vehicle_control_command' default='false'/>
+  <arg name='fixed_delta_seconds' default='0.05'/>
+
   <!-- carla ros bridge -->
   <include file='$(find carla_ros_bridge)/launch/carla_ros_bridge.launch'>
     <arg name='host' value='$(arg host)'/>
     <arg name='port' value='$(arg port)'/>
-    <arg name='synchronous_mode' value='true'/>
-    <arg name='synchronous_mode_wait_for_vehicle_control_command' value='false'/>
-    <arg name='fixed_delta_seconds' value='0.05'/>
+    <arg name='synchronous_mode' value='$(arg synchronous_mode)'/>
+    <arg name='synchronous_mode_wait_for_vehicle_control_command' value='$(arg synchronous_mode_wait_for_vehicle_control_command)'/>
+    <arg name='fixed_delta_seconds' value='$(arg fixed_delta_seconds)'/>
   </include>
 
   <!-- carla ego vehicle -->
