@@ -47,7 +47,7 @@ cd ~/msgs && sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https:
 
 # CARMA Utils package
 mkdir -p ~/utils
-cd ~/utils && sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-utils.git
+cd ~/utils && sudo git clone --depth 1 --single-branch -b feature/CDAR-335-Sensorlib-XMLRPC-Interface https://github.com/usdot-fhwa-stol/carma-utils.git
 
 # GPS Common
 mkdir -p ~/gps && cd ~/gps 
