@@ -25,6 +25,14 @@
 # For a copy, see <https://opensource.org/licenses/MIT>.
 #
 
+#sensorlib imports
+import sys
+sys.path.append('/home/carma/utils/carma-utils/sensorlib/src')
+from SimulatedSensorConfigurator import SimulatedSensorConfigurator
+from util.SimulatedSensorUtils import SimulatedSensorUtils
+import os
+import carla
+
 
 """
 ground truth detections. Publishes the following topics:
@@ -162,6 +170,47 @@ def convert_objects():
     rospy.Subscriber('/carla/{}/objects'.format(role_name), ObjectArray, external_objects_callback)
     rospy.spin()
 
+def Get_data_from_sensorlib(infrastructure_id = -1, enable_processing = True):
+
+    config = SimulatedSensorUtils.load_config_from_file("/home/carma/utils/carma-utils/sensorlib/config/simulated_sensor_config.yaml")
+    simulated_sensor_config = config["simulated_sensor"]
+    carla_sensor_config = config["lidar_sensor"]
+    noise_model_config = SimulatedSensorUtils.load_config_from_file("/home/carma/utils/carma-utils/sensorlib/config/noise_model_config.yaml")
+    carla_host = "127.0.0.1"
+    carla_port = "2000"
+    sensor_transform = carla.Transform(carla.Location(x=0.0, y=0.0, z=0.0),
+                                       carla.Rotation(pitch=0.0, yaw=0.0, roll=0.0))
+    #default value
+    simulated_lidar_sensor = SimulatedSensorConfigurator.register_simulated_semantic_lidar_sensor(
+        simulated_sensor_config,
+        carla_sensor_config,
+        noise_model_config,
+        carla_host, carla_port,
+        sensor_transform,
+        infrastructure_id,
+        None,
+        enable_processing)
+    result = simulated_lidar_sensor.compute_detected_objects()
+
+    objects_msg = ExternalObjectList()
+
+    objects_msg.id = result[1]
+    objects_msg.pose.pose = result[5]
+    objects_msg.confidence = result[11]
+    objects_msg.velocity.twist.linear = result[6]
+    objects_msg.dynamic_obj = 1
+    objects_msg.presence_vector = objects_msg.presence_vector + \
+                                 ExternalObject.ID_PRESENCE_VECTOR + \
+                                 ExternalObject.POSE_PRESENCE_VECTOR + \
+                                 ExternalObject.VELOCITY_PRESENCE_VECTOR + \
+                                 ExternalObject.SIZE_PRESENCE_VECTOR + \
+                                 ExternalObject.CONFIDENCE_PRESENCE_VECTOR + \
+                                 ExternalObject.DYNAMIC_OBJ_PRESENCE + \
+                                 ExternalObject.OBJECT_TYPE_PRESENCE_VECTOR
+    
+    return objects_msg
+
+    
 
 if __name__ == '__main__':
     print("carla_to_carma_external_objects")
