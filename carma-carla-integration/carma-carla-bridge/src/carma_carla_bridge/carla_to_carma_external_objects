@@ -27,8 +27,8 @@
 
 #sensorlib imports
 import sys
-sys.path.append('/home/carma/utils/carma-utils/sensorlib/src')
-from SimulatedSensorConfigurator import SimulatedSensorConfigurator
+sys.path.append('/home/carma/utils/carma-utils/sensorlib')
+from sensor.SimulatedSensorConfigurator import SimulatedSensorConfigurator
 from util.SimulatedSensorUtils import SimulatedSensorUtils
 import os
 import carla
@@ -167,7 +167,7 @@ def convert_objects():
     #    rospy.logerr("Ground truth localization has been disabled")
     #    return
     
-    rospy.Subscriber('/carla/{}/objects'.format(role_name), ObjectArray, external_objects_callback)
+    rospy.Subscriber('/carla/{}/objects'.format(role_name), ObjectArray, Get_data_from_sensorlib)
     rospy.spin()
 
 def Get_data_from_sensorlib(infrastructure_id = -1, enable_processing = True):
@@ -190,16 +190,18 @@ def Get_data_from_sensorlib(infrastructure_id = -1, enable_processing = True):
         infrastructure_id,
         None,
         enable_processing)
-    result = simulated_lidar_sensor.compute_detected_objects()
+    results = simulated_lidar_sensor.compute_detected_objects()
 
     objects_msg = ExternalObjectList()
 
-    objects_msg.id = result[1]
-    objects_msg.pose.pose = result[5]
-    objects_msg.confidence = result[11]
-    objects_msg.velocity.twist.linear = result[6]
-    objects_msg.dynamic_obj = 1
-    objects_msg.presence_vector = objects_msg.presence_vector + \
+    for object in results:
+        object_msg = ExternalObject()
+        object_msg.id = object[1]
+        object_msg.pose.pose = object[5]
+        object_msg.confidence = object[11]
+        object_msg.velocity.twist.linear = object[6]
+        object_msg.dynamic_obj = 1
+        object_msg.presence_vector = objects_msg.presence_vector + \
                                  ExternalObject.ID_PRESENCE_VECTOR + \
                                  ExternalObject.POSE_PRESENCE_VECTOR + \
                                  ExternalObject.VELOCITY_PRESENCE_VECTOR + \
@@ -207,8 +209,9 @@ def Get_data_from_sensorlib(infrastructure_id = -1, enable_processing = True):
                                  ExternalObject.CONFIDENCE_PRESENCE_VECTOR + \
                                  ExternalObject.DYNAMIC_OBJ_PRESENCE + \
                                  ExternalObject.OBJECT_TYPE_PRESENCE_VECTOR
-    
-    return objects_msg
+        objects_msg.objects.append(object_msg)
+
+    external_objects_pub.publish(objects_msg)
 
     
 
