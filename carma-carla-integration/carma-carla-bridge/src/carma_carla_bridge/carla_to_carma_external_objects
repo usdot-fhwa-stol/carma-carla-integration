@@ -28,8 +28,8 @@
 #sensorlib imports
 import sys
 sys.path.append('/home/carma/utils/carma-utils/sensorlib')
-from sensor.SimulatedSensorConfigurator import SimulatedSensorConfigurator
-from util.SimulatedSensorUtils import SimulatedSensorUtils
+from src.SensorAPI import SensorAPI
+from src.util.SimulatedSensorUtils import SimulatedSensorUtils
 import os
 import carla
 
@@ -46,6 +46,8 @@ from cav_msgs.msg import ExternalObjectList, ExternalObject
 
 external_objects_pub = rospy.Publisher('/environment/external_objects', ExternalObjectList, queue_size=1)
 prev_objects = {}
+
+
 
 def converter(object):
     """
@@ -166,31 +168,54 @@ def convert_objects():
     #if localization_stream != True:
     #    rospy.logerr("Ground truth localization has been disabled")
     #    return
-    
-    rospy.Subscriber('/carla/{}/objects'.format(role_name), ObjectArray, Get_data_from_sensorlib)
-    rospy.spin()
-
-def Get_data_from_sensorlib(infrastructure_id = -1, enable_processing = True):
-
-    config = SimulatedSensorUtils.load_config_from_file("/home/carma/utils/carma-utils/sensorlib/config/simulated_sensor_config.yaml")
-    simulated_sensor_config = config["simulated_sensor"]
-    carla_sensor_config = config["lidar_sensor"]
+    sensor_config = SimulatedSensorUtils.load_config_from_file("/home/carma/utils/carma-utils/sensorlib/config/simulated_sensor_config.yaml")
     noise_model_config = SimulatedSensorUtils.load_config_from_file("/home/carma/utils/carma-utils/sensorlib/config/noise_model_config.yaml")
-    carla_host = "127.0.0.1"
-    carla_port = "2000"
-    sensor_transform = carla.Transform(carla.Location(x=0.0, y=0.0, z=0.0),
-                                       carla.Rotation(pitch=0.0, yaw=0.0, roll=0.0))
+
+    client = carla.Client('localhost', 2000)
+    client.set_timeout(10.0)
+    world = client.get_world()
+    _infrastructure_id = 1
+    _sensor_id = 1
+    _detection_cycle_delay_seconds = 0.5
+
+    paraDict = {}
+    paraDict['infrastructure_id'] = _infrastructure_id
+    paraDict['sensor_id'] = _sensor_id
+    paraDict['detection_cycle_delay_seconds'] = _detection_cycle_delay_seconds
+
+    rate = rospy.Rate(10)
+
+    while not rospy.is_shutdown():
+        get_data_from_sensorlib(world, paraDict, sensor_config, noise_model_config)
+        rate.sleep()
+
+    #rospy.Subscriber('/carla/{}/objects'.format(role_name), ObjectArray, get_data_from_sensorlib)
+    #rospy.spin()
+
+def get_data_from_sensorlib(world, paraDict, sensorConfig, noise_model_config):
+
+    simulated_sensor_config = sensorConfig["simulated_sensor"]
+    carla_sensor_config = sensorConfig["lidar_sensor"]
+    
+    infrastructure_id = paraDict['infrastructure_id']
+    sensor_id = paraDict['sensor_id']
+    detection_cycle_delay_seconds = paraDict['detection_cycle_delay_seconds']
+
+    api = SensorAPI.build_from_world(world)
+    
+    user_offset = carla.Location(0, 0, 0)
+    lidar_transform = carla.Transform(carla.Location(x=-0.5, z=1.8) + user_offset)
+
     #default value
-    simulated_lidar_sensor = SimulatedSensorConfigurator.register_simulated_semantic_lidar_sensor(
-        simulated_sensor_config,
-        carla_sensor_config,
-        noise_model_config,
-        carla_host, carla_port,
-        sensor_transform,
-        infrastructure_id,
-        None,
-        enable_processing)
-    results = simulated_lidar_sensor.compute_detected_objects()
+    sensor = api.create_simulated_semantic_lidar_sensor(simulated_sensor_config, carla_sensor_config, noise_model_config,
+                                                    detection_cycle_delay_seconds,
+                                                    infrastructure_id, sensor_id,
+                                                    lidar_transform.location, lidar_transform.rotation)
+
+
+    results = sensor.get_detected_objects()
+
+    print(results)
 
     objects_msg = ExternalObjectList()
 

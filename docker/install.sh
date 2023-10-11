@@ -36,6 +36,10 @@ python3.7 -m pip install simple-pid
 python3.7 -m pip install numpy --upgrade
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
 alias python='/usr/bin/python3.7'
+#set carla variable
+export LOAD_CARLA_EGG=True
+export CARLA_VERSION=0.9.10
+export CARLA_EGG_DIR=/home/carma/PythonAPI/carla/dist
 
 # Clone CARLA ROS bridge
 sudo git clone --depth 1 -b '0.9.10.1' --recurse-submodules https://github.com/carla-simulator/ros-bridge.git
@@ -70,3 +74,4 @@ ln -s ~/ros-bridge
 ln -s ~/carma-carla-integration
 
 cd ~/carma_carla_ws && /bin/bash -c '. /opt/ros/noetic/setup.bash; catkin_make'
+
