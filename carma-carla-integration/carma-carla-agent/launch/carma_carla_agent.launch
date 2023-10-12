@@ -81,6 +81,10 @@
   <arg name='selected_route' default="Release_test_case_1"/>
   <arg name="selected_plugins" default="['RouteFollowingPlugin','InLaneCruisingPlugin','StopAndWaitPlugin','Pure Pursuit','CooperativeLaneChangePlugin']"/>
 
+  <!-- enable sensor external object-->
+  <arg name='enable_sensor_objects' default='false'/>
+  <arg name='sensor_object_pub_rate' default='10'/>
+
   <!--
     ##########################
     ##  CARLA CARMA bridge  ##
@@ -132,5 +136,8 @@
     <!-- route and plugins params-->
     <arg name='selected_route' value='$(arg selected_route)'/>
     <arg name='selected_plugins' value='$(arg selected_plugins)'/>
+
+    <arg name='enable_sensor_objects' value='$(arg enable_sensor_objects)'/>
+    <arg name='sensor_object_pub_rate' value='$(arg sensor_object_pub_rate)'/>
   </include>
 </launch>
