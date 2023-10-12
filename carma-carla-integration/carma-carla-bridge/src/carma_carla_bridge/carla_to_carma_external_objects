@@ -45,117 +45,6 @@ from derived_object_msgs.msg import ObjectArray, Object
 from cav_msgs.msg import ExternalObjectList, ExternalObject
 
 external_objects_pub = rospy.Publisher('/environment/external_objects', ExternalObjectList, queue_size=1)
-prev_objects = {}
-
-
-
-def converter(object):
-    """
-    CARLA object message type:
-        derived_object_msgs::Object
-    """
-    global prev_objects
-    object_type_lookup = {Object.CLASSIFICATION_PEDESTRIAN:ExternalObject.PEDESTRIAN,
-                          Object.CLASSIFICATION_CAR:ExternalObject.SMALL_VEHICLE,
-                          Object.CLASSIFICATION_TRUCK:ExternalObject.LARGE_VEHICLE,
-                          Object.CLASSIFICATION_MOTORCYCLE:ExternalObject.MOTORCYCLE}
-
-    ## CARMA external object init
-    object_msg = ExternalObject()
-    ## In the simulation source, the presence_vector should be a constant (except the object type)
-    object_msg.presence_vector = object_msg.presence_vector + \
-                                 ExternalObject.ID_PRESENCE_VECTOR + \
-                                 ExternalObject.POSE_PRESENCE_VECTOR + \
-                                 ExternalObject.VELOCITY_PRESENCE_VECTOR + \
-                                 ExternalObject.SIZE_PRESENCE_VECTOR + \
-                                 ExternalObject.CONFIDENCE_PRESENCE_VECTOR + \
-                                 ExternalObject.DYNAMIC_OBJ_PRESENCE + \
-                                 ExternalObject.OBJECT_TYPE_PRESENCE_VECTOR
-
-    object_msg.header = object.header
-    object_msg.id = object.id
-    object_msg.pose.pose = object.pose
-
-    ## CARLA ROS Bridge will not provide the vehicle twist info which generated,
-    ## As a result, we need to calculate that based on position and time differences
-    if object.id in prev_objects:
-        ## time diff
-        curr_time = object.header.stamp.secs + 10**-9 * object.header.stamp.nsecs
-        prev_time = prev_objects[object.id]['object'].header.stamp.secs + 10**-9 * prev_objects[object.id]['object'].header.stamp.nsecs
-        time_diff = curr_time - prev_time
-
-        if time_diff != 0:
-            ## dist diff
-            x_pose_diff = ((object.pose.position.x - prev_objects[object.id]['object'].pose.pose.position.x) ** 2) ** 0.5
-            y_pose_diff = ((object.pose.position.y - prev_objects[object.id]['object'].pose.pose.position.y) ** 2) ** 0.5
-            z_pose_diff = ((object.pose.position.z - prev_objects[object.id]['object'].pose.pose.position.z) ** 2) ** 0.5
-
-            object_msg.velocity.twist.linear.x = x_pose_diff / time_diff
-            object_msg.velocity.twist.linear.y = y_pose_diff / time_diff
-            object_msg.velocity.twist.linear.z = z_pose_diff / time_diff
-        else:
-            ## if time differences is 0, assign exact same velocity twist from previous object to current object
-            object_msg.velocity.twist.linear = prev_objects[object.id]['object'].velocity.twist.linear
-
-    else:
-        prev_objects[object.id] = {}
-
-    ## since we are using simulation, the external objects info is not received via detector. The confidence should always be 1
-    object_msg.confidence = 1
-
-    ## object size convert
-    object_msg.size.x = object.shape.dimensions[0]
-    object_msg.size.y = object.shape.dimensions[1]
-    object_msg.size.z = object.shape.dimensions[2]
-
-    ## the ros topic of /carla/{}/objects only provides dynamic object information. As a result, this parameter should always be 1.
-    object_msg.dynamic_obj = 1
-
-
-    ## determine what object type is
-    if object.object_classified:
-        if object.classification in object_type_lookup:
-            object_msg.object_type = object_type_lookup[object.classification]
-        else:
-            object_msg.object_type = ExternalObject.UNKNOWN
-    else:
-        ## if the object classified is set as False, it means the object can not be identified
-        object_msg.presence_vector = object_msg.presence_vector - ExternalObject.OBJECT_TYPE_PRESENCE_VECTOR
-
-    ## save the current object status
-    prev_objects[object.id]['object'] = object_msg
-    prev_objects[object.id]['update'] = True
-    prev_objects[object.id]["no_update_count"] = 0
-
-    return object_msg
-
-def external_objects_callback(obj_arr):
-    """
-    callback current objects
-    obj_arr message type:
-        derived_object_msgs::ObjectArray
-    """
-    global external_objects_pub
-    objects_msg = ExternalObjectList()
-    objects_msg.header = obj_arr.header
-    for i in range(len(obj_arr.objects)):
-        objects_msg.objects.append(converter(obj_arr.objects[i]))
-
-    ## check the dictionary if object not being used anymore
-    remove_key_list = []
-    for key in prev_objects:
-        if prev_objects[key]["update"]:
-            prev_objects[key]["update"] = False
-        else:
-            prev_objects[key]["no_update_count"] = prev_objects[key]["no_update_count"] + 1
-
-        if prev_objects[key]["no_update_count"] > 10:
-            remove_key_list.append(key)
-    ## remove these not use objects
-    for i in range(len(remove_key_list)):
-        prev_objects.pop(remove_key_list[i])
-
-    external_objects_pub.publish(objects_msg)
 
 
 def convert_objects():
@@ -163,11 +52,6 @@ def convert_objects():
     main loop
     """
     rospy.init_node('carla_to_carma_external_objects', anonymous=True)
-    role_name = rospy.get_param('~role_name', 'ego_vehicle')
-    #object_detection_stream = rospy.get_param('~object_detection_stream')
-    #if localization_stream != True:
-    #    rospy.logerr("Ground truth localization has been disabled")
-    #    return
     sensor_config = SimulatedSensorUtils.load_config_from_file("/home/carma/utils/carma-utils/sensorlib/config/simulated_sensor_config.yaml")
     noise_model_config = SimulatedSensorUtils.load_config_from_file("/home/carma/utils/carma-utils/sensorlib/config/noise_model_config.yaml")
 
@@ -178,28 +62,26 @@ def convert_objects():
     _sensor_id = 1
     _detection_cycle_delay_seconds = 0.5
 
-    paraDict = {}
-    paraDict['infrastructure_id'] = _infrastructure_id
-    paraDict['sensor_id'] = _sensor_id
-    paraDict['detection_cycle_delay_seconds'] = _detection_cycle_delay_seconds
+    para_dict = {}
+    para_dict['infrastructure_id'] = _infrastructure_id
+    para_dict['sensor_id'] = _sensor_id
+    para_dict['detection_cycle_delay_seconds'] = _detection_cycle_delay_seconds
 
     rate = rospy.Rate(10)
 
     while not rospy.is_shutdown():
-        get_data_from_sensorlib(world, paraDict, sensor_config, noise_model_config)
+        get_data_from_sensorlib(world, para_dict, sensor_config, noise_model_config)
         rate.sleep()
 
-    #rospy.Subscriber('/carla/{}/objects'.format(role_name), ObjectArray, get_data_from_sensorlib)
-    #rospy.spin()
 
-def get_data_from_sensorlib(world, paraDict, sensorConfig, noise_model_config):
+def get_data_from_sensorlib(world, para_dict, sensorConfig, noise_model_config):
 
     simulated_sensor_config = sensorConfig["simulated_sensor"]
     carla_sensor_config = sensorConfig["lidar_sensor"]
     
-    infrastructure_id = paraDict['infrastructure_id']
-    sensor_id = paraDict['sensor_id']
-    detection_cycle_delay_seconds = paraDict['detection_cycle_delay_seconds']
+    infrastructure_id = para_dict['infrastructure_id']
+    sensor_id = para_dict['sensor_id']
+    detection_cycle_delay_seconds = para_dict['detection_cycle_delay_seconds']
 
     api = SensorAPI.build_from_world(world)
     
@@ -214,19 +96,23 @@ def get_data_from_sensorlib(world, paraDict, sensorConfig, noise_model_config):
 
 
     results = sensor.get_detected_objects()
-
-    print(results)
-
     objects_msg = ExternalObjectList()
 
     for object in results:
         object_msg = ExternalObject()
-        object_msg.id = object[1]
-        object_msg.pose.pose = object[5]
-        object_msg.confidence = object[11]
-        object_msg.velocity.twist.linear = object[6]
+        object_msg.id = object.id
+        position_list = object.position.tolist() 
+        object_msg.pose.pose.position.x = float(position_list[0])
+        object_msg.pose.pose.position.y = float(position_list[1])
+        object_msg.pose.pose.position.z = float(position_list[2])
+        object_msg.confidence = object.confidence
+        velocity_list = object.velocity.tolist()
+        object_msg.velocity.twist.linear.x = float(velocity_list[0])
+        object_msg.velocity.twist.linear.y = float(velocity_list[1])
+        object_msg.velocity.twist.linear.z = float(velocity_list[2])
+        #object_msg.object_type = object.object_type
         object_msg.dynamic_obj = 1
-        object_msg.presence_vector = objects_msg.presence_vector + \
+        object_msg.presence_vector = object_msg.presence_vector + \
                                  ExternalObject.ID_PRESENCE_VECTOR + \
                                  ExternalObject.POSE_PRESENCE_VECTOR + \
                                  ExternalObject.VELOCITY_PRESENCE_VECTOR + \
