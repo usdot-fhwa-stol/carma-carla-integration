@@ -34,10 +34,10 @@ while [[ $# -gt 0 ]]; do
             ;;
       esac
 done
-
+echo "cloning!"
 if [[ "$BRANCH" = "develop" ]]; then
-      git clone https://github.com/usdot-fhwa-stol/carma-msgs.git ~/src/carma-msgs --branch $BRANCH --depth 1
-      git clone https://github.com/usdot-fhwa-stol/carma-utils.git ~/src/carma-utils --branch $BRANCH --depth 1    
+      git clone https://github.com/usdot-fhwa-stol/carma-msgs.git ~/src/carma-msgs --branch develop --depth 1
+      git clone https://github.com/usdot-fhwa-stol/carma-utils.git ~/src/carma-utils --branch develop --depth 1    
 else
       git clone https://github.com/usdot-fhwa-stol/carma-msgs.git ${dir}/src/carma-msgs --branch develop --depth 1
       git clone https://github.com/usdot-fhwa-stol/carma-utils.git ${dir}/src/carma-utils --branch develop --depth 1

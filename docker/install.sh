@@ -42,7 +42,7 @@ sudo git clone --depth 1 -b '0.9.10.1' --recurse-submodules https://github.com/c
 
 # Clone ROS message
 mkdir -p ~/msgs
-cd ~/msgs && sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/autoware.ai.git
+cd ~/msgs && sudo git clone --depth 1 --single-branch -b carma-develop https://github.com/usdot-fhwa-stol/autoware.ai.git
 cd ~/msgs && sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-msgs.git
 
 # CARMA Utils package
@@ -55,6 +55,7 @@ sudo git clone https://github.com/swri-robotics/gps_umd.git
 
 mkdir -p ~/carma_carla_ws/src/msgs && cd ~/carma_carla_ws/src/msgs
 
+ln -s ~/msgs/carma-msgs/j3224_msgs
 ln -s ~/msgs/carma-msgs/j2735_msgs
 ln -s ~/msgs/carma-msgs/cav_msgs
 ln -s ~/msgs/carma-msgs/can_msgs
