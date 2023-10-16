@@ -50,6 +50,8 @@
   <arg name='sensor_object_pub_rate' default='10'/>
   <arg name='host' default='127.0.0.1'/>
   <arg name='port' default='2000'/>
+  <arg name='sensor_id' default='1'/>
+  <arg name='detection_cycle_delay_seconds' default='0.5'/>
   <!--
     ##################
     ## TF remapping ##
@@ -103,6 +105,8 @@
       <param name='sensor_object_pub_rate' type="double" value="$(arg robot_status_pub_rate)"/>
       <param name='host' type="str" value="$(arg host)"/>
       <param name='port' type="int" value="$(arg port)"/>
+      <param name='sensor_id' type="int" value="$(arg sensor_id)"/>
+      <param name='detection_cycle_delay_seconds' type="double" value="$(arg detection_cycle_delay_seconds)"/>
     </node>
   </group>
 
