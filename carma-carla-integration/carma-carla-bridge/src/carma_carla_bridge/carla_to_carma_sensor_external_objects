@@ -37,7 +37,10 @@ def convert_objects():
     sensor_config = SimulatedSensorUtils.load_config_from_file("/home/carma/utils/carma-utils/sensorlib/config/simulated_sensor_config.yaml")
     noise_model_config = SimulatedSensorUtils.load_config_from_file("/home/carma/utils/carma-utils/sensorlib/config/noise_model_config.yaml")
 
-    client = carla.Client('localhost', 2000)
+    carla_host_address = rospy.get_param('~host')
+    carla_port = rospy.get_param('~port')
+    client = carla.Client(carla_host_address, carla_port)
+    #timeout in seconds
     client.set_timeout(10.0)
     world = client.get_world()
     _infrastructure_id = 1
@@ -69,7 +72,7 @@ def get_data_from_sensorlib(world, para_dict, sensorConfig, noise_model_config):
     user_offset = carla.Location(0, 0, 0)
     lidar_transform = carla.Transform(carla.Location(x=-0.5, z=1.8) + user_offset)
 
-    #default value
+    
     sensor = api.create_simulated_semantic_lidar_sensor(simulated_sensor_config, carla_sensor_config, noise_model_config,
                                                     detection_cycle_delay_seconds,
                                                     infrastructure_id, sensor_id,
@@ -77,7 +80,7 @@ def get_data_from_sensorlib(world, para_dict, sensorConfig, noise_model_config):
 
 
     results = sensor.get_detected_objects()
-    objects_msg = ExternalObjectList()
+    object_msg_list = ExternalObjectList()
 
     for object in results:
         object_msg = ExternalObject()
@@ -101,9 +104,9 @@ def get_data_from_sensorlib(world, para_dict, sensorConfig, noise_model_config):
                                  ExternalObject.CONFIDENCE_PRESENCE_VECTOR + \
                                  ExternalObject.DYNAMIC_OBJ_PRESENCE + \
                                  ExternalObject.OBJECT_TYPE_PRESENCE_VECTOR
-        objects_msg.objects.append(object_msg)
+        object_msg_list.objects.append(object_msg)
 
-    external_objects_pub.publish(objects_msg)
+    external_objects_pub.publish(object_msg_list)
 
     
 

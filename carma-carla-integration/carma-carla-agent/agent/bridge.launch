@@ -48,6 +48,8 @@
   <!-- enable sensor external object-->
   <arg name='enable_sensor_objects' default='false'/>
   <arg name='sensor_object_pub_rate' default='10'/>
+  <arg name='host' default='127.0.0.1'/>
+  <arg name='port' default='2000'/>
   <!--
     ##################
     ## TF remapping ##
@@ -99,6 +101,8 @@
     <node pkg='carma_carla_bridge' type='carla_to_carma_sensor_external_objects' name='carla_to_carma_sensor_external_objects' output='screen'>
       <param name='role_name' type="str" value="$(arg role_name)"/>
       <param name='sensor_object_pub_rate' type="double" value="$(arg robot_status_pub_rate)"/>
+      <param name='host' type="str" value="$(arg host)"/>
+      <param name='port' type="int" value="$(arg port)"/>
     </node>
   </group>
 
