@@ -42,7 +42,11 @@ sudo git clone --depth 1 -b '0.9.10.1' --recurse-submodules https://github.com/c
 
 # Clone ROS message
 mkdir -p ~/msgs
-cd ~/msgs && sudo git clone --depth 1 --single-branch -b carma-develop https://github.com/usdot-fhwa-stol/autoware.ai.git
+if [ "${CARMA_VERSION}" = "develop" ]; then
+  cd ~/msgs && sudo git clone --depth 1 --single-branch -b carma-develop https://github.com/usdot-fhwa-stol/autoware.ai.git
+else
+  cd ~/msgs && sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/autoware.ai.git
+fi
 cd ~/msgs && sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-msgs.git
 
 # CARMA Utils package
