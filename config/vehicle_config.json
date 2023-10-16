@@ -5,7 +5,7 @@
       "spawn_point": "15.4,-90.1,0,0,0,90",
 
       "selected_route": "test_case_1",
-      "selected_plugins": "RouteFollowingPlugin,InLaneCruisingPlugin,StopAndWaitPlugin,Pure Pursuit",
+      "selected_plugins": "/guidance/plugins/route_following_plugin,/guidance/plugins/inlanecruising_plugin,/guidance/plugins/stop_and_wait_plugin,/guidance/plugins/pure_pursuit_wrapper",
 
       "speed_Kp": "0.4",
       "speed_Ki": "0.0",
@@ -18,14 +18,14 @@
       "init_acceleration": "1",
       "init_steering_angle": "0",
       "init_jerk": "0",
-      "max_steering_degree": "70",
+      "max_steering_degree": "70"
     },
     {
       "role_name": "hero2",
       "spawn_point": "310.6,-94.8,0,0,0,-90",
 
       "selected_route": "test_case_2",
-      "selected_plugins": "RouteFollowingPlugin,InLaneCruisingPlugin,StopAndWaitPlugin,Pure Pursuit",
+      "selected_plugins": "/guidance/plugins/route_following_plugin,/guidance/plugins/inlanecruising_plugin,/guidance/plugins/stop_and_wait_plugin,/guidance/plugins/pure_pursuit_wrapper",
 
       "speed_Kp": "0.4",
       "speed_Ki": "0.0",
@@ -38,8 +38,8 @@
       "init_acceleration": "1",
       "init_steering_angle": "0",
       "init_jerk": "0",
-      "max_steering_degree": "70",
-    },
+      "max_steering_degree": "70"
+    }
 
   ]
 }
