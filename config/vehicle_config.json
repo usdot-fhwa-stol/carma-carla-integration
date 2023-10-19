@@ -18,7 +18,7 @@
       "init_acceleration": "1",
       "init_steering_angle": "0",
       "init_jerk": "0",
-      "max_steering_degree": "70"
+      "max_steering_degree": "70",
     },
     {
       "role_name": "hero2",
@@ -38,8 +38,8 @@
       "init_acceleration": "1",
       "init_steering_angle": "0",
       "init_jerk": "0",
-      "max_steering_degree": "70"
-    }
+      "max_steering_degree": "70",
+    },
 
   ]
 }
