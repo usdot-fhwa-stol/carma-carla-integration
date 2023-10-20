@@ -37,6 +37,7 @@
   <!-- route and plugins params -->
   <arg name='selected_route'/>
   <arg name='selected_plugins'/>
+  <arg name='start_delay_in_seconds'/>
 
   <!-- ackermann control params -->
   <arg name='init_speed' default='5'/>
@@ -161,6 +162,7 @@
   <node pkg='carma_carla_bridge' type='carma_carla_guidance' name='carma_carla_guidance' output='screen'>
     <param name='selected_route' type='str' value="$(arg selected_route)"/>
     <param name='selected_plugins' type='str' value="$(arg selected_plugins)"/>
+    <param name='start_delay_in_seconds' type='double' value="$(arg start_delay_in_seconds)"/>
   </node>
 
 </launch>

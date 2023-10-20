@@ -64,6 +64,8 @@ def initialize():
 
     # get selected plugins
     plugin_list_str = rospy.get_param("~selected_plugins")
+    start_delay_in_seconds = rospy.get_param("~start_delay_in_seconds", 15.0)
+    rospy.loginfo("Start delay in seconds: %f", start_delay_in_seconds)
     plugin_list = ast.literal_eval(plugin_list_str)
     if len(plugin_list) == 0:
         rospy.logerr("No input plugin found, please check the config file at /opt/carma/simulation/vehicle_config.json")
@@ -79,8 +81,15 @@ def initialize():
     while rospy.is_shutdown() != True:
         active_plugins = active_plugins_serv().plugins
         if route_selected and check_plugin_status(active_plugins, plugin_list):
+            seconds_passed = 0.0
+            while (seconds_passed < start_delay_in_seconds):
+                rospy.loginfo("Engaging the guidance in: " + str(start_delay_in_seconds - seconds_passed))
+                seconds_passed += 1.0
+                rospy.sleep(1)
+            rospy.loginfo("Attempting to engage guidance")
             resp = set_guidance_active_serv(True)
             if resp.guidance_status:
+                rospy.loginfo("Guidance engaged!")
                 break
             else:
                 rospy.logerr("Failed to set guidance status")
