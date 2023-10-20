@@ -51,10 +51,13 @@ def create_sensor_for_sensorlib():
     client.set_timeout(10.0)
     world = client.get_world()
     parent_actor_id = None
+    role_name = rospy.get_param('~role_name')
     for actor in world.get_actors():
-        if actor.attributes.get('role_name') == 'hero':
+        if actor.attributes.get('role_name') == role_name:
             parent_actor_id = actor.id
             break
+    if not parent_actor_id:
+        return
     #infrastructure_id have no relationship with carla
     infrastructure_id = 1
     simulated_sensor_config = sensor_config["simulated_sensor"]
