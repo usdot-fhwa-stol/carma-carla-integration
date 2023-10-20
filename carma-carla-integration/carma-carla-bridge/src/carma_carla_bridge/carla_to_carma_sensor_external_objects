@@ -1,0 +1,114 @@
+#!/usr/bin/env python
+# Copyright (C) 2023 LEIDOS.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+#sensorlib imports
+import sys
+sys.path.append('/home/carma/utils/carma-utils/sensorlib')
+from src.SensorAPI import SensorAPI
+from src.util.SimulatedSensorUtils import SimulatedSensorUtils
+import carla
+import rospy
+
+
+from cav_msgs.msg import ExternalObjectList, ExternalObject
+
+external_objects_pub = rospy.Publisher('/environment/external_objects', ExternalObjectList, queue_size=1)
+
+
+def convert_objects():
+    """
+    main loop
+    """
+    rospy.init_node('carla_to_carma_sensor_external_objects', anonymous=True)
+    pub_rate = rospy.get_param('~sensor_object_pub_rate', 10)
+    rate = rospy.Rate(pub_rate)
+    
+    sensor = create_sensor_for_sensorlib()
+      
+    while not rospy.is_shutdown():
+        get_data_from_sensorlib(sensor)
+        rate.sleep()
+
+def create_sensor_for_sensorlib():
+    sensor_config = SimulatedSensorUtils.load_config_from_file("/home/carma/utils/carma-utils/sensorlib/config/simulated_sensor_config.yaml")
+    noise_model_config = SimulatedSensorUtils.load_config_from_file("/home/carma/utils/carma-utils/sensorlib/config/noise_model_config.yaml")
+    carla_host_address = rospy.get_param('~host')
+    carla_port = rospy.get_param('~port')
+    client = carla.Client(carla_host_address, carla_port)
+    #timeout in seconds
+    client.set_timeout(10.0)
+    world = client.get_world()
+    parent_actor_id = None
+    role_name = rospy.get_param('~role_name')
+    for actor in world.get_actors():
+        if actor.attributes.get('role_name') == role_name:
+            parent_actor_id = actor.id
+            break
+    if not parent_actor_id:
+        return
+    #infrastructure_id have no relationship with carla
+    infrastructure_id = 1
+    simulated_sensor_config = sensor_config["simulated_sensor"]
+    carla_sensor_config = sensor_config["lidar_sensor"]
+    sensor_id = rospy.get_param('~sensor_id')
+    detection_cycle_delay_seconds = rospy.get_param('~detection_cycle_delay_seconds')
+    api = SensorAPI.build_from_world(world)
+    #user_offset should just be a constant
+    user_offset = carla.Location(0, 0, 0)
+    lidar_transform = carla.Transform(user_offset)
+    sensor = api.create_simulated_semantic_lidar_sensor(simulated_sensor_config, carla_sensor_config, noise_model_config,
+                                                    detection_cycle_delay_seconds,
+                                                    infrastructure_id, sensor_id,
+                                                    lidar_transform.location, lidar_transform.rotation, parent_actor_id)
+    return sensor
+
+
+
+def get_data_from_sensorlib(sensor):
+    
+    results = sensor.get_detected_objects()
+    object_msg_list = ExternalObjectList()
+
+    for object in results:
+        object_msg = ExternalObject()
+        object_msg.id = object.id
+        position_list = object.position.tolist() 
+        object_msg.pose.pose.position.x = float(position_list[0])
+        object_msg.pose.pose.position.y = float(position_list[1])
+        object_msg.pose.pose.position.z = float(position_list[2])
+        object_msg.confidence = object.confidence
+        velocity_list = object.velocity.tolist()
+        object_msg.velocity.twist.linear.x = float(velocity_list[0])
+        object_msg.velocity.twist.linear.y = float(velocity_list[1])
+        object_msg.velocity.twist.linear.z = float(velocity_list[2])
+        #object_msg.object_type = object.object_type
+        object_msg.dynamic_obj = 1
+        object_msg.presence_vector = object_msg.presence_vector + \
+                                 ExternalObject.ID_PRESENCE_VECTOR + \
+                                 ExternalObject.POSE_PRESENCE_VECTOR + \
+                                 ExternalObject.VELOCITY_PRESENCE_VECTOR + \
+                                 ExternalObject.SIZE_PRESENCE_VECTOR + \
+                                 ExternalObject.CONFIDENCE_PRESENCE_VECTOR + \
+                                 ExternalObject.DYNAMIC_OBJ_PRESENCE + \
+                                 ExternalObject.OBJECT_TYPE_PRESENCE_VECTOR
+        object_msg_list.objects.append(object_msg)
+
+    external_objects_pub.publish(object_msg_list)
+
+    
+
+if __name__ == '__main__':
+    print("carla_to_carma_sensor_external_objects")
+    convert_objects()
