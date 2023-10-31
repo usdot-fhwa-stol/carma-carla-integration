@@ -16,7 +16,7 @@
 #sensorlib imports
 import sys
 sys.path.append('/home/carma/utils/carma-utils/sensorlib')
-from src.SensorAPI import SensorAPI
+from src.CarlaCDASimAPI import CarlaCDASimAPI
 from src.util.SimulatedSensorUtils import SimulatedSensorUtils
 import carla
 import rospy
@@ -64,7 +64,7 @@ def create_sensor_for_sensorlib():
     carla_sensor_config = sensor_config["lidar_sensor"]
     sensor_id = rospy.get_param('~sensor_id')
     detection_cycle_delay_seconds = rospy.get_param('~detection_cycle_delay_seconds')
-    api = SensorAPI.build_from_world(world)
+    api = CarlaCDASimAPI.build_from_world(world)
     #user_offset should just be a constant
     user_offset = carla.Location(0, 0, 0)
     lidar_transform = carla.Transform(user_offset)
