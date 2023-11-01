@@ -37,7 +37,8 @@ def convert_objects():
     sensor_creation_rate = rospy.Rate(1)
     
     sensor = None
-    while sensor is None:
+    sensor = create_sensor_for_sensorlib()
+    while not rospy.is_shutdown() and sensor is None:
         print("Trying to create vehicle sensor...")
         sensor = create_sensor_for_sensorlib()
         sensor_creation_rate.sleep()
