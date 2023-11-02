@@ -26,10 +26,7 @@ sudo apt-get update && sudo apt-get install -y --no-install-recommends \
                             wget
 
 sudo apt-get install python3-distutils
-# sudo python3 -m pip uninstall simple-pid
 sudo python3 -m pip install simple-pid==1.0.1 wheel numpy
-sudo python3 -m pip show simple-pid
-# python3.7 -m pip install numpy --upgrade
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
 # alias python='/usr/bin/python3.7'
 
