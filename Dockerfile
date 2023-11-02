@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 FROM usdotfhwastoldev/carma-base:develop
+# FROM usdotfhwastol/carma-base:carma-system-4.4.0
 
 LABEL Description="Dockerised CARMA-CARLA integration"
 
