@@ -17,12 +17,6 @@
 sudo add-apt-repository ppa:deadsnakes/ppa -y
 
 sudo apt-get update && sudo apt-get install -y --no-install-recommends \
-                            python3.7 \
-                            python3.7-distutils \
-                            python3-pip \
-                            python3-wheel \
-                            python3 \
-                            python3-numpy \
                             libgps-dev \
                             ros-noetic-ackermann-msgs \
                             ros-noetic-derived-object-msgs \
@@ -31,11 +25,9 @@ sudo apt-get update && sudo apt-get install -y --no-install-recommends \
                             ros-noetic-rviz \
                             wget
 
-
-python3.7 -m pip install simple-pid
-python3.7 -m pip install numpy --upgrade
+sudo apt-get install python3-distutils
+sudo python3 -m pip install simple-pid==1.0.1 wheel numpy
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
-alias python='/usr/bin/python3.7'
 
 # Clone CARLA ROS bridge
 sudo git clone --depth 1 -b '0.9.10.1' --recurse-submodules https://github.com/carla-simulator/ros-bridge.git
