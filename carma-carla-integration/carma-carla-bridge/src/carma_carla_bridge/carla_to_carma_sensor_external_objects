@@ -20,7 +20,7 @@ from src.CarlaCDASimAPI import CarlaCDASimAPI
 from src.util.SimulatedSensorUtils import SimulatedSensorUtils
 import carla
 import rospy
-
+from rospy.exceptions import ROSInterruptException
 
 from cav_msgs.msg import ExternalObjectList, ExternalObject
 
@@ -29,20 +29,40 @@ external_objects_pub = rospy.Publisher('/environment/external_objects', External
 
 def convert_objects():
     """
-    main loop
+    Main loop
     """
     rospy.init_node('carla_to_carma_sensor_external_objects', anonymous=True)
     pub_rate = rospy.get_param('~sensor_object_pub_rate', 10)
     rate = rospy.Rate(pub_rate)
+    sensor_creation_timeout = 60
     sensor_creation_rate = rospy.Rate(1)
 
-    client, world, api, parent_actor_id, sensor_config, noise_model_config = setup_carla_client_and_config()
+    setup_result = setup_carla_client_and_config()
+    if setup_result is None:
+        rospy.logfatal("Unable to set up CARLA client and configuration due to missing actor.")
+        return
+
+    client, world, api, parent_actor_id, sensor_config, noise_model_config = setup_result
+
+    sensor_creation_start_time = rospy.Time.now()
 
     sensor = None
     while not rospy.is_shutdown() and sensor is None:
-        rospy.loginfo("Trying to create vehicle sensor...")
+        rospy.loginfo("Attempting to create vehicle sensor...")
         sensor = create_sensor_for_sensorlib(world, api, parent_actor_id, sensor_config, noise_model_config)
-        sensor_creation_rate.sleep()
+
+        if sensor:
+            break  # Exit the loop if the sensor is created successfully.
+        elif rospy.Time.now() - sensor_creation_start_time > rospy.Duration(sensor_creation_timeout):
+            rospy.logerr(f"Sensor creation timed out after {sensor_creation_timeout} seconds.")
+            return
+        else:
+            rospy.logwarn("Sensor creation failed, will retry after a short delay.")
+            sensor_creation_rate.sleep()
+
+    if sensor is None:
+        rospy.logfatal("Unable to create sensor since ROS is down")
+        return
 
     while not rospy.is_shutdown():
         get_data_from_sensorlib(sensor)
@@ -55,17 +75,6 @@ def setup_carla_client_and_config():
     client.set_timeout(10.0)
     world = client.get_world()
 
-    role_name = rospy.get_param('~role_name')
-    parent_actor_id = None
-    for actor in world.get_actors():
-        if actor.attributes.get('role_name') == role_name:
-            parent_actor_id = actor.id
-            break
-
-    if not parent_actor_id:
-        rospy.logerr("No actor with role_name '{}' found.".format(role_name))
-        return None
-
     api = CarlaCDASimAPI.build_from_world(world)
 
     sensor_config = SimulatedSensorUtils.load_config_from_file(
@@ -74,6 +83,26 @@ def setup_carla_client_and_config():
     noise_model_config = SimulatedSensorUtils.load_config_from_file(
         "/home/carma/utils/carma-utils/sensorlib/config/noise_model_config.yaml"
     )
+
+    role_name = rospy.get_param('~role_name')
+    parent_actor_id = None
+    actor_search_timeout = 60
+    search_start_time = rospy.Time.now()
+
+    while rospy.Time.now() - search_start_time < rospy.Duration(actor_search_timeout):
+        for actor in world.get_actors():
+            if actor.attributes.get('role_name') == role_name:
+                parent_actor_id = actor.id
+                break
+        if parent_actor_id:
+            break
+        if rospy.is_shutdown():
+            raise ROSInterruptException("ROS shutdown requested while searching for actor.")
+        rospy.sleep(1)  # sleep for a second before retrying
+
+    if not parent_actor_id:
+        rospy.logerr("Failed to find parent actor with role_name '{}' within {} seconds.".format(role_name, actor_search_timeout))
+        return None
 
     return client, world, api, parent_actor_id, sensor_config, noise_model_config
 
