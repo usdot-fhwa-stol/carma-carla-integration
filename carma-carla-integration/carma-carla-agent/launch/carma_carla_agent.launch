@@ -139,8 +139,10 @@
     <!-- route and plugins params-->
     <arg name='selected_route' value='$(arg selected_route)'/>
     <arg name='selected_plugins' value='$(arg selected_plugins)'/>
-    <arg name="start_delay_in_seconds" value='$(arg start_delay_in_seconds)'/>
+    <arg name='start_delay_in_seconds' value='$(arg start_delay_in_seconds)'/>
 
+    <arg name='host' type="str" value="$(arg host)"/>
+    <arg name='port' type="int" value="$(arg port)"/>
     <arg name='enable_sensor_objects' value='$(arg enable_sensor_objects)'/>
     <arg name='sensor_object_pub_rate' value='$(arg sensor_object_pub_rate)'/>
     <arg name='sensor_id' value='$(arg sensor_id)'/>
