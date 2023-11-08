@@ -65,10 +65,6 @@ def initialize():
     """
     rospy.init_node("carma_carla_guidance")
 
-    # initialize ROS service
-    set_guidance_active_serv = rospy.ServiceProxy('/guidance/set_guidance_active', SetGuidanceActive)
-    active_plugins_serv = rospy.ServiceProxy('/guidance/plugins/get_active_plugins', PluginList)
-
     # initialize ROS topic
     rospy.Subscriber("/guidance/route_event",RouteEvent, route_event_callback)
     status_pub = rospy.Publisher('/carla/guidance_bridge_node/active_status', String, queue_size=10)
