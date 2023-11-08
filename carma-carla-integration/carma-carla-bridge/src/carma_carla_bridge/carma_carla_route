@@ -88,7 +88,7 @@ def guidance_bridge_node_status_callback(data):
     if data.data == "The node is active":
         is_guidance_bridge_node_active = True
 
-    rospy.loginfo(rospy.get_caller_id() + " I heard %s", data.data)
+    rospy.loginfo(rospy.get_caller_id() + "carma_carla_route received notice in guidance_bridge_node_status_callback: %s", data.data)
 
 def initialize():
     """
@@ -120,5 +120,5 @@ def initialize():
         rospy.sleep(1)
 
 if __name__ == '__main__':
-    rospy.loginfo("carma_carla_route")
+    rospy.loginfo("carma_carla_route starting")
     initialize()

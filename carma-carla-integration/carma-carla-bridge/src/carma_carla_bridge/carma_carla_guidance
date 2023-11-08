@@ -38,7 +38,7 @@ def route_event_callback(route_event_msg):
 
     global route_selected
     if route_event_msg.event == RouteEvent.ROUTE_SELECTED or route_event_msg.event == RouteEvent.ROUTE_STARTED:
-        rospy.logerr("Route Selected")
+        rospy.loginfo("Route Selected")
         route_selected = True
 
 def check_plugin_status(activate_plugins, plugin_list):
@@ -53,10 +53,10 @@ def check_plugin_status(activate_plugins, plugin_list):
             activate_plugins_name_list.append(activate_plugin.name)
     if len(list( set(plugin_list) - set(activate_plugins_name_list) )) > 0:
         # still have some plugin not being activated yet
-        rospy.logerr("Some plugins are not activated...!")
+        rospy.logwarn("Some plugins are not activated...!")
         return False
     else:
-        rospy.logerr("All plugins activated...!")
+        rospy.loginfo("All plugins activated...!")
         return True
 
 def initialize():
@@ -64,14 +64,18 @@ def initialize():
     main loop
     """
     rospy.init_node("carma_carla_guidance")
+
+    # initialize ROS service
+    set_guidance_active_serv = rospy.ServiceProxy('/guidance/set_guidance_active', SetGuidanceActive)
+    active_plugins_serv = rospy.ServiceProxy('/guidance/plugins/get_active_plugins', PluginList)
+
     # initialize ROS topic
     rospy.Subscriber("/guidance/route_event",RouteEvent, route_event_callback)
-    rospy.logerr("Route event done!")
     status_pub = rospy.Publisher('/carla/guidance_bridge_node/active_status', String, queue_size=10)
     # get selected plugins
     plugin_list_str = rospy.get_param("~selected_plugins")
     start_delay_in_seconds = rospy.get_param("~start_delay_in_seconds", 15.0)
-    rospy.logerr("Start delay in seconds: %f", start_delay_in_seconds)
+    rospy.loginfo("Start delay in seconds: %f", start_delay_in_seconds)
     plugin_list = ast.literal_eval(plugin_list_str)
     if len(plugin_list) == 0:
         rospy.logerr("No input plugin found, please check the config file at /opt/carma/simulation/vehicle_config.json")
@@ -82,44 +86,24 @@ def initialize():
     active_plugins_serv = rospy.ServiceProxy('/guidance/plugins/get_active_plugins', PluginList)
 
     # initialize ROS topic
-    rospy.Subscriber("/guidance/route_event",RouteEvent, route_event_callback)
-    rospy.logerr("Route event done!")
-    status_pub = rospy.Publisher('/carla/guidance_bridge_node/active_status', String, queue_size=10)
-    # get selected plugins
-    plugin_list_str = rospy.get_param("~selected_plugins")
-    start_delay_in_seconds = rospy.get_param("~start_delay_in_seconds", 15.0)
-    rospy.logerr("Start delay in seconds: %f", start_delay_in_seconds)
-    plugin_list = ast.literal_eval(plugin_list_str)
-    if len(plugin_list) == 0:
-        rospy.logerr("No input plugin found, please check the config file at /opt/carma/simulation/vehicle_config.json")
-        return
-
-    # initialize ROS service
-    set_guidance_active_serv = rospy.ServiceProxy('/guidance/set_guidance_active', SetGuidanceActive)
-    active_plugins_serv = rospy.ServiceProxy('/guidance/plugins/get_active_plugins', PluginList)
-
-    # initialize ROS topic
-    rospy.logerr('List of plugins from config: %s', plugin_list)
+    rospy.loginfo('List of plugins from config: %s', plugin_list)
 
     while rospy.is_shutdown() != True:
-        rospy.logerr("Calling the active plugins now")
         active_plugins = active_plugins_serv().plugins
         status_msg = "The node is active"
         rospy.loginfo(status_msg)
         status_pub.publish(status_msg)
 
-        #rospy.logerr('Active plugins detected: %s', active_plugins)
-        rospy.logerr('route: %s', route_selected)
         if route_selected and check_plugin_status(active_plugins, plugin_list):
             seconds_passed = 0.0
             while (seconds_passed < start_delay_in_seconds):
-                rospy.logerr("Engaging the guidance in: " + str(start_delay_in_seconds - seconds_passed))
+                rospy.loginfo("Engaging the guidance in: " + str(start_delay_in_seconds - seconds_passed))
                 seconds_passed += 1.0
                 rospy.sleep(1)
-            rospy.logerr("Attempting to engage guidance")
+            rospy.loginfo("Attempting to engage guidance")
             resp = set_guidance_active_serv(True)
             if resp.guidance_status:
-                rospy.logerr("Guidance engaged!")
+                rospy.loginfo("Guidance engaged!")
                 break
             else:
                 rospy.logerr("Failed to set guidance status")
@@ -127,5 +111,5 @@ def initialize():
             rospy.sleep(1)
 
 if __name__ == '__main__':
-    rospy.logerr("carma_carla_guidance")
+    rospy.loginfo("carma_carla_guidance starting")
     initialize()
