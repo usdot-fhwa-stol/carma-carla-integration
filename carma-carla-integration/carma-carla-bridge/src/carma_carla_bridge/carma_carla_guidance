@@ -26,7 +26,7 @@ import ast
 from cav_msgs.msg import RouteEvent
 from cav_msgs.msg import Plugin
 from cav_srvs.srv import SetGuidanceActive, PluginList
-from std_msgs.msg import String
+from std_msgs.msg import Bool
 route_selected = False
 
 def route_event_callback(route_event_msg):
@@ -67,7 +67,7 @@ def initialize():
 
     # initialize ROS topic
     rospy.Subscriber("/guidance/route_event",RouteEvent, route_event_callback)
-    status_pub = rospy.Publisher('/carla/guidance_bridge_node/active_status', String, queue_size=10)
+    status_pub = rospy.Publisher('/carla/guidance_bridge_node/active_status', Bool, queue_size=10)
     # get selected plugins
     plugin_list_str = rospy.get_param("~selected_plugins")
     start_delay_in_seconds = rospy.get_param("~start_delay_in_seconds", 15.0)
@@ -86,8 +86,8 @@ def initialize():
 
     while rospy.is_shutdown() != True:
         active_plugins = active_plugins_serv().plugins
-        status_msg = "The node is active"
-        rospy.loginfo(status_msg)
+        status_msg = True
+        rospy.loginfo("Broadcasting the carma_carla_guidance node is active")
         status_pub.publish(status_msg)
 
         if route_selected and check_plugin_status(active_plugins, plugin_list):

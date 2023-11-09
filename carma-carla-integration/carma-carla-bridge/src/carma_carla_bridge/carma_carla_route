@@ -26,7 +26,7 @@ import rospy
 from geometry_msgs.msg import PoseStamped, Pose
 from cav_msgs.msg import RouteState, RouteEvent, Route
 from cav_srvs.srv import GetAvailableRoutes, SetActiveRoute
-from std_msgs.msg import String
+from std_msgs.msg import Bool
 received_pose = False
 is_guidance_bridge_node_active = False
 
@@ -85,8 +85,7 @@ def check_selected_route(available_route_ids, selected_route_id):
 
 def guidance_bridge_node_status_callback(data):
     global is_guidance_bridge_node_active
-    if data.data == "The node is active":
-        is_guidance_bridge_node_active = True
+    is_guidance_bridge_node_active = data.data
 
     rospy.loginfo(rospy.get_caller_id() + "carma_carla_route received notice in guidance_bridge_node_status_callback: %s", data.data)
 
