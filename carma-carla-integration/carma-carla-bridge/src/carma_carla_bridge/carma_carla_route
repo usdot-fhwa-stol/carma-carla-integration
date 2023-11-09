@@ -103,7 +103,7 @@ def initialize():
     rospy.sleep(2)
     available_route_ids = get_available_route_ids()
     rospy.Subscriber('/localization/current_pose', PoseStamped, pose_cb)
-    rospy.Subscriber('/carla/guidance_bridge_node/active_status', String, guidance_bridge_node_status_callback)
+    rospy.Subscriber('/carla/guidance_bridge_node/active_status', Bool, guidance_bridge_node_status_callback)
     while rospy.is_shutdown() != True:
         if received_pose:
             if available_route_ids == None:
