@@ -26,7 +26,7 @@ import ast
 from cav_msgs.msg import RouteEvent
 from cav_msgs.msg import Plugin
 from cav_srvs.srv import SetGuidanceActive, PluginList
-
+from std_msgs.msg import Bool
 route_selected = False
 
 def route_event_callback(route_event_msg):
@@ -35,8 +35,9 @@ def route_event_callback(route_event_msg):
     guidance_state_msg type:
         cav_msgs::GuidanceState
     """
+
     global route_selected
-    if route_event_msg.event == RouteEvent.ROUTE_SELECTED:
+    if route_event_msg.event == RouteEvent.ROUTE_SELECTED or route_event_msg.event == RouteEvent.ROUTE_STARTED:
         rospy.loginfo("Route Selected")
         route_selected = True
 
@@ -52,8 +53,10 @@ def check_plugin_status(activate_plugins, plugin_list):
             activate_plugins_name_list.append(activate_plugin.name)
     if len(list( set(plugin_list) - set(activate_plugins_name_list) )) > 0:
         # still have some plugin not being activated yet
+        rospy.logwarn("Some plugins are not activated...!")
         return False
     else:
+        rospy.loginfo("All plugins activated...!")
         return True
 
 def initialize():
@@ -62,6 +65,9 @@ def initialize():
     """
     rospy.init_node("carma_carla_guidance")
 
+    # initialize ROS topic
+    rospy.Subscriber("/guidance/route_event",RouteEvent, route_event_callback)
+    status_pub = rospy.Publisher('/carla/guidance_bridge_node/active_status', Bool, queue_size=10)
     # get selected plugins
     plugin_list_str = rospy.get_param("~selected_plugins")
     start_delay_in_seconds = rospy.get_param("~start_delay_in_seconds", 15.0)
@@ -76,10 +82,14 @@ def initialize():
     active_plugins_serv = rospy.ServiceProxy('/guidance/plugins/get_active_plugins', PluginList)
 
     # initialize ROS topic
-    rospy.Subscriber("/guidance/route_event",RouteEvent, route_event_callback)
+    rospy.loginfo('List of plugins from config: %s', plugin_list)
 
     while rospy.is_shutdown() != True:
         active_plugins = active_plugins_serv().plugins
+        status_msg = True
+        rospy.loginfo("Broadcasting the carma_carla_guidance node is active")
+        status_pub.publish(status_msg)
+
         if route_selected and check_plugin_status(active_plugins, plugin_list):
             seconds_passed = 0.0
             while (seconds_passed < start_delay_in_seconds):
@@ -96,7 +106,6 @@ def initialize():
         else:
             rospy.sleep(1)
 
-
 if __name__ == '__main__':
-    rospy.loginfo("carma_carla_guidance")
+    rospy.loginfo("carma_carla_guidance starting")
     initialize()

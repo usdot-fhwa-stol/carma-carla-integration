@@ -26,8 +26,9 @@ import rospy
 from geometry_msgs.msg import PoseStamped, Pose
 from cav_msgs.msg import RouteState, RouteEvent, Route
 from cav_srvs.srv import GetAvailableRoutes, SetActiveRoute
-
+from std_msgs.msg import Bool
 received_pose = False
+is_guidance_bridge_node_active = False
 
 def get_available_route_ids():
     """
@@ -82,6 +83,12 @@ def check_selected_route(available_route_ids, selected_route_id):
         rospy.logerr("Route not found, check selected_route parameter and CARMA route folder")
     return None
 
+def guidance_bridge_node_status_callback(data):
+    global is_guidance_bridge_node_active
+    is_guidance_bridge_node_active = data.data
+
+    rospy.loginfo(rospy.get_caller_id() + "carma_carla_route received notice in guidance_bridge_node_status_callback: %s", data.data)
+
 def initialize():
     """
     main loop
@@ -96,18 +103,21 @@ def initialize():
     rospy.sleep(2)
     available_route_ids = get_available_route_ids()
     rospy.Subscriber('/localization/current_pose', PoseStamped, pose_cb)
+    rospy.Subscriber('/carla/guidance_bridge_node/active_status', Bool, guidance_bridge_node_status_callback)
     while rospy.is_shutdown() != True:
         if received_pose:
             if available_route_ids == None:
                 rospy.logerr("No routes available, make sure the route folder at /opt/carma/routes has route file")
+                break
             else:
-                if check_selected_route(available_route_ids, selected_route_id):
+                if check_selected_route(available_route_ids, selected_route_id) and is_guidance_bridge_node_active:
+                    rospy.sleep(2)
                     set_route(selected_route_id)
-            break
+                    break
         else:
             rospy.loginfo("Localization Incomplete")
         rospy.sleep(1)
 
 if __name__ == '__main__':
-    rospy.loginfo("carma_carla_route")
+    rospy.loginfo("carma_carla_route starting")
     initialize()
