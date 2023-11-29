@@ -141,7 +141,7 @@ def get_data_from_sensorlib(sensor):
         object_msg.pose.pose.position.y = float(position_list[1])
         object_msg.pose.pose.position.z = float(position_list[2])
 
-        object_msg.pose.covariance = object.positionCovariance.tolist()
+        object_msg.pose.covariance = object.positionCovariance.flatten()
 
         object_msg.confidence = object.confidence
 
@@ -150,19 +150,19 @@ def get_data_from_sensorlib(sensor):
         object_msg.velocity.twist.linear.y = float(velocity_list[1])
         object_msg.velocity.twist.linear.z = float(velocity_list[2])
 
-        object_msg.velocity.covariance = object.velocityCovariance.tolist()
+        object_msg.velocity.covariance = object.velocityCovariance.flatten()
 
         object_msg.size.x = object.size[0]
         object_msg.size.y = object.size[1]
         object_msg.size.z = object.size[2]
 
-        if object.type is "PEDESTRIAN":
+        if object.type == "PEDESTRIAN":
             object_msg.object_type = 4
-        elif object.type is "TRUCK" or object.type is "VAN":
+        elif object.type == "TRUCK" or object.type == "VAN":
             object_msg.object_type = 2
-        elif object.type is "MOTORCYCLE" or object.type is "CYCLIST":
+        elif object.type == "MOTORCYCLE" or object.type == "CYCLIST":
             object_msg.object_type = 3
-        elif object.type is "CAR":
+        elif object.type == "CAR":
             object_msg.object_type = 1
         else:
             object_msg.object_type = 0
