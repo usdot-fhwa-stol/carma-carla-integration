@@ -21,7 +21,7 @@ from src.util.SimulatedSensorUtils import SimulatedSensorUtils
 import carla
 import rospy
 from rospy.exceptions import ROSInterruptException
-
+import numpy as np
 from cav_msgs.msg import ExternalObjectList, ExternalObject
 
 external_objects_pub = rospy.Publisher('/environment/external_objects', ExternalObjectList, queue_size=1)
@@ -129,24 +129,54 @@ def create_sensor_for_sensorlib(world, api, parent_actor_id, sensor_config, nois
 
 
 def get_data_from_sensorlib(sensor):
-    
+
     results = sensor.get_detected_objects()
     object_msg_list = ExternalObjectList()
 
     for object in results:
         object_msg = ExternalObject()
-        object_msg.id = object.id
-        position_list = object.position.tolist() 
+        object_msg.header.stamp.secs = object.timestamp
+        object_msg.header.frame_id = "map"
+        #TODO include nsec https://github.com/usdot-fhwa-stol/carma-utils/issues/189
+
+        object_msg.id = object.objectId
+        position_list = object.position.tolist()
         object_msg.pose.pose.position.x = float(position_list[0])
         object_msg.pose.pose.position.y = float(position_list[1])
         object_msg.pose.pose.position.z = float(position_list[2])
+
+        zeros_3_3 = np.zeros((3,3),dtype=float) # Create off-diagonal zeros array
+        pose_covariance = np.asarray(np.bmat([[object.positionCovariance, zeros_3_3], [zeros_3_3, object.orientationCovariance]]))
+
+        object_msg.pose.covariance = pose_covariance.flatten()
+
         object_msg.confidence = object.confidence
+
         velocity_list = object.velocity.tolist()
         object_msg.velocity.twist.linear.x = float(velocity_list[0])
         object_msg.velocity.twist.linear.y = float(velocity_list[1])
         object_msg.velocity.twist.linear.z = float(velocity_list[2])
-        #object_msg.object_type = object.object_type
+
+        twist_covariance = np.asarray(np.bmat([[object.velocityCovariance, zeros_3_3], [zeros_3_3, object.angularVelocityCovariance]]))
+        object_msg.velocity.covariance = twist_covariance.flatten()
+
+        object_msg.size.x = object.size[0]
+        object_msg.size.y = object.size[1]
+        object_msg.size.z = object.size[2]
+
+        if object.type == "PEDESTRIAN":
+            object_msg.object_type = 4
+        elif object.type == "TRUCK" or object.type == "VAN":
+            object_msg.object_type = 2
+        elif object.type == "MOTORCYCLE" or object.type == "CYCLIST":
+            object_msg.object_type = 3
+        elif object.type == "CAR":
+            object_msg.object_type = 1
+        else:
+            object_msg.object_type = 0
+
         object_msg.dynamic_obj = 1
+
         object_msg.presence_vector = object_msg.presence_vector + \
                                  ExternalObject.ID_PRESENCE_VECTOR + \
                                  ExternalObject.POSE_PRESENCE_VECTOR + \
@@ -159,7 +189,7 @@ def get_data_from_sensorlib(sensor):
 
     external_objects_pub.publish(object_msg_list)
 
-    
+
 
 if __name__ == '__main__':
     print("carla_to_carma_sensor_external_objects")
