@@ -21,7 +21,7 @@ from src.util.SimulatedSensorUtils import SimulatedSensorUtils
 import carla
 import rospy
 from rospy.exceptions import ROSInterruptException
-
+import numpy as np
 from cav_msgs.msg import ExternalObjectList, ExternalObject
 
 external_objects_pub = rospy.Publisher('/environment/external_objects', ExternalObjectList, queue_size=1)
@@ -144,7 +144,10 @@ def get_data_from_sensorlib(sensor):
         object_msg.pose.pose.position.y = float(position_list[1])
         object_msg.pose.pose.position.z = float(position_list[2])
 
-        object_msg.pose.covariance = object.positionCovariance.flatten()
+        zeros_6_6 = np.zeros((6,6),dtype=float) # Create off-diagonal zeros array
+        pose_covariance = np.asarray(np.bmat([[object.positionCovariance, zeros_6_6], [zeros_6_6, object.orientationCovariance]]))
+
+        object_msg.pose.covariance = pose_covariance.flatten()
 
         object_msg.confidence = object.confidence
 
@@ -153,7 +156,8 @@ def get_data_from_sensorlib(sensor):
         object_msg.velocity.twist.linear.y = float(velocity_list[1])
         object_msg.velocity.twist.linear.z = float(velocity_list[2])
 
-        object_msg.velocity.covariance = object.velocityCovariance.flatten()
+        twist_covariance = np.asarray(np.bmat([[object.velocityCovariance, zeros_6_6], [zeros_6_6, object.angularVelocityCovariance]]))
+        object_msg.velocity.covariance = twist_covariance.flatten()
 
         object_msg.size.x = object.size[0]
         object_msg.size.y = object.size[1]
