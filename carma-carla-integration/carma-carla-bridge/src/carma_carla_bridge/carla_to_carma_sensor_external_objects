@@ -135,6 +135,9 @@ def get_data_from_sensorlib(sensor):
 
     for object in results:
         object_msg = ExternalObject()
+        object_msg.header.stamp.sec = object.timestamp
+        #TODO include nsec https://github.com/usdot-fhwa-stol/carma-utils/issues/189
+
         object_msg.id = object.objectId
         position_list = object.position.tolist()
         object_msg.pose.pose.position.x = float(position_list[0])
