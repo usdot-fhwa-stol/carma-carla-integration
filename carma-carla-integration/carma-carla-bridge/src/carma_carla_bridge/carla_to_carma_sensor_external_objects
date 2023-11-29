@@ -129,20 +129,16 @@ def create_sensor_for_sensorlib(world, api, parent_actor_id, sensor_config, nois
 
 
 def get_data_from_sensorlib(sensor):
+    
     results = sensor.get_detected_objects()
     object_msg_list = ExternalObjectList()
 
     for object in results:
         object_msg = ExternalObject()
         object_msg.id = object.id
-        position_list = object.position.tolist()
+        position_list = object.position.tolist() 
         object_msg.pose.pose.position.x = float(position_list[0])
-
-        # CARLA 0.9.10 has a bug where the y-axis is negated. This has
-        # been resolved in later releases. Remove the negative sign
-        # when we upgrade to a newer CARLA version.
-        object_msg.pose.pose.position.y = -float(position_list[1])
-
+        object_msg.pose.pose.position.y = float(position_list[1])
         object_msg.pose.pose.position.z = float(position_list[2])
         object_msg.confidence = object.confidence
         velocity_list = object.velocity.tolist()
@@ -163,7 +159,7 @@ def get_data_from_sensorlib(sensor):
 
     external_objects_pub.publish(object_msg_list)
 
-
+    
 
 if __name__ == '__main__':
     print("carla_to_carma_sensor_external_objects")
