@@ -106,7 +106,7 @@
       <param name='sensor_object_pub_rate' type="double" value="$(arg robot_status_pub_rate)"/>
       <param name='host' type="str" value="$(arg host)"/>
       <param name='port' type="int" value="$(arg port)"/>
-      <param name='sensor_id' type="int" value="$(arg sensor_id)"/>
+      <param name='sensor_id' type="str" value="$(arg sensor_id)"/>
       <param name='detection_cycle_delay_seconds' type="double" value="$(arg detection_cycle_delay_seconds)"/>
     </node>
   </group>
