@@ -116,7 +116,7 @@ def create_sensor_for_sensorlib(world, api, parent_actor_id, sensor_config, nois
     lidar_transform = carla.Transform(user_offset)
 
     # Assuming infrastructure_id is still 1 as it has no relation to CARLA
-    infrastructure_id = 1
+    infrastructure_id = "1"
 
     sensor = api.create_simulated_semantic_lidar_sensor(
         simulated_sensor_config, carla_sensor_config, noise_model_config,
