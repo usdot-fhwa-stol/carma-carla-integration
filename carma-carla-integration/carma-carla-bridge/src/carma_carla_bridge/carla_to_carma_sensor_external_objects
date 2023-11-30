@@ -131,13 +131,16 @@ def create_sensor_for_sensorlib(world, api, parent_actor_id, sensor_config, nois
 def get_data_from_sensorlib(sensor):
 
     results = sensor.get_detected_objects()
+    rospy.loginfo("Received objects from sensorlib of size: " + str(len(results)))
     object_msg_list = ExternalObjectList()
 
     for object in results:
         object_msg = ExternalObject()
-        object_msg.header.stamp.secs = object.timestamp
+        object_msg.header.stamp.secs = (int)(object.timestamp)
+        object_msg.header.stamp.nsecs = (int)((object.timestamp - (int)(object.timestamp))*(1e9))
         object_msg.header.frame_id = "map"
-        #TODO include nsec https://github.com/usdot-fhwa-stol/carma-utils/issues/189
+        #TODO
+        #https://github.com/usdot-fhwa-stol/carma-carla-integration/issues/51
 
         object_msg.id = object.objectId
         position_list = object.position.tolist()
