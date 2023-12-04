@@ -13,16 +13,19 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-#sensorlib imports
+
 import sys
+
 sys.path.append('/home/carma/utils/carma-utils/sensorlib')
 from src.CarlaCDASimAPI import CarlaCDASimAPI
 from src.util.SimulatedSensorUtils import SimulatedSensorUtils
 import carla
+
+from cav_msgs.msg import ExternalObjectList, ExternalObject
+import numpy as np
 import rospy
 from rospy.exceptions import ROSInterruptException
-import numpy as np
-from cav_msgs.msg import ExternalObjectList, ExternalObject
+from scipy.spatial.transform import Rotation
 
 external_objects_pub = rospy.Publisher('/environment/external_objects', ExternalObjectList, queue_size=1)
 
@@ -147,6 +150,15 @@ def get_data_from_sensorlib(sensor):
         object_msg.pose.pose.position.x = float(position_list[0])
         object_msg.pose.pose.position.y = float(position_list[1])
         object_msg.pose.pose.position.z = float(position_list[2])
+
+        roll, pitch, yaw = object.rotation
+        rotation = Rotation.from_euler("xyz", [roll, pitch, yaw], degrees=True)
+        quaternion = rotation.as_quat()
+
+        object_msg.pose.pose.orientation.x = quaternion[0]
+        object_msg.pose.pose.orientation.y = quaternion[1]
+        object_msg.pose.pose.orientation.z = quaternion[2]
+        object_msg.pose.pose.orientation.w = quaternion[3]
 
         zeros_3_3 = np.zeros((3,3),dtype=float) # Create off-diagonal zeros array
         pose_covariance = np.asarray(np.bmat([[object.positionCovariance, zeros_3_3], [zeros_3_3, object.orientationCovariance]]))
