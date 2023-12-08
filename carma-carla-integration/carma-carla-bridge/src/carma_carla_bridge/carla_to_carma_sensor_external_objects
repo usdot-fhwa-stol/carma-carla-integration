@@ -115,7 +115,7 @@ def create_sensor_for_sensorlib(world, api, parent_actor_id, sensor_config, nois
     sensor_id = rospy.get_param('~sensor_id')
     detection_cycle_delay_seconds = rospy.get_param('~detection_cycle_delay_seconds')
 
-    user_offset = carla.Location(0, 0, 0)  # Assumes this is still a constant offset
+    user_offset = carla.Location(0, 0, 2.0)  # Assumes the lidar location is 2 meters from the ground attached to the vehicle
     lidar_transform = carla.Transform(user_offset)
 
     # Assuming infrastructure_id is still 1 as it has no relation to CARLA
