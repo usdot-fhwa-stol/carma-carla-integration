@@ -52,7 +52,7 @@
   <arg name='host' default='127.0.0.1'/>
   <arg name='port' default='2000'/>
   <arg name='sensor_id' default='1'/>
-  <arg name='detection_cycle_delay_seconds' default='0.5'/>
+  <arg name='detection_cycle_delay_seconds' default='0.1'/>
   <!--
     ##################
     ## TF remapping ##

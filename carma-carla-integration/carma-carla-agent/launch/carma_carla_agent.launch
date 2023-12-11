@@ -86,7 +86,7 @@
   <arg name='enable_sensor_objects' default='false'/>
   <arg name='sensor_object_pub_rate' default='10'/>
   <arg name='sensor_id' default="1"/>
-  <arg name='detection_cycle_delay_seconds' default='0.5'/>
+  <arg name='detection_cycle_delay_seconds' default='0.1'/>
 
   <!--
     ##########################
