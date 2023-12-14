@@ -134,7 +134,7 @@ def create_sensor_for_sensorlib(world, api, parent_actor_id, sensor_config, nois
 def get_data_from_sensorlib(sensor):
 
     results = sensor.get_detected_objects()
-    rospy.loginfo("Received objects from sensorlib of size: " + str(len(results)))
+    #rospy.loginfo("Received objects from sensorlib of size: " + str(len(results)))
     object_msg_list = ExternalObjectList()
 
     for object in results:
