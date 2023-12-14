@@ -38,7 +38,6 @@
   <arg name='synchronous_mode' default='false'/>
   <arg name='synchronous_mode_wait_for_vehicle_control_command' default='false'/>
   <arg name='fixed_delta_seconds' default='0.05'/>
-  <remap from="clock" to="/carla_clock"/>
 
   <!-- carla ros bridge -->
   <include file='$(find carla_ros_bridge)/launch/carla_ros_bridge.launch'>
