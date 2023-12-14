@@ -146,7 +146,7 @@ def get_data_from_sensorlib(sensor):
         position_list = object.position.tolist()
         object_msg.pose.pose.position.x = float(position_list[0])
         object_msg.pose.pose.position.y = float(position_list[1])
-        object_msg.pose.pose.position.z = float(position_list[2])
+        object_msg.pose.pose.position.z = 0.0 #carma-platform doesn't use z value
 
         roll, pitch, yaw = object.rotation
         rotation = Rotation.from_euler("xyz", [roll, pitch, yaw], degrees=True)
