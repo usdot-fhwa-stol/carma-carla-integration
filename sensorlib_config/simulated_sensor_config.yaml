@@ -1,0 +1,30 @@
+simulated_sensor:
+  prefilter:
+    allowed_semantic_tags:
+      - CAR
+      - PEDESTRIAN
+      - VAN
+      - CYCLIST
+      - TRUCK
+      - MOTORCYCLE
+    max_distance_meters: 100
+  detection_threshold_scaling_formula:
+    nominal_hitpoint_detection_ratio_threshold: 0.4
+    # Rate below was found experimentally by placing an object by 10 meter apart and seeing how many their average hitpoints get reduced
+    hitpoint_detection_ratio_threshold_per_meter_change_rate: 0.025
+    adjustable_threshold_scaling_parameters:
+      dropoff_rate: 0.01
+  geometry_reassociation:
+    max_sample_count: 150
+    min_sample_count: 30
+    downsample_ratio: 2
+    geometry_association_max_dist_in_meters: 3.0
+  use_sensor_centric_frame: False
+lidar_sensor:
+  lower_fov: -80.0
+  upper_fov: 30.0
+  channels: 32
+  range: 100
+  rotation_period: 0.1
+  points_per_second: 56000
+  projection_string: +proj=tmerc +lat_0=0 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +geoidgrids=egm96_15.gtx +vunits=m +no_defs
