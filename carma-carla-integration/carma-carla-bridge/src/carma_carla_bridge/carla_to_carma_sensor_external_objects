@@ -134,22 +134,18 @@ def create_sensor_for_sensorlib(world, api, parent_actor_id, sensor_config, nois
 def get_data_from_sensorlib(sensor):
 
     results = sensor.get_detected_objects()
-    rospy.loginfo("Received objects from sensorlib of size: " + str(len(results)))
     object_msg_list = ExternalObjectList()
 
     for object in results:
         object_msg = ExternalObject()
-        object_msg.header.stamp.secs = (int)(object.timestamp)
-        object_msg.header.stamp.nsecs = (int)((object.timestamp - (int)(object.timestamp))*(1e9))
+        object_msg.header.stamp = rospy.Time.now()
         object_msg.header.frame_id = "map"
-        #TODO
-        #https://github.com/usdot-fhwa-stol/carma-carla-integration/issues/51
 
         object_msg.id = object.objectId
         position_list = object.position.tolist()
         object_msg.pose.pose.position.x = float(position_list[0])
         object_msg.pose.pose.position.y = float(position_list[1])
-        object_msg.pose.pose.position.z = float(position_list[2])
+        object_msg.pose.pose.position.z = 0.0 #carma-platform doesn't use z value
 
         roll, pitch, yaw = object.rotation
         rotation = Rotation.from_euler("xyz", [roll, pitch, yaw], degrees=True)
