@@ -86,7 +86,7 @@ def check_selected_route(available_route_ids, selected_route_id):
     elif len(ind_list) > 1:
         rospy.logerr("Duplicate route files found")
     else:
-        rospy.logerr("Route not found, check selected_route parameter and CARMA route folder")
+        rospy.logwarn("Route not found, check selected_route parameter and CARMA route folder...")
     return None
 
 def guidance_bridge_node_status_callback(data):
@@ -123,6 +123,7 @@ def initialize():
                 else:
                     # Check again for available routes as sometimes the
                     # Route node may not have loaded all the available routes
+                    rospy.logwarn("Selected route" + selected_route_id + " was not available, retrieving avaliable routes again to see if it becomes available")
                     available_route_ids = get_available_route_ids()
         else:
             rospy.loginfo("Localization Incomplete... Waiting to receive a pose before checking attempting to set the Route")
