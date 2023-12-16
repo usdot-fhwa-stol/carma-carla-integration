@@ -96,11 +96,9 @@ def initialize():
             seconds_passed = 0.0
             while (seconds_passed < start_delay_in_seconds):
                 rospy.loginfo("Engaging the guidance in: " + str(start_delay_in_seconds - seconds_passed))
-                sys.stdout.flush()
                 seconds_passed += 1.0
                 rospy.sleep(1)
             rospy.loginfo("Attempting to engage guidance")
-            sys.stdout.flush()
             rospy.wait_for_service('/guidance/set_guidance_active')
             resp = set_guidance_active_serv(True)
             if resp.guidance_status:
