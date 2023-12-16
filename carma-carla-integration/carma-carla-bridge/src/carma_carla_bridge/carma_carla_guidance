@@ -22,6 +22,7 @@ Call Services from CARMA:
              /guidance/plugins/get_active_plugins
 """
 import rospy
+import sys
 import ast
 from cav_msgs.msg import RouteEvent
 from cav_msgs.msg import Plugin
@@ -85,6 +86,7 @@ def initialize():
     rospy.loginfo('List of plugins from config: %s', plugin_list)
 
     while rospy.is_shutdown() != True:
+        rospy.wait_for_service('/guidance/plugins/get_active_plugins')
         active_plugins = active_plugins_serv().plugins
         status_msg = True
         rospy.loginfo("Broadcasting the carma_carla_guidance node is active")
@@ -94,9 +96,12 @@ def initialize():
             seconds_passed = 0.0
             while (seconds_passed < start_delay_in_seconds):
                 rospy.loginfo("Engaging the guidance in: " + str(start_delay_in_seconds - seconds_passed))
+                sys.stdout.flush()
                 seconds_passed += 1.0
                 rospy.sleep(1)
             rospy.loginfo("Attempting to engage guidance")
+            sys.stdout.flush()
+            rospy.wait_for_service('/guidance/set_guidance_active')
             resp = set_guidance_active_serv(True)
             if resp.guidance_status:
                 rospy.loginfo("Guidance engaged!")

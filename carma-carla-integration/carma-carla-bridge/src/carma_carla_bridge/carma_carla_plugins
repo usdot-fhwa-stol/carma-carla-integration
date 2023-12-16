@@ -70,11 +70,13 @@ def initialize():
 
     while rospy.is_shutdown() != True:
         # get registered plugins from CARMA platform
+        rospy.wait_for_service('/guidance/plugins/get_registered_plugins')
         registered_plugins = registered_plugins_serv().plugins
 
         # check if selected plugins and required plugins are listed in registered plugins
         # if not, sleep loop for a second and recall the registered plugin ROS service for updating
         if check_registration_plugin(registered_plugins, plugin_list):
+            rospy.wait_for_service("/guidance/plugins/activate_plugin")
             for plugin in plugin_list:
                 activation = activation_srv(plugin_name=plugin, activated=True)
                 if activation.newstate:
