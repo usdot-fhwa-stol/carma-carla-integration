@@ -98,7 +98,7 @@ def guidance_bridge_node_status_callback(data):
     global is_guidance_bridge_node_active
     is_guidance_bridge_node_active = data.data
 
-    rospy.loginfo(rospy.get_caller_id() + ": received notice in guidance_bridge_node_status_callback: %s", data.data)
+    rospy.loginfo(f"{rospy.get_caller_id()}: received notice in guidance_bridge_node_status_callback: {data.data}")
 
 def initialize():
     """

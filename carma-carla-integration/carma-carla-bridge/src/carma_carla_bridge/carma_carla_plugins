@@ -77,7 +77,7 @@ def initialize():
         try:
             registered_plugins = registered_plugins_serv().plugins
         except rospy.ServiceException as e:
-            rospy.logwarn(f"Service call to {registered_plugins_serv.resolved_name} failed: %s, " % e)
+            rospy.logwarn(f"Service call to {registered_plugins_serv.resolved_name} failed: {e}")
             rospy.logwarn("Service call can sometimes fail due to ROS, but please make sure the platform has started without any error."
                           "Retrying in 1 second..")
             rospy.sleep(1)
@@ -95,7 +95,7 @@ def initialize():
             try:
                 activation = activation_srv(plugin_name=plugin, activated=True)
             except rospy.ServiceException as e:
-                rospy.logwarn(f"Service call to {activation_srv.resolved_name} failed: %s, " % e)
+                rospy.logwarn(f"Service call to {activation_srv.resolved_name} failed: {e}")
                 rospy.logwarn("Service call can sometimes fail due to ROS, but "
                     f"please make sure the plugin {plugin} is configured and "
                     "ready to be activated. Retrying in 1 second...")
