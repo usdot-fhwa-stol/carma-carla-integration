@@ -86,7 +86,8 @@ def setup_carla_client_and_config():
     noise_model_config = SimulatedSensorUtils.load_config_from_file(
         "/home/carma/utils/carma-utils/sensorlib/config/noise_model_config.yaml"
     )
-
+    #change sensor config to non sensor centric
+    sensor_config["use_sensor_centric_frame"] = False
     role_name = rospy.get_param('~role_name')
     parent_actor_id = None
     actor_search_timeout = 60
