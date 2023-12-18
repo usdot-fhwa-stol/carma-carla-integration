@@ -81,7 +81,7 @@ def setup_carla_client_and_config():
     api = CarlaCDASimAPI.build_from_world(world)
 
     sensor_config = SimulatedSensorUtils.load_config_from_file(
-        "/home/carma/sensorlib_config/simulated_sensor_config.yaml"
+        "/home/carma/utils/carma-utils/sensorlib/config/simulated_sensor_config.yaml"
     )
     noise_model_config = SimulatedSensorUtils.load_config_from_file(
         "/home/carma/utils/carma-utils/sensorlib/config/noise_model_config.yaml"
