@@ -25,7 +25,7 @@
     ## Configuration ##
     ###################
   -->
-
+  <param name="use_sim_time" value="true"/>
   <arg name='agent' default='agent'/>
   <!-- connecting default info  -->
   <arg name='host' default='127.0.0.1'/>

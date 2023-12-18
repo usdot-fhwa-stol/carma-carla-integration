@@ -22,6 +22,7 @@ Call Services from CARMA:
              /guidance/plugins/get_active_plugins
 """
 import rospy
+import sys
 import ast
 from cav_msgs.msg import RouteEvent
 from cav_msgs.msg import Plugin
@@ -81,13 +82,24 @@ def initialize():
     set_guidance_active_serv = rospy.ServiceProxy('/guidance/set_guidance_active', SetGuidanceActive)
     active_plugins_serv = rospy.ServiceProxy('/guidance/plugins/get_active_plugins', PluginList)
 
+    # make sure to wait for the services to be available
+    rospy.wait_for_service(set_guidance_active_serv.resolved_name)
+    rospy.wait_for_service(active_plugins_serv.resolved_name)
+
     # initialize ROS topic
     rospy.loginfo('List of plugins from config: %s', plugin_list)
 
-    while rospy.is_shutdown() != True:
-        active_plugins = active_plugins_serv().plugins
+    while not rospy.is_shutdown():
+        try:
+            active_plugins = active_plugins_serv().plugins
+        except rospy.ServiceException as e:
+            rospy.logwarn(f"Service call to {active_plugins_serv.resolved_name} failed: {e}")
+            rospy.logwarn("Service call can sometimes fail due to ROS, but please make sure the selected plugins are activated. Retrying in 1 second..")
+
+            rospy.sleep(1)
+            continue
+
         status_msg = True
-        rospy.loginfo("Broadcasting the carma_carla_guidance node is active")
         status_pub.publish(status_msg)
 
         if route_selected and check_plugin_status(active_plugins, plugin_list):
@@ -96,8 +108,16 @@ def initialize():
                 rospy.loginfo("Engaging the guidance in: " + str(start_delay_in_seconds - seconds_passed))
                 seconds_passed += 1.0
                 rospy.sleep(1)
+
             rospy.loginfo("Attempting to engage guidance")
-            resp = set_guidance_active_serv(True)
+            try:
+                resp = set_guidance_active_serv(True)
+            except rospy.ServiceException as e:
+                rospy.logwarn(f"Service call to {set_guidance_active_serv.resolved_name} failed: {e}")
+                rospy.logwarn("Service call can sometimes fail due to ROS, but please make sure the platform has started without any error. Retrying in 1 second..")
+                rospy.sleep(1)
+                continue
+
             if resp.guidance_status:
                 rospy.loginfo("Guidance engaged!")
                 break
