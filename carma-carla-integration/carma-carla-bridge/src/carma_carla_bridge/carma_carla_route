@@ -37,7 +37,7 @@ def get_available_route_ids():
     else, return None
     """
     service = rospy.ServiceProxy('/guidance/get_available_routes', GetAvailableRoutes)
-    rospy.wait_for_service('/guidance/get_available_routes')
+    rospy.wait_for_service(service.resolved_name)
     available_route_ids = []
     try:
         resp = service()
@@ -53,7 +53,7 @@ def set_route(selected_route_id):
     Setting selected route to CARMA platform
     """
     service = rospy.ServiceProxy('/guidance/set_active_route', SetActiveRoute)
-    rospy.wait_for_service('/guidance/set_active_route')
+    rospy.wait_for_service(service.resolved_name)
     try:
         resp = service(choice=0, route_id=selected_route_id)
 
@@ -90,7 +90,7 @@ def check_selected_route(available_route_ids, selected_route_id):
     elif len(ind_list) > 1:
         rospy.logerr("Duplicate route files found")
     else:
-        rospy.logwarn(f"Route: {selected_route_id} not found, /guidance/route node could be not ready."
+        rospy.logwarn(f"Route: {selected_route_id} not found, /guidance/route node could be not ready. "
                       "Otherwise, please check selected_route parameter in carma-config and CARMA route folder (by default: /opt/carma/routes)...")
     return None
 
@@ -98,7 +98,7 @@ def guidance_bridge_node_status_callback(data):
     global is_guidance_bridge_node_active
     is_guidance_bridge_node_active = data.data
 
-    rospy.loginfo(rospy.get_caller_id() + "carma_carla_route received notice in guidance_bridge_node_status_callback: %s", data.data)
+    rospy.loginfo(rospy.get_caller_id() + ": received notice in guidance_bridge_node_status_callback: %s", data.data)
 
 def initialize():
     """

@@ -83,8 +83,8 @@ def initialize():
     active_plugins_serv = rospy.ServiceProxy('/guidance/plugins/get_active_plugins', PluginList)
 
     # make sure to wait for the services to be available
-    rospy.wait_for_service('/guidance/set_guidance_active')
-    rospy.wait_for_service('/guidance/plugins/get_active_plugins')
+    rospy.wait_for_service(set_guidance_active_serv.resolved_name)
+    rospy.wait_for_service(active_plugins_serv.resolved_name)
 
     # initialize ROS topic
     rospy.loginfo('List of plugins from config: %s', plugin_list)
@@ -93,7 +93,7 @@ def initialize():
         try:
             active_plugins = active_plugins_serv().plugins
         except rospy.ServiceException as e:
-            rospy.logwarn("Service call to 'active_plugins_serv' failed: %s" % e)
+            rospy.logwarn(f"Service call to {active_plugins_serv.resolved_name} failed: %s" % e)
             rospy.logwarn("Service call can sometimes fail due to ROS, but please make sure the selected plugins are activated. Retrying in 1 second..")
 
             rospy.sleep(1)
@@ -113,7 +113,7 @@ def initialize():
             try:
                 resp = set_guidance_active_serv(True)
             except rospy.ServiceException as e:
-                rospy.logwarn("Service call to 'set_guidance_active_serv' failed: %s, " % e)
+                rospy.logwarn(f"Service call to {set_guidance_active_serv.resolved_name} failed: %s, " % e)
                 rospy.logwarn("Service call can sometimes fail due to ROS, but please make sure the platform has started without any error. Retrying in 1 second..")
                 rospy.sleep(1)
                 continue
