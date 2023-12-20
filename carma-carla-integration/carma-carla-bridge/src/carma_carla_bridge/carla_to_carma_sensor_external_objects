@@ -67,8 +67,35 @@ def convert_objects():
         rospy.logfatal("Unable to create sensor since ROS is down")
         return
 
+    intersection_sensor = None
+    sensor_creation_time = rospy.Time.now()
+    rospy.loginfo("Attempting to create intersection sensor")
+    while rospy.Time.now() - sensor_creation_time < rospy.Duration(sensor_creation_timeout):
+        if rospy.is_shutdown():
+            rospy.logfatal("Failed to create intersection sensor: ROS has shut down")
+            return
+
+        intersection_sensor = create_intersection_sensor(
+            world,
+            api,
+            sensor_config,
+            noise_model_config
+        )
+
+        if intersection_sensor:
+            break
+        else:
+            sensor_creation_rate.sleep()
+    else:
+        rospy.logerr(
+            "Failed to create intersection sensor: "
+            f"timed out after {sensor_creation_timeout} seconds"
+        )
+        return
+
     while not rospy.is_shutdown():
         get_data_from_sensorlib(sensor)
+        get_data_from_sensorlib(intersection_sensor)
         rate.sleep()
 
 def setup_carla_client_and_config():
@@ -110,6 +137,26 @@ def setup_carla_client_and_config():
 
     return client, world, api, parent_actor_id, sensor_config, noise_model_config
 
+def create_intersection_sensor(world, api, sensor_config, noise_model_config):
+    simulated_sensor_config = sensor_config["simulated_sensor"]
+    carla_sensor_config = sensor_config["lidar_sensor"]
+    sensor_id = str(rospy.get_param('~sensor_id'))
+    detection_cycle_delay_seconds = rospy.get_param('~detection_cycle_delay_seconds')
+
+    lidar_transform = carla.Transform(carla.Location(263.799988, -178.050003, 10))
+
+    # Assuming infrastructure_id is still 1 as it has no relation to CARLA
+    infrastructure_id = "2"
+
+    sensor = api.create_simulated_semantic_lidar_sensor(
+        simulated_sensor_config, carla_sensor_config, noise_model_config,
+        detection_cycle_delay_seconds,
+        infrastructure_id, sensor_id,
+        lidar_transform.location, lidar_transform.rotation
+    )
+
+    return sensor
+
 def create_sensor_for_sensorlib(world, api, parent_actor_id, sensor_config, noise_model_config):
     simulated_sensor_config = sensor_config["simulated_sensor"]
     carla_sensor_config = sensor_config["lidar_sensor"]
@@ -142,7 +189,7 @@ def get_data_from_sensorlib(sensor):
         object_msg = ExternalObject()
         object_msg.header.stamp = rospy.Time.now()
         object_msg.header.frame_id = "map"
-
+        object_msg.bsm_id = [0, 0, 0, int(sensor.get_infrastructure_id())]
         object_msg.id = object.objectId
         position_list = object.position.tolist()
         object_msg.pose.pose.position.x = float(position_list[0])
@@ -197,7 +244,8 @@ def get_data_from_sensorlib(sensor):
                                  ExternalObject.SIZE_PRESENCE_VECTOR + \
                                  ExternalObject.CONFIDENCE_PRESENCE_VECTOR + \
                                  ExternalObject.DYNAMIC_OBJ_PRESENCE + \
-                                 ExternalObject.OBJECT_TYPE_PRESENCE_VECTOR
+                                 ExternalObject.OBJECT_TYPE_PRESENCE_VECTOR + \
+                                 ExternalObject.BSM_ID_PRESENCE_VECTOR
         object_msg_list.objects.append(object_msg)
 
     external_objects_pub.publish(object_msg_list)
