@@ -136,6 +136,7 @@ def get_data_from_sensorlib(sensor):
 
     results = sensor.get_detected_objects()
     object_msg_list = ExternalObjectList()
+    object_msg_list.header.frame_id = "map"
 
     for object in results:
         object_msg = ExternalObject()
