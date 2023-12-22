@@ -119,12 +119,20 @@ def initialize():
                 continue
 
             if resp.guidance_status:
-                rospy.loginfo("Guidance engaged!")
+                rospy.loginfo("Guidance engaged")
                 break
             else:
                 rospy.logerr("Failed to set guidance status")
-        else:
-            rospy.sleep(1)
+                continue
+
+        if not route_selected:
+            rospy.logdebug("Could not engage guidance: route not selected")
+
+        if not check_plugin_status(active_plugins, plugin_list):
+            rospy.logdebug("Could not engage guidance: missing some required plugins")
+            rospy.logdebug(f"Active plugins: {', '.join([plugin.name for plugin in active_plugins])}")
+
+        rospy.sleep(1)
 
 if __name__ == '__main__':
     rospy.loginfo("carma_carla_guidance starting")
