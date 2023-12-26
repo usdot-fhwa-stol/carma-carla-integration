@@ -1,0 +1,7 @@
+# Wait for CARLA 
+## Introduction
+This is a simple python script to standup a CARLA client that only terminates onces a successful connection to CARLA is established. This avoids timeout issues with the CARLA Ros Bridge described here (https://github.com/usdot-fhwa-stol/carma-carla-integration/issues/65). Essentially launching carma-carla-agent launches the [CARLA ROS Bridge](https://github.com/carla-simulator/ros-bridge/tree/0.9.10.1). The [CARLA ROS Bridge](https://github.com/carla-simulator/ros-bridge/tree/0.9.10.1) attempts to connect to CARLA to provide CARLA data as ros messages on topics. This connection times out after hardcoded 10 seconds of waiting for CARLA information on a topic(https://github.com/carla-simulator/ros-bridge/blob/0700f2d24bf46b47188a03dce51615ee353d5aa9/carla_ego_vehicle/src/carla_ego_vehicle/carla_ego_vehicle.py#L260). To guard against this, this script can simply be called as a precursor to ensure that CARLA is healthy before launching any CARLA ROS Bridge functionality.
+
+Prior to this script, we used hardcoded sleep commands that were environment specific to avoid carma-carla-integration CARLA timeout issues.
+## Improvements
+Ideally this script can be improve to be a ROS node that is called before any other CARMA CARLA Integration ROS Nodes. This node can be resposible for confirming the health of both ROS Server and CARLA before launching any other services. 
