@@ -130,14 +130,6 @@
     <param name='robot_status_pub_rate' type="double" value="$(arg robot_status_pub_rate)"/>
   </node>
 
-  <node pkg='carma_carla_bridge' type='carma_carla_driver_status' name='carla_to_carma_driver_status' output='screen'>
-    <param name='driver_status_pub_rate' type="double" value="$(arg driver_status_pub_rate)"/>
-    <param name='lidar_enabled' type="bool" value="$(arg lidar_enabled)"/>
-    <param name='controller_enabled' type="bool" value="$(arg controller_enabled)"/>
-    <param name='camera_enabled' type="bool" value="$(arg camera_enabled)"/>
-    <param name='gnss_enabled' type="bool" value="$(arg gnss_enabled)"/>
-  </node>
-
   <!--
     # route #
     Set the vehicle route after localization.
