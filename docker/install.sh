@@ -41,9 +41,9 @@ else
 fi
 cd ~/msgs && sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-msgs.git
 
-# CARMA Utils package
-mkdir -p ~/utils
-cd ~/utils && sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-utils.git
+# CARLA Sensor Lib package
+cd /opt/
+sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carla-sensor-lib.git
 
 # GPS Common
 mkdir -p ~/gps && cd ~/gps 
@@ -59,8 +59,8 @@ ln -s ~/msgs/carma-msgs/cav_srvs
 ln -s ~/msgs/carma-msgs/carma_cmake_common
 ln -s ~/msgs/autoware.ai/messages/autoware_msgs
 
-mkdir -p ~/carma_carla_ws/src/utils && cd ~/carma_carla_ws/src/utils 
-ln -s ~/utils/carma-utils/carma_utils
+cd ~/carma_carla_ws/
+ln -s ~/opt/carla-sensor-lib
 
 cd ~/carma_carla_ws/src && 
 ln -s ~/ros-bridge

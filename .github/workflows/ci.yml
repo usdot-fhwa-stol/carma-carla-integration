@@ -27,11 +27,11 @@ jobs:
       with:
         repository: usdot-fhwa-stol/autoware.ai
         path: src/autoware.ai
-    - name: Checkout carma-utils
+    - name: Checkout carla-sensor-lib
       uses: actions/checkout@v3.3.0
       with:
-        repository: usdot-fhwa-stol/carma-utils
-        path: src/carma-utils
+        repository: usdot-fhwa-stol/carla-sensor-lib
+        path: src/carla-sensor-lib
     - name: Checkout carma-msgs
       uses: actions/checkout@v3.3.0
       with:
