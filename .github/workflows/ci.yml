@@ -32,6 +32,13 @@ jobs:
       with:
         repository: usdot-fhwa-stol/carma-utils
         path: src/carma-utils
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3 # The setup-java action provides the functionality for GitHub Actions runners for Downloading and setting up a requested version of Java
+      with:
+        java-version: 17
+        distribution: "temurin"
+        run: |
+          export JAVA_HOME=$GITHUB_WORKSPACE/java-17
     - name: Checkout carma-msgs
       uses: actions/checkout@v3.3.0
       with:
