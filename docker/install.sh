@@ -30,24 +30,27 @@ sudo python3 -m pip install simple-pid==1.0.1 wheel numpy
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
 
 # Clone CARLA ROS bridge
-sudo git clone --depth 1 -b '0.9.10.1' --recurse-submodules https://github.com/carla-simulator/ros-bridge.git
+git clone --depth 1 -b '0.9.10.1' --recurse-submodules https://github.com/carla-simulator/ros-bridge.git
 
 # Clone ROS message
 mkdir -p ~/msgs
 if [ "${CARMA_VERSION}" = "develop" ]; then
-  cd ~/msgs && sudo git clone --depth 1 --single-branch -b carma-develop https://github.com/usdot-fhwa-stol/autoware.ai.git
+  cd ~/msgs && git clone --depth 1 --single-branch -b carma-develop https://github.com/usdot-fhwa-stol/autoware.ai.git
 else
-  cd ~/msgs && sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/autoware.ai.git
+  cd ~/msgs && git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/autoware.ai.git
 fi
-cd ~/msgs && sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-msgs.git
+cd ~/msgs && git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-msgs.git
 
 # CARMA Utils package
 mkdir -p ~/utils
-cd ~/utils && sudo git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-utils.git
+cd ~/utils && git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-utils.git
+# CARLA Sensor Lib 
+cd ~
+git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carla-sensor-lib
 
 # GPS Common
 mkdir -p ~/gps && cd ~/gps 
-sudo git clone https://github.com/swri-robotics/gps_umd.git
+git clone https://github.com/swri-robotics/gps_umd.git
 
 mkdir -p ~/carma_carla_ws/src/msgs && cd ~/carma_carla_ws/src/msgs
 
