@@ -16,7 +16,7 @@
 
 import sys
 
-sys.path.append('/home/carma/sensorlib')
+sys.path.append('/home/carma/carla-sensor-lib')
 from src.CarlaCDASimAPI import CarlaCDASimAPI
 from src.util.SimulatedSensorUtils import SimulatedSensorUtils
 import carla
