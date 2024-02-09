@@ -13,6 +13,7 @@ on:
       - "develop"
       - "master"
       - "release/*"
+      - "release/lavida"
 # Job to build and push the Docker image
 jobs:
   dockerhub:

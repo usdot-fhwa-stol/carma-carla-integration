@@ -11,7 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-FROM usdotfhwastoldev/carma-base:develop
+FROM usdotfhwastolcandidate/carma-base:lavida
 
 LABEL Description="Dockerised CARMA-CARLA integration"
 

@@ -3,7 +3,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   push:
-    branches: [develop, master]
+    branches: [develop, master, release/lavida]
 jobs:
   build:
     defaults:
@@ -12,7 +12,7 @@ jobs:
         working-directory: "/opt/carma/"
     runs-on: ubuntu-latest
     container:
-      image: usdotfhwastoldev/carma-base:develop
+      image: usdotfhwastolcandidate/carma-base:lavida
       env:
         INIT_ENV: "/home/carma/.base-image/init-env.sh"
         TERM: xterm
