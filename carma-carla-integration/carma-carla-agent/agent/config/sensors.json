@@ -73,6 +73,10 @@
             "rotation_frequency": 20
         },
         {
+            "type": "sensor.other.collision",
+            "id": "collision"
+        },
+        {
             "type": "sensor.other.radar",
             "id": "radar_fl",
             "x": 3.42, "y": 1.02, "z": 0.535, "roll": 0.0, "pitch": 0.0, "yaw": 0.953,
