@@ -177,13 +177,15 @@ def get_data_from_sensorlib(sensor):
         object_msg.size.y = object.size[1]
         object_msg.size.z = object.size[2]
 
+        #Since SDSM service is not populating the optional data about object_type
+        #treating every vehicle as CAR will improve the performance of CP algorithm
+        #https://github.com/usdot-fhwa-stol/carma-streets/issues/402
+
         if object.type == "PEDESTRIAN":
             object_msg.object_type = 4
-        elif object.type == "TRUCK" or object.type == "VAN":
-            object_msg.object_type = 2
         elif object.type == "MOTORCYCLE" or object.type == "CYCLIST":
             object_msg.object_type = 3
-        elif object.type == "CAR":
+        elif object.type == "TRUCK" or object.type == "VAN" or object.type == "CAR":
             object_msg.object_type = 1
         else:
             object_msg.object_type = 0
