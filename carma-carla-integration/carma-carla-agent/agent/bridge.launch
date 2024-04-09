@@ -37,6 +37,7 @@
   <!-- route and plugins params -->
   <arg name='selected_route'/>
   <arg name='selected_plugins'/>
+  <arg name='start_delay_in_seconds'/>
 
   <!-- ackermann control params -->
   <arg name='init_speed' default='5'/>
@@ -45,7 +46,13 @@
   <arg name='init_jerk' default='0'/>
   <arg name='max_steering_degree' default='70'/>
 
-
+  <!-- enable sensor external object-->
+  <arg name='enable_sensor_objects' default='false'/>
+  <arg name='sensor_object_pub_rate' default='10'/>
+  <arg name='host' default='127.0.0.1'/>
+  <arg name='port' default='2000'/>
+  <arg name='sensor_id' default='1'/>
+  <arg name='detection_cycle_delay_seconds' default='0.1'/>
   <!--
     ##################
     ## TF remapping ##
@@ -87,9 +94,22 @@
     # external objects
     Extract the external objects from carla ObjectArray
   -->
-  <node pkg='carma_carla_bridge' type='carla_to_carma_external_objects' name='carla_to_carma_external_objects' output='screen'>
-    <param name='role_name' type="str" value="$(arg role_name)"/>
-  </node>
+  <group if="$(arg enable_sensor_objects)">
+    <node pkg='carma_carla_bridge' type='carla_to_carma_external_objects' name='carla_to_carma_external_objects' output='screen'>
+      <param name='role_name' type="str" value="$(arg role_name)"/>
+    </node>
+  </group>
+
+  <group unless="$(arg enable_sensor_objects)">
+    <node pkg='carma_carla_bridge' type='carla_to_carma_sensor_external_objects' name='carla_to_carma_sensor_external_objects' output='screen'>
+      <param name='role_name' type="str" value="$(arg role_name)"/>
+      <param name='sensor_object_pub_rate' type="double" value="$(arg robot_status_pub_rate)"/>
+      <param name='host' type="str" value="$(arg host)"/>
+      <param name='port' type="int" value="$(arg port)"/>
+      <param name='sensor_id' type="str" value="$(arg sensor_id)"/>
+      <param name='detection_cycle_delay_seconds' type="double" value="$(arg detection_cycle_delay_seconds)"/>
+    </node>
+  </group>
 
   <!-- convert vehicle command to carla ackermann drive-->
   <node pkg='carma_carla_bridge' type='carma_to_carla_ackermann_cmd' name='carma_to_carla_ackermann_cmd' output='screen'>
@@ -142,6 +162,7 @@
   <node pkg='carma_carla_bridge' type='carma_carla_guidance' name='carma_carla_guidance' output='screen'>
     <param name='selected_route' type='str' value="$(arg selected_route)"/>
     <param name='selected_plugins' type='str' value="$(arg selected_plugins)"/>
+    <param name='start_delay_in_seconds' type='double' value="$(arg start_delay_in_seconds)"/>
   </node>
 
 </launch>

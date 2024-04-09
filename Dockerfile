@@ -11,11 +11,11 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-FROM usdotfhwastol/carma-base:carma-system-4.2.0
+FROM usdotfhwastol/carma-base:carma-system-4.5.0
 
 LABEL Description="Dockerised CARMA-CARLA integration"
 
-ARG CARMA_VERSION="carma-system-4.2.0"
+ARG CARMA_VERSION="develop"
 ARG VERSION
 ARG VCS_REF
 ARG BUILD_DATE
@@ -43,6 +43,10 @@ COPY /carma-carla-integration ./carma-carla-integration
 RUN /home/carma/docker/install.sh
 COPY /patch/settings.yaml ./ros-bridge/carla_ros_bridge/config
 RUN rm -R -rf /home/carma/docker
+
+ENV LOAD_CARLA_EGG=True
+ENV CARLA_VERSION=0.9.10
+ENV CARLA_EGG_DIR=/home/carma/PythonAPI/carla/dist
 
 CMD ["/bin/bash"]
 

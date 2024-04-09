@@ -1,15 +1,23 @@
 name: Docker Hub build
 
+# Triggers the workflow on manual dispatch and on push to 'develop', 'master'and 'release/*' branches
 on:
+  workflow_dispatch:
+    inputs: # input parameter used to trigger manual builds if required apart from external repository build triggers.
+      triggered_by:
+        description: 'Triggered By'
+        required: true
+        default: 'Manual'
   push:
     branches:
       - "develop"
       - "master"
       - "release/*"
-
+# Job to build and push the Docker image
 jobs:
   dockerhub:
+    # Referenced a reusable workflow defined in actions repository
     uses: usdot-fhwa-stol/actions/.github/workflows/dockerhub.yml@main
     secrets:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }} # Docker Hub token for authentication

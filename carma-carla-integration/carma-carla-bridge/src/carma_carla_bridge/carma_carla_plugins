@@ -68,23 +68,51 @@ def initialize():
     activation_srv = rospy.ServiceProxy("/guidance/plugins/activate_plugin", PluginActivation)
     registered_plugins_serv = rospy.ServiceProxy('/guidance/plugins/get_registered_plugins', PluginList)
 
-    while rospy.is_shutdown() != True:
+    rospy.wait_for_service(activation_srv.resolved_name)
+    rospy.wait_for_service(registered_plugins_serv.resolved_name)
+
+    while not rospy.is_shutdown():
         # get registered plugins from CARMA platform
-        registered_plugins = registered_plugins_serv().plugins
+
+        try:
+            registered_plugins = registered_plugins_serv().plugins
+        except rospy.ServiceException as e:
+            rospy.logwarn(f"Service call to {registered_plugins_serv.resolved_name} failed: {e}")
+            rospy.logwarn("Service call can sometimes fail due to ROS, but please make sure the platform has started without any error."
+                          "Retrying in 1 second..")
+            rospy.sleep(1)
+            continue
 
         # check if selected plugins and required plugins are listed in registered plugins
         # if not, sleep loop for a second and recall the registered plugin ROS service for updating
-        if check_registration_plugin(registered_plugins, plugin_list):
-            for plugin in plugin_list:
+        if not check_registration_plugin(registered_plugins, plugin_list):
+            rospy.sleep(1)
+            continue
+
+        while plugin_list:
+            plugin = plugin_list[-1]
+
+            try:
                 activation = activation_srv(plugin_name=plugin, activated=True)
-                if activation.newstate:
-                    rospy.loginfo(str(plugin) + " has been activated")
-                else:
-                    rospy.logerr(str(plugin) + " not able to be activated.")
-            break
-        else:
+            except rospy.ServiceException as e:
+                rospy.logwarn(f"Service call to {activation_srv.resolved_name} failed: {e}")
+                rospy.logwarn("Service call can sometimes fail due to ROS, but "
+                    f"please make sure the plugin {plugin} is configured and "
+                    "ready to be activated. Retrying in 1 second...")
+                rospy.sleep(1)
+                continue
+            else:
+                plugin_list.pop()
+
+            if activation.newstate:
+                rospy.loginfo(str(plugin) + " has been activated")
+            else:
+                rospy.logerr(str(plugin) + " was not able to be activated.")
+
             rospy.sleep(1)
 
+        # Exit the node spin after activating all plugins
+        break
 
 if __name__ == '__main__':
     print("carma_carla_plugins")

@@ -26,8 +26,9 @@ import rospy
 from geometry_msgs.msg import PoseStamped, Pose
 from cav_msgs.msg import RouteState, RouteEvent, Route
 from cav_srvs.srv import GetAvailableRoutes, SetActiveRoute
-
+from std_msgs.msg import Bool
 received_pose = False
+is_guidance_bridge_node_active = False
 
 def get_available_route_ids():
     """
@@ -36,6 +37,7 @@ def get_available_route_ids():
     else, return None
     """
     service = rospy.ServiceProxy('/guidance/get_available_routes', GetAvailableRoutes)
+    rospy.wait_for_service(service.resolved_name)
     available_route_ids = []
     try:
         resp = service()
@@ -51,14 +53,22 @@ def set_route(selected_route_id):
     Setting selected route to CARMA platform
     """
     service = rospy.ServiceProxy('/guidance/set_active_route', SetActiveRoute)
+    rospy.wait_for_service(service.resolved_name)
     try:
         resp = service(choice=0, route_id=selected_route_id)
-        if resp.error_status != 0:
-            rospy.logerr('Error status response from /guidance/set_active_route:', resp)
-        else:
+
+        if not resp.error_status:
             rospy.loginfo('Call set active route success!')
+            return True
+
+        rospy.logerr('Error status response from /guidance/set_active_route:', resp)
+
     except:
-        rospy.logerr("Exception occurs during the set_active_route call")
+        rospy.logerr("Exception occurs during the set_active_route call... "
+            "Possibly route node's world model is not yet loaded... "
+            "Retrying in 1 sec")
+
+    return False
 
 def pose_cb(pose_msg):
     """
@@ -75,12 +85,20 @@ def check_selected_route(available_route_ids, selected_route_id):
     """
     ind_list = [ind for (ind, route_id) in enumerate(available_route_ids) if route_id == selected_route_id]
     if len(ind_list) == 1:
+        rospy.loginfo("Route found!: " + selected_route_id)
         return selected_route_id
     elif len(ind_list) > 1:
         rospy.logerr("Duplicate route files found")
     else:
-        rospy.logerr("Route not found, check selected_route parameter and CARMA route folder")
+        rospy.logwarn(f"Route: {selected_route_id} not found, /guidance/route node could be not ready. "
+                      "Otherwise, please check selected_route parameter in carma-config and CARMA route folder (by default: /opt/carma/routes)...")
     return None
+
+def guidance_bridge_node_status_callback(data):
+    global is_guidance_bridge_node_active
+    is_guidance_bridge_node_active = data.data
+
+    rospy.loginfo(f"{rospy.get_caller_id()}: received notice in guidance_bridge_node_status_callback: {data.data}")
 
 def initialize():
     """
@@ -96,18 +114,37 @@ def initialize():
     rospy.sleep(2)
     available_route_ids = get_available_route_ids()
     rospy.Subscriber('/localization/current_pose', PoseStamped, pose_cb)
-    while rospy.is_shutdown() != True:
-        if received_pose:
-            if available_route_ids == None:
-                rospy.logerr("No routes available, make sure the route folder at /opt/carma/routes has route file")
-            else:
-                if check_selected_route(available_route_ids, selected_route_id):
-                    set_route(selected_route_id)
+    rospy.Subscriber('/carla/guidance_bridge_node/active_status', Bool, guidance_bridge_node_status_callback)
+
+    while not rospy.is_shutdown():
+        if not received_pose:
+            rospy.loginfo("Localization Incomplete... "
+                "Waiting to receive a pose before attempting to set the Route")
+            rospy.sleep(1)
+            continue
+
+        if available_route_ids is None:
+            rospy.logerr("No routes available, make sure the route folder at "
+                "/opt/carma/routes has route file")
+            rospy.sleep(1)
+            continue
+
+        if (not check_selected_route(available_route_ids, selected_route_id)
+            or not is_guidance_bridge_node_active):
+            # Check again for available routes as sometimes the
+            # Route node may not have loaded all the available routes
+            rospy.logwarn(f"Selected route: {selected_route_id} "
+                "was not available, retrieving available routes "
+                "again to see if it becomes available")
+            available_route_ids = get_available_route_ids()
+            rospy.sleep(1)
+            continue
+
+        rospy.sleep(2)
+        if set_route(selected_route_id):
             break
-        else:
-            rospy.loginfo("Localization Incomplete")
         rospy.sleep(1)
 
 if __name__ == '__main__':
-    rospy.loginfo("carma_carla_route")
+    rospy.loginfo("carma_carla_route starting")
     initialize()

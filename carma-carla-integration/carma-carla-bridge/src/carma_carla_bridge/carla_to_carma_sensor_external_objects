@@ -1,0 +1,211 @@
+#!/usr/bin/env python
+# Copyright (C) 2023 LEIDOS.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+
+import sys
+
+sys.path.append('/home/carma/carla-sensor-lib')
+from src.CarlaCDASimAPI import CarlaCDASimAPI
+from src.util.SimulatedSensorUtils import SimulatedSensorUtils
+import carla
+
+from cav_msgs.msg import ExternalObjectList, ExternalObject
+import numpy as np
+import rospy
+from rospy.exceptions import ROSInterruptException
+from scipy.spatial.transform import Rotation
+
+external_objects_pub = rospy.Publisher('/environment/external_objects', ExternalObjectList, queue_size=1)
+
+
+def convert_objects():
+    """
+    Main loop
+    """
+    rospy.init_node('carla_to_carma_sensor_external_objects', anonymous=True)
+    pub_rate = rospy.get_param('~sensor_object_pub_rate', 10)
+    rate = rospy.Rate(pub_rate)
+    sensor_creation_timeout = 60
+    sensor_creation_rate = rospy.Rate(1)
+
+    setup_result = setup_carla_client_and_config()
+    if setup_result is None:
+        rospy.logfatal("Unable to set up CARLA client and configuration due to missing actor.")
+        return
+
+    client, world, api, parent_actor_id, sensor_config, noise_model_config = setup_result
+
+    sensor_creation_start_time = rospy.Time.now()
+
+    sensor = None
+    while not rospy.is_shutdown() and sensor is None:
+        rospy.loginfo("Attempting to create vehicle sensor...")
+        sensor = create_sensor_for_sensorlib(world, api, parent_actor_id, sensor_config, noise_model_config)
+
+        if sensor:
+            break  # Exit the loop if the sensor is created successfully.
+        elif rospy.Time.now() - sensor_creation_start_time > rospy.Duration(sensor_creation_timeout):
+            rospy.logerr(f"Sensor creation timed out after {sensor_creation_timeout} seconds.")
+            return
+        else:
+            rospy.logwarn("Sensor creation failed, will retry after a short delay.")
+            sensor_creation_rate.sleep()
+
+    if sensor is None:
+        rospy.logfatal("Unable to create sensor since ROS is down")
+        return
+
+    while not rospy.is_shutdown():
+        get_data_from_sensorlib(sensor)
+        rate.sleep()
+
+def setup_carla_client_and_config():
+    carla_host_address = rospy.get_param('~host')
+    carla_port = rospy.get_param('~port')
+    client = carla.Client(carla_host_address, carla_port)
+    client.set_timeout(10.0)
+    world = client.get_world()
+
+    api = CarlaCDASimAPI.build_from_world(world)
+
+    sensor_config = SimulatedSensorUtils.load_config_from_file(
+        "/home/carma/carla-sensor-lib/config/simulated_sensor_config.yaml"
+    )
+    noise_model_config = SimulatedSensorUtils.load_config_from_file(
+        "/home/carma/carla-sensor-lib/config/noise_model_config.yaml"
+    )
+    #change sensor config to non sensor centric
+    sensor_config["simulated_sensor"]["use_sensor_centric_frame"] = False
+    role_name = rospy.get_param('~role_name')
+    parent_actor_id = None
+    actor_search_timeout = 60
+    search_start_time = rospy.Time.now()
+
+    while rospy.Time.now() - search_start_time < rospy.Duration(actor_search_timeout):
+        for actor in world.get_actors():
+            if actor.attributes.get('role_name') == role_name:
+                parent_actor_id = actor.id
+                break
+        if parent_actor_id:
+            break
+        if rospy.is_shutdown():
+            raise ROSInterruptException("ROS shutdown requested while searching for actor.")
+        rospy.sleep(1)  # sleep for a second before retrying
+
+    if not parent_actor_id:
+        rospy.logerr("Failed to find parent actor with role_name '{}' within {} seconds.".format(role_name, actor_search_timeout))
+        return None
+
+    return client, world, api, parent_actor_id, sensor_config, noise_model_config
+
+def create_sensor_for_sensorlib(world, api, parent_actor_id, sensor_config, noise_model_config):
+    simulated_sensor_config = sensor_config["simulated_sensor"]
+    carla_sensor_config = sensor_config["lidar_sensor"]
+    sensor_id = rospy.get_param('~sensor_id')
+    detection_cycle_delay_seconds = rospy.get_param('~detection_cycle_delay_seconds')
+
+    user_offset = carla.Location(0, 0, 2.0)  # Assumes the lidar location is 2 meters from the ground attached to the vehicle
+    lidar_transform = carla.Transform(user_offset)
+
+    # Assuming infrastructure_id is still 1 as it has no relation to CARLA
+    infrastructure_id = "1"
+
+    sensor = api.create_simulated_semantic_lidar_sensor(
+        simulated_sensor_config, carla_sensor_config, noise_model_config,
+        detection_cycle_delay_seconds,
+        infrastructure_id, sensor_id,
+        lidar_transform.location, lidar_transform.rotation, parent_actor_id
+    )
+    return sensor
+
+
+
+def get_data_from_sensorlib(sensor):
+
+    results = sensor.get_detected_objects()
+    object_msg_list = ExternalObjectList()
+    object_msg_list.header.frame_id = "map"
+
+    for object in results:
+        object_msg = ExternalObject()
+        object_msg.header.stamp = rospy.Time.now()
+        object_msg.header.frame_id = "map"
+
+        object_msg.id = object.objectId
+        position_list = object.position.tolist()
+        object_msg.pose.pose.position.x = float(position_list[0])
+        object_msg.pose.pose.position.y = float(position_list[1])
+        object_msg.pose.pose.position.z = 0.0 #carma-platform doesn't use z value
+
+        roll, pitch, yaw = object.rotation
+        rotation = Rotation.from_euler("xyz", [roll, pitch, yaw], degrees=True)
+        quaternion = rotation.as_quat()
+
+        object_msg.pose.pose.orientation.x = quaternion[0]
+        object_msg.pose.pose.orientation.y = quaternion[1]
+        object_msg.pose.pose.orientation.z = quaternion[2]
+        object_msg.pose.pose.orientation.w = quaternion[3]
+
+        zeros_3_3 = np.zeros((3,3),dtype=float) # Create off-diagonal zeros array
+        pose_covariance = np.asarray(np.bmat([[object.positionCovariance, zeros_3_3], [zeros_3_3, object.orientationCovariance]]))
+
+        object_msg.pose.covariance = pose_covariance.flatten()
+
+        object_msg.confidence = object.confidence
+
+        velocity_list = object.velocity.tolist()
+        object_msg.velocity.twist.linear.x = float(velocity_list[0])
+        object_msg.velocity.twist.linear.y = float(velocity_list[1])
+        object_msg.velocity.twist.linear.z = float(velocity_list[2])
+
+        twist_covariance = np.asarray(np.bmat([[object.velocityCovariance, zeros_3_3], [zeros_3_3, object.angularVelocityCovariance]]))
+        object_msg.velocity.covariance = twist_covariance.flatten()
+
+        object_msg.size.x = object.size[0]
+        object_msg.size.y = object.size[1]
+        object_msg.size.z = object.size[2]
+
+        #Since SDSM service is not populating the optional data about object_type
+        #treating every vehicle as CAR will improve the performance of CP algorithm
+        #https://github.com/usdot-fhwa-stol/carma-streets/issues/402
+
+        if object.type == "PEDESTRIAN":
+            object_msg.object_type = 4
+        elif object.type == "MOTORCYCLE" or object.type == "CYCLIST":
+            object_msg.object_type = 3
+        elif object.type == "TRUCK" or object.type == "VAN" or object.type == "CAR":
+            object_msg.object_type = 1
+        else:
+            object_msg.object_type = 0
+
+        object_msg.dynamic_obj = 1
+
+        object_msg.presence_vector = object_msg.presence_vector + \
+                                 ExternalObject.ID_PRESENCE_VECTOR + \
+                                 ExternalObject.POSE_PRESENCE_VECTOR + \
+                                 ExternalObject.VELOCITY_PRESENCE_VECTOR + \
+                                 ExternalObject.SIZE_PRESENCE_VECTOR + \
+                                 ExternalObject.CONFIDENCE_PRESENCE_VECTOR + \
+                                 ExternalObject.DYNAMIC_OBJ_PRESENCE + \
+                                 ExternalObject.OBJECT_TYPE_PRESENCE_VECTOR
+        object_msg_list.objects.append(object_msg)
+
+    external_objects_pub.publish(object_msg_list)
+
+
+
+if __name__ == '__main__':
+    print("carla_to_carma_sensor_external_objects")
+    convert_objects()

@@ -25,7 +25,7 @@
     ## Configuration ##
     ###################
   -->
-
+  <param name="use_sim_time" value="true"/>
   <arg name='agent' default='agent'/>
   <!-- connecting default info  -->
   <arg name='host' default='127.0.0.1'/>
@@ -79,7 +79,14 @@
 
   <!-- route and plugins params -->
   <arg name='selected_route' default="Release_test_case_1"/>
-  <arg name="selected_plugins" default="['RouteFollowingPlugin','InLaneCruisingPlugin','StopAndWaitPlugin','Pure Pursuit','CooperativeLaneChangePlugin']"/>
+  <arg name="selected_plugins" default="['/guidance/plugins/route_following_plugin','/guidance/plugins/inlanecruising_plugin','/guidance/plugins/stop_and_wait_plugin','/guidance/plugins/pure_pursuit_wrapper']"/>
+  <arg name="start_delay_in_seconds" default="15.0"/>
+
+  <!-- enable sensor external object-->
+  <arg name='enable_sensor_objects' default='false'/>
+  <arg name='sensor_object_pub_rate' default='10'/>
+  <arg name='sensor_id' default="1"/>
+  <arg name='detection_cycle_delay_seconds' default='0.1'/>
 
   <!--
     ##########################
@@ -132,5 +139,14 @@
     <!-- route and plugins params-->
     <arg name='selected_route' value='$(arg selected_route)'/>
     <arg name='selected_plugins' value='$(arg selected_plugins)'/>
+    <arg name='start_delay_in_seconds' value='$(arg start_delay_in_seconds)'/>
+
+    <arg name='host' value="$(arg host)"/>
+    <arg name='port' value="$(arg port)"/>
+    <arg name='enable_sensor_objects' value='$(arg enable_sensor_objects)'/>
+    <arg name='sensor_object_pub_rate' value='$(arg sensor_object_pub_rate)'/>
+    <arg name='sensor_id' value='$(arg sensor_id)'/>
+    <arg name='detection_cycle_delay_seconds' value='$(arg detection_cycle_delay_seconds)'/>
+
   </include>
 </launch>
