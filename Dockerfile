@@ -15,7 +15,7 @@ FROM usdotfhwastol/carma-base:carma-system-4.5.0
 
 LABEL Description="Dockerised CARMA-CARLA integration"
 
-ARG CARMA_VERSION="develop"
+ARG CARMA_VERSION="carma-system-4.5.0"
 ARG VERSION
 ARG VCS_REF
 ARG BUILD_DATE
