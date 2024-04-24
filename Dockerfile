@@ -18,7 +18,6 @@ ARG GIT_BRANCH="develop"
 
 LABEL Description="Dockerised CARMA-CARLA integration"
 
-ARG CARMA_VERSION="carma-system-4.5.0"
 ARG VERSION
 ARG VCS_REF
 ARG BUILD_DATE
