@@ -11,7 +11,10 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-FROM usdotfhwastol/carma-base:carma-system-4.5.0
+ARG DOCKER_ORG="usdotfhwastoldev"
+ARG DOCKER_TAG="develop"
+FROM ${DOCKER_ORG}/carma-base:${DOCKER_TAG} 
+ARG GIT_BRANCH="develop" 
 
 LABEL Description="Dockerised CARMA-CARLA integration"
 
@@ -40,6 +43,7 @@ COPY PythonAPI ./PythonAPI
 COPY /carma-carla-integration ./carma-carla-integration
 
 # Run the install script as root
+#TODO (SIM-5) Fix install/checkout scripts
 RUN /home/carma/docker/install.sh
 COPY /patch/settings.yaml ./ros-bridge/carla_ros_bridge/config
 RUN rm -R -rf /home/carma/docker

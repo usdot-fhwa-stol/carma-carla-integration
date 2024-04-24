@@ -10,8 +10,8 @@ on:
         default: 'Manual'
   push:
     branches:
-      - "develop"
-      - "master"
+      - develop
+      - master
       - "release/*"
 # Job to build and push the Docker image
 jobs:

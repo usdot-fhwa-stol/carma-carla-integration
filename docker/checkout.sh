@@ -20,11 +20,13 @@
 set -ex
 
 dir=~
+BRANCH=develop
 while [[ $# -gt 0 ]]; do
       arg="$1"
       case $arg in
-            -d|--develop)
-                  BRANCH=develop
+            -b|--branch)
+                  BRANCH=$2
+                  shift
                   shift
             ;;
             -r|--root)
@@ -34,11 +36,12 @@ while [[ $# -gt 0 ]]; do
             ;;
       esac
 done
-
-if [[ "$BRANCH" = "develop" ]]; then
-      git clone https://github.com/usdot-fhwa-stol/carma-msgs.git ~/src/carma-msgs --branch $BRANCH --depth 1
-      git clone https://github.com/usdot-fhwa-stol/carma-utils.git ~/src/carma-utils --branch $BRANCH --depth 1    
+git clone https://github.com/usdot-fhwa-stol/carma-msgs.git "${dir}"/src/carma-msgs --branch "${BRANCH}" --depth 1
+git clone https://github.com/usdot-fhwa-stol/carma-utils.git "${dir}"/src/carma-utils --branch "${BRANCH}" --depth 1
+git clone https://github.com/usdot-fhwa-stol/carla-sensor-lib "${dir}"/src/carla-sensor-lib --branch "${BRANCH}" --depth 1
+if [[ "${BRANCH}" == "develop" ]] || [[ "${BRANCH}" == "master" ]]; then
+      git clone  https://github.com/usdot-fhwa-stol/autoware.ai.git "${dir}"/src/autoware.ai --branch carma-"${BRANCH}" --depth 1
 else
-      git clone https://github.com/usdot-fhwa-stol/carma-msgs.git ${dir}/src/carma-msgs --branch carma-system-4.5.0 --depth 1
-      git clone https://github.com/usdot-fhwa-stol/carma-utils.git ${dir}/src/carma-utils --branch carma-system-4.5.0 --depth 1
+      git clone  https://github.com/usdot-fhwa-stol/autoware.ai.git "${dir}"/src/autoware.ai --branch "${BRANCH}" --depth 1
+
 fi
