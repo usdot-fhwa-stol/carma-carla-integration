@@ -15,13 +15,13 @@ ARG DOCKER_ORG="usdotfhwastoldev"
 ARG DOCKER_TAG="develop"
 FROM ${DOCKER_ORG}/carma-base:${DOCKER_TAG} 
 ARG GIT_BRANCH="develop" 
+ENV CARMA_VERSION=${GIT_BRANCH}
 
 LABEL Description="Dockerised CARMA-CARLA integration"
 
 ARG VERSION
 ARG VCS_REF
 ARG BUILD_DATE
-
 LABEL org.label-schema.schema-version="1.0"
 LABEL org.label-schema.name="carma-carla-integration"
 LABEL org.label-schema.description="XIL carma-carla-integration for evaluation and testing of the CARMA Platform"
