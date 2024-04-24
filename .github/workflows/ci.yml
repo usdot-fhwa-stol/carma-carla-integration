@@ -45,7 +45,7 @@ jobs:
     - name: Checkout dependencies
       run: |
         source "$INIT_ENV"
-        ./src/${{ github.event.repository.name }}/docker/checkout.bash -r /opt/carma/ -b ${{ steps.determine-base-branch.outputs.git_branch }}
+        ./src/${{ github.event.repository.name }}/docker/checkout.sh -r /opt/carma/ -b ${{ steps.determine-base-branch.outputs.git_branch }}
     - name: Build
       run: |
         source "$INIT_ENV"
