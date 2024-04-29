@@ -5,51 +5,53 @@ on:
   push:
     branches: [develop, master]
 jobs:
+  determine_docker_org_and_tag:
+    runs-on: ubuntu-latest
+    outputs:
+      docker_organization: ${{ steps.docker-org-and-tag.outputs.docker_organization }}
+      docker_image_tag: ${{ steps.docker-org-and-tag.outputs.docker_image_tag }}
+    steps:
+      - id: docker-org-and-tag
+        uses: usdot-fhwa-stol/actions/docker-org-and-tag@main
   build:
+    needs: determine_docker_org_and_tag
     defaults:
       run:
         shell: bash
         working-directory: "/opt/carma/"
     runs-on: ubuntu-latest
     container:
-      image: usdotfhwastoldev/carma-base:develop
+      image: ${{ needs.determine_docker_org_and_tag.outputs.docker_organization }}/carma-base:${{ needs.determine_docker_org_and_tag.outputs.docker_image_tag }}
       env:
         INIT_ENV: "/home/carma/.base-image/init-env.sh"
         TERM: xterm
       options: "--user root"
     steps:
     - name: Checkout ${{ github.event.repository.name }}
-      uses: actions/checkout@v3.3.0
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
         path: src/${{ github.event.repository.name }}
-    - name: Checkout autoware.ai
-      uses: actions/checkout@v3.3.0
-      with:
-        repository: usdot-fhwa-stol/autoware.ai
-        path: src/autoware.ai
-    - name: Checkout carma-utils
-      uses: actions/checkout@v3.3.0
-      with:
-        repository: usdot-fhwa-stol/carma-utils
-        path: src/carma-utils
-    - name: Checkout carma-msgs
-      uses: actions/checkout@v3.3.0
-      with:
-        repository: usdot-fhwa-stol/carma-msgs
-        path: src/carma-msgs
     - name: Move source code
       run: mv $GITHUB_WORKSPACE/src /opt/carma/
-    - name: Build
+    - name: Determine base branch
+      id: determine-base-branch
+      run: |
+        if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+          echo git_branch="$GITHUB_BASE_REF" >> $GITHUB_OUTPUT
+        else
+          echo git_branch="$GITHUB_REF_NAME" >> $GITHUB_OUTPUT
+        fi
+    - name: Checkout dependencies
+      run: |
+        source "$INIT_ENV"
+        ./src/${{ github.event.repository.name }}/docker/checkout.sh -r /opt/carma/ -b ${{ steps.determine-base-branch.outputs.git_branch }}
+    - name: Build and Test
+    # TODO (SIM-6) Missing build wrapper call for C++ builds necessary for sonar static anaysis
       run: |
         source "$INIT_ENV"
         sed -i '/colcon build/ s/$/ --packages-up-to carla_sensors_integration carma_carla_agent carma_carla_bridge/' /home/carma/.ci-image/engineering_tools/code_coverage/make_with_coverage.bash
         make_with_coverage.bash -m -e /opt/carma/ -o ./coverage_reports/gcov
-    - name: Run C++ Tests
-      run: |
-        source "$INIT_ENV"
-        sed -i '/colcon test/ s/$/ --packages-up-to carla_sensors_integration carma_carla_agent carma_carla_bridge/' /home/carma/.ci-image/engineering_tools/code_coverage/make_with_coverage.bash
-        make_with_coverage.bash -t -e /opt/carma/ -o ./coverage_reports/gcov
     - name: Run SonarScanner
       uses: usdot-fhwa-stol/actions/sonar-scanner@main
       with:
