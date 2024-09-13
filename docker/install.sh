@@ -54,8 +54,8 @@ git clone https://github.com/swri-robotics/gps_umd.git
 
 mkdir -p ~/carma_carla_ws/src/msgs && cd ~/carma_carla_ws/src/msgs
 
-ln -s ~/msgs/carma-msgs/j3224_msgs
-ln -s ~/msgs/carma-msgs/j2735_msgs
+ln -s ~/msgs/carma-msgs/j3224_v2x_msgs
+ln -s ~/msgs/carma-msgs/j2735_v2x_msgs
 ln -s ~/msgs/carma-msgs/cav_msgs
 ln -s ~/msgs/carma-msgs/can_msgs
 ln -s ~/msgs/carma-msgs/cav_srvs
