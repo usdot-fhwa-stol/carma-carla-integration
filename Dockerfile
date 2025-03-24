@@ -11,10 +11,10 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-ARG DOCKER_ORG="usdotfhwastoldev"
-ARG DOCKER_TAG="develop-noetic"
+ARG DOCKER_ORG="usdotfhwastolcandidate"
+ARG DOCKER_TAG="test_run-noetic"
 FROM ${DOCKER_ORG}/carma-base:${DOCKER_TAG}
-ARG GIT_BRANCH="develop"
+ARG GIT_BRANCH="release/test_run"
 ENV CARMA_VERSION=${GIT_BRANCH}
 
 LABEL Description="Dockerised CARMA-CARLA integration"
