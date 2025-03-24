@@ -12,9 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 ARG DOCKER_ORG="usdotfhwastoldev"
-ARG DOCKER_TAG="develop"
-FROM ${DOCKER_ORG}/carma-base:${DOCKER_TAG} 
-ARG GIT_BRANCH="develop" 
+ARG DOCKER_TAG="develop-noetic"
+FROM ${DOCKER_ORG}/carma-base:${DOCKER_TAG}
+ARG GIT_BRANCH="develop"
 ENV CARMA_VERSION=${GIT_BRANCH}
 
 LABEL Description="Dockerised CARMA-CARLA integration"
@@ -52,4 +52,3 @@ ENV CARLA_VERSION=0.9.10
 ENV CARLA_EGG_DIR=/home/carma/PythonAPI/carla/dist
 
 CMD ["/bin/bash"]
-

@@ -18,6 +18,9 @@ jobs:
   dockerhub:
     # Referenced a reusable workflow defined in actions repository
     uses: usdot-fhwa-stol/actions/.github/workflows/dockerhub.yml@main
+    with:
+      tag_name_suffix: noetic
+      remove_suffix: true
     secrets:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }} # Docker Hub token for authentication
