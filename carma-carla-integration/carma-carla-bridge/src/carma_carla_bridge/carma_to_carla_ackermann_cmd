@@ -50,6 +50,8 @@ guidance_state = GuidanceState.STARTUP
 init_status = True
 init_cmd = AckermannDrive()
 lateral_jerk = 0
+last_linear_velocity = 0.0
+last_vel_stamp = rospy.Time.now()
 
 def guidance_state_callback(guidance_state_msg):
     """
@@ -67,6 +69,9 @@ def guidance_state_callback(guidance_state_msg):
         init_cmd.acceleration = rospy.get_param('~init_acceleration', 1)
         init_cmd.steering_angle = rospy.get_param('~init_steering_angle', 0)
         init_cmd.jerk = rospy.get_param('~init_jerk', 0)
+
+        last_linear_velocity = init_cmd.speed
+        last_vel_stamp = rospy.Time.now()
         ackermann_cmd_pub.publish(init_cmd)
 
 def commanded_jerk_callback(lateral_jerk_msg):
@@ -91,12 +96,21 @@ def vehicle_cmd_callback(vehicle_cmd):
     else:
         ackermann_drive = AckermannDrive()
         ackermann_drive.speed = vehicle_cmd.ctrl_cmd.linear_velocity
-        ackermann_drive.acceleration = vehicle_cmd.ctrl_cmd.linear_acceleration
+
+        # acceleration in carma-platform is not correct, so we manually
+        # calculate based on velocity:
+        ackermann_drive.acceleration = (
+            (vehicle_cmd.ctrl_cmd.linear_velocity - last_linear_velocity) /
+            (rospy.Time.now() - last_vel_stamp)
+        )
         ackermann_drive.steering_angle = vehicle_cmd.ctrl_cmd.steering_angle
         ackermann_drive.jerk = lateral_jerk
 
         ## publishing ackermann drive msg to CARLA virtual vehicle
         ackermann_cmd_pub.publish(ackermann_drive)
+
+        last_linear_velocity = vehicle_cmd.ctrl_cmd.linear_velocity
+        last_vel_stamp = rospy.Time.now()
 
 
 def vehicle_cmd_to_ackermanndrive():
