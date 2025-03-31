@@ -65,7 +65,7 @@ def guidance_state_callback(guidance_state_msg):
     guidance_state_msg type:
         cav_msgs::GuidanceState
     """
-    global init_status, guidance_state, init_cmd, ackermann_cmd_pub, commanded_speed
+    global init_status, guidance_state, init_cmd, ackermann_cmd_pub, commanded_speed, commanded_speed_previous_time
 
     guidance_state = guidance_state_msg.state
     if guidance_state == GuidanceState.ENGAGED and init_status:
@@ -110,13 +110,17 @@ def calculate_acceleration(current_speed,
     """
     global previous_accel
 
-    acceleration = (
-            current_speed - commanded_speed) / (
-                commanded_speed_time - commanded_speed_previous_time).to_sec()
+    time_diff = (commanded_speed_time - commanded_speed_previous_time).to_sec()
+    if time_diff > 0:
+        acceleration = (
+                current_speed - commanded_speed) / (
+                    commanded_speed_time - commanded_speed_previous_time).to_sec()
 
-    # Update previous values for next calculation
-    previous_accel = acceleration
-
+        # Update previous values for next calculation
+        previous_accel = acceleration
+    else:
+        # If time difference is zero or negative, use previous acceleration
+        acceleration = previous_accel
     return acceleration
 
 def vehicle_cmd_callback(vehicle_cmd):
