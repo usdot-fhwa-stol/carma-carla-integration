@@ -35,6 +35,9 @@ Subscribe from CARMA :std_msgs::Float32
 Subscribe from CARMA :cav_msgs::GuidanceState
     Topic: /guidance/state
 
+Subscribe from CARMA :geometry_msgs::Twist
+    Topic: /hardware_interface/vehicle/twist
+
 Publish to CARLA :ackermann_msgs::AckermannDrive
     Topic: /carla/{}/ackermann_cmd
 
@@ -44,12 +47,16 @@ from ackermann_msgs.msg import AckermannDrive
 from autoware_msgs.msg import VehicleCmd
 from cav_msgs.msg import GuidanceState
 from std_msgs.msg import Float32
+from geometry_msgs.msg import Twist
 
 ackermann_cmd_pub = None
 guidance_state = GuidanceState.STARTUP
 init_status = True
 init_cmd = AckermannDrive()
 lateral_jerk = 0
+current_speed = 0
+previous_speed = 0
+previous_time = None
 
 def guidance_state_callback(guidance_state_msg):
     """
@@ -79,6 +86,43 @@ def commanded_jerk_callback(lateral_jerk_msg):
     global lateral_jerk
     lateral_jerk = lateral_jerk_msg.data
 
+def vehicle_twist_callback(twist_msg):
+    """
+    callback for vehicle twist subscribing from CARMA
+    twist_msg type:
+        geometry_msgs::Twist
+    """
+    global current_speed, previous_speed, previous_time
+
+    current_time = rospy.Time.now()
+    current_speed = twist_msg.linear.x
+
+    # Initialize previous_time on first callback
+    if previous_time is None:
+        previous_time = current_time
+        previous_speed = current_speed
+
+def calculate_acceleration():
+    """
+    Calculate acceleration based on speed difference
+    """
+    global current_speed, previous_speed, previous_time
+
+    current_time = rospy.Time.now()
+    time_diff = (current_time - previous_time).to_sec()
+
+    # Avoid division by zero
+    if time_diff > 0:
+        acceleration = (current_speed - previous_speed) / time_diff
+
+        # Update previous values for next calculation
+        previous_speed = current_speed
+        previous_time = current_time
+
+        return acceleration
+    else:
+        return 0.0
+
 def vehicle_cmd_callback(vehicle_cmd):
     """
     callback for vehicle cmds subscribing from CARMA
@@ -91,7 +135,10 @@ def vehicle_cmd_callback(vehicle_cmd):
     else:
         ackermann_drive = AckermannDrive()
         ackermann_drive.speed = vehicle_cmd.ctrl_cmd.linear_velocity
-        ackermann_drive.acceleration = vehicle_cmd.ctrl_cmd.linear_acceleration
+
+        # Calculate acceleration based on current speed instead of using the provided value
+        ackermann_drive.acceleration = calculate_acceleration()
+
         ackermann_drive.steering_angle = vehicle_cmd.ctrl_cmd.steering_angle
         ackermann_drive.jerk = lateral_jerk
 
@@ -112,6 +159,7 @@ def vehicle_cmd_to_ackermanndrive():
     rospy.Subscriber('/hardware_interface/vehicle_cmd', VehicleCmd, vehicle_cmd_callback, queue_size=1)
     rospy.Subscriber('/guidance/state', GuidanceState, guidance_state_callback, queue_size=1)
     rospy.Subscriber('/guidance/twist_filter/result/twist/lateral_jerk', Float32, commanded_jerk_callback, queue_size=1)
+    rospy.Subscriber('/hardware_interface/vehicle/twist', Twist, vehicle_twist_callback, queue_size=1)
     rospy.spin()
 
 
