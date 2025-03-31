@@ -55,9 +55,7 @@ init_status = True
 init_cmd = AckermannDrive()
 lateral_jerk = 0
 current_speed = 0
-current_speed_time = None
 commanded_speed = 0
-commanded_speed_time = None
 commanded_speed_previous_time = None
 previous_accel = 0
 
@@ -75,6 +73,7 @@ def guidance_state_callback(guidance_state_msg):
         ## providing initial ackermann command to carla virtual vehicle
         init_cmd.speed = rospy.get_param('~init_speed', 10)
         commanded_speed = init_cmd.speed
+        commanded_speed_previous_time = rospy.Time.now()
         init_cmd.acceleration = rospy.get_param('~init_acceleration', 1)
         init_cmd.steering_angle = rospy.get_param('~init_steering_angle', 0)
         init_cmd.jerk = rospy.get_param('~init_jerk', 0)
@@ -98,35 +97,27 @@ def vehicle_twist_callback(twist_msg):
     """
     global current_speed, commanded_speed, previous_time
 
-    current_speed_time = rospy.Time.now()
     current_speed = twist_msg.twist.linear.x
 
     # print all values for debugging
     print("vehicle_twist_callback")
     print(f"current_speed: {current_speed} ")
-    print(f"current_speed_time: {current_speed_time} ")
 
-def calculate_acceleration(current_speed, current_speed_time,
+def calculate_acceleration(current_speed,
                             commanded_speed, commanded_speed_time, commanded_speed_previous_time):
     """
     Calculate acceleration based on speed difference
     """
+    global previous_accel
 
-    current_speed_time = rospy.Time.now()
-    is_current_speed_up_to_date = (commanded_speed_time - current_speed_time).to_sec()
-
-    # Avoid division by zero
-    if is_current_speed_up_to_date > 0:
-        acceleration = (
+    acceleration = (
             current_speed - commanded_speed) / (
                 commanded_speed_time - commanded_speed_previous_time).to_sec()
 
-        # Update previous values for next calculation
-        previous_accel = acceleration
+    # Update previous values for next calculation
+    previous_accel = acceleration
 
-        return acceleration
-    else:
-        return previous_accel
+    return acceleration
 
 def vehicle_cmd_callback(vehicle_cmd):
     """
@@ -134,7 +125,7 @@ def vehicle_cmd_callback(vehicle_cmd):
     vehicle_cmd type:
         autoware_msgs::VehicleCmd
     """
-    global ackermann_cmd_pub, current_speed, current_speed_time, commanded_speed_previous_time
+    global ackermann_cmd_pub, current_speed, commanded_speed_previous_time
     if guidance_state != GuidanceState.ENGAGED:
         return
     else:
@@ -144,7 +135,7 @@ def vehicle_cmd_callback(vehicle_cmd):
         commanded_speed_time = rospy.Time.now()
 
         # Calculate acceleration based on current speed instead of using the provided value
-        ackermann_drive.acceleration = calculate_acceleration(current_speed, current_speed_time,
+        ackermann_drive.acceleration = calculate_acceleration(current_speed,
                                                               commanded_speed, commanded_speed_time,
                                                               commanded_speed_previous_time)
 
