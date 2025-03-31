@@ -57,6 +57,7 @@ lateral_jerk = 0
 current_speed = 0
 previous_speed = 0
 previous_time = None
+previous_accel = 0
 
 def guidance_state_callback(guidance_state_msg):
     """
@@ -131,10 +132,11 @@ def calculate_acceleration():
         # Update previous values for next calculation
         previous_speed = current_speed
         previous_time = current_time
+        previous_accel = acceleration
 
         return acceleration
     else:
-        return 0.0
+        return previous_accel
 
 def vehicle_cmd_callback(vehicle_cmd):
     """
