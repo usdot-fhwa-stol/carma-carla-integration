@@ -35,7 +35,7 @@ Subscribe from CARMA :std_msgs::Float32
 Subscribe from CARMA :cav_msgs::GuidanceState
     Topic: /guidance/state
 
-Subscribe from CARMA :geometry_msgs::Twist
+Subscribe from CARMA :geometry_msgs::TwistStamped
     Topic: /hardware_interface/vehicle/twist
 
 Publish to CARLA :ackermann_msgs::AckermannDrive
@@ -47,7 +47,7 @@ from ackermann_msgs.msg import AckermannDrive
 from autoware_msgs.msg import VehicleCmd
 from cav_msgs.msg import GuidanceState
 from std_msgs.msg import Float32
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import TwistStamped
 
 ackermann_cmd_pub = None
 guidance_state = GuidanceState.STARTUP
@@ -90,15 +90,28 @@ def vehicle_twist_callback(twist_msg):
     """
     callback for vehicle twist subscribing from CARMA
     twist_msg type:
-        geometry_msgs::Twist
+        geometry_msgs::TwistStamped
     """
     global current_speed, previous_speed, previous_time
 
     current_time = rospy.Time.now()
-    current_speed = twist_msg.linear.x
+    current_speed = twist_msg.twist.linear.x
+
+    # print all values for debugging
+    print("vehicle_twist_callback")
+    print(f"current_speed: {current_speed} ")
+    print(f"previous_speed: {previous_speed} ")
+    print(f"previous_time: {previous_time} ")
+    print(f"twist_msg: {twist_msg} ")
 
     # Initialize previous_time on first callback
     if previous_time is None:
+        # print all values for debugging
+        print("Initializing previous_time")
+        print(f"current_time: {current_time} ")
+        print(f"previous_speed: {previous_speed} ")
+        print(f"previous_time: {previous_time} ")
+        print(f"twist_msg: {twist_msg} ")
         previous_time = current_time
         previous_speed = current_speed
 
@@ -159,7 +172,7 @@ def vehicle_cmd_to_ackermanndrive():
     rospy.Subscriber('/hardware_interface/vehicle_cmd', VehicleCmd, vehicle_cmd_callback, queue_size=1)
     rospy.Subscriber('/guidance/state', GuidanceState, guidance_state_callback, queue_size=1)
     rospy.Subscriber('/guidance/twist_filter/result/twist/lateral_jerk', Float32, commanded_jerk_callback, queue_size=1)
-    rospy.Subscriber('/hardware_interface/vehicle/twist', Twist, vehicle_twist_callback, queue_size=1)
+    rospy.Subscriber('/hardware_interface/vehicle/twist', TwistStamped, vehicle_twist_callback, queue_size=1)
     rospy.spin()
 
 
