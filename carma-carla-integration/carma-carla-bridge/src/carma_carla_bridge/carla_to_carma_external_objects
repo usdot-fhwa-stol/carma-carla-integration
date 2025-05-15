@@ -32,8 +32,11 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPo
 from rclpy.time import Time as RclpyTime
 
 from derived_object_msgs.msg import ObjectArray as DerivedObjectArray
-from derived_object_msgs.msg import Object as DerivedObject # This is the message definition you just inspected
-from cav_msgs.msg import ExternalObjectList, ExternalObject
+from derived_object_msgs.msg import Object as DerivedObject
+#from cav_msgs.msg import ExternalObjectList, ExternalObject
+from carla_to_carma_external_objects.msg import ExternalObjectList, ExternalObject
+#from carla_to_carma_external_objects.msg import ExternalObject, ExternalObjectList
+
 
 class CarlaToCarmaObjectsNode(Node):
     """Node to convert CARLA detected objects to CARMA ExternalObjectList messages."""
