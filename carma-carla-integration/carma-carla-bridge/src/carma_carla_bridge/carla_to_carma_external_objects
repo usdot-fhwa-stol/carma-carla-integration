@@ -33,8 +33,10 @@ from rclpy.time import Time as RclpyTime
 
 from derived_object_msgs.msg import ObjectArray as DerivedObjectArray
 from derived_object_msgs.msg import Object as DerivedObject
-#from cav_msgs.msg import ExternalObjectList, ExternalObject
 from carla_to_carma_external_objects.msg import ExternalObjectList, ExternalObject
+
+# Original import messages, not sure how to entirely proced here but assumably there should be swapped in.
+#from cav_msgs.msg import ExternalObjectList, ExternalObject
 #from carla_to_carma_external_objects.msg import ExternalObject, ExternalObjectList
 
 
@@ -129,6 +131,9 @@ class CarlaToCarmaObjectsNode(Node):
                 }
 
         self.external_objects_pub.publish(carma_objects_list_msg)
+
+        ##DEBUG: LOGS WHEN RECIEVING EXT OBJ 
+        ##self.get_logger().info(f"[callback] published {len(carma_objects_list_msg.objects)} external object(s)")
 
         # Mark objects not in current message for potential cleanup
         for obj_id_key in list(self.prev_objects.keys()):
