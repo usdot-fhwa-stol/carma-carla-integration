@@ -35,18 +35,13 @@ from derived_object_msgs.msg import ObjectArray as DerivedObjectArray
 from derived_object_msgs.msg import Object as DerivedObject
 from carla_to_carma_external_objects.msg import ExternalObjectList, ExternalObject
 
-# Original import messages, not sure how to entirely proced here but assumably there should be swapped in.
-#from cav_msgs.msg import ExternalObjectList, ExternalObject
-#from carla_to_carma_external_objects.msg import ExternalObject, ExternalObjectList
-
-
 class CarlaToCarmaObjectsNode(Node):
     """Node to convert CARLA detected objects to CARMA ExternalObjectList messages."""
     def __init__(self):
         super().__init__('carla_to_carma_external_objects_node')
 
         # Declare and get parameters
-        self.declare_parameter('role_name', 'ego_vehicle')
+        self.declare_parameter('role_name', 'hero')
         self.role_name = self.get_parameter('role_name').get_parameter_value().string_value
         self.get_logger().info(f"Using role_name: '{self.role_name}'")
 
@@ -132,9 +127,6 @@ class CarlaToCarmaObjectsNode(Node):
 
         self.external_objects_pub.publish(carma_objects_list_msg)
 
-        ##DEBUG: LOGS WHEN RECIEVING EXT OBJ 
-        ##self.get_logger().info(f"[callback] published {len(carma_objects_list_msg.objects)} external object(s)")
-
         # Mark objects not in current message for potential cleanup
         for obj_id_key in list(self.prev_objects.keys()):
             if obj_id_key not in active_ids_in_current_message:
@@ -142,7 +134,6 @@ class CarlaToCarmaObjectsNode(Node):
                      self.prev_objects[obj_id_key]['no_update_count'] += 1
                 else: # Should never happen if logic is correct
                     self.prev_objects[obj_id_key]['no_update_count'] = 1
-
 
     def convert_carla_to_carma(self, carla_obj: DerivedObject, current_ros_time: RclpyTime) -> ExternalObject:
         """Converts a single CARLA DerivedObject to a CARMA ExternalObject."""
