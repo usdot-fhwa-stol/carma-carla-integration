@@ -39,7 +39,7 @@ class CarlaToCarmaLocalization(Node):
    def __init__(self):
        super().__init__('carla_to_carma_localization')
        # Declare parameter for vehicle role name
-       self.declare_parameter('role_name', 'ego_vehicle')
+       self.declare_parameter('role_name', 'hero')
        role = self.get_parameter('role_name').get_parameter_value().string_value
 
        # Publishers
