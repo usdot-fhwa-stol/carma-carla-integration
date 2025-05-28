@@ -1,0 +1,22 @@
+carla_ros2_bridge
+Copyright 2025 Will Varner, made in the UGA MSC Lab
+
+This product is licensed under the Apache License, Version 2.0.
+A copy of the Apache License 2.0 can be found in the LICENSE file.
+
+This product includes software components sourced from other projects:
+
+1. transforms.py:
+   Copyright (c) 2018-2019 Intel Corporation
+   This work is licensed under the terms of the MIT license.
+   A copy of the MIT license can be found at <https://opensource.org/licenses/MIT>.
+   The original copyright notice and MIT license terms are preserved within the
+   carla_ros2_bridge/transforms.py file.
+
+2. This product depends on `ros-carla-msgs` developed by the CARLA Simulator Team,
+   licensed under the MIT license.
+
+3. This product depends on `derived_object_msgs` from the `astuff_sensor_msgs`
+   repository, by AutonomouStuff, licensed under the MIT license.
+
+This product includes was developed in the UGA MSC Lab under Dr. Yunli Shao
