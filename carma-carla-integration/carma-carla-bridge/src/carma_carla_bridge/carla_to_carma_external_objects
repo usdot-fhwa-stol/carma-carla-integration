@@ -23,13 +23,15 @@
 """
 Converts CARLA native ROS2 detected objects to CARMA ExternalObjectList messages.
 Subscribes to: /carla/<role_name>/objects (derived_object_msgs/ObjectArray)
-Publishes: /environment/external_objects (cav_msgs/ExternalObjectList)
+Publishes: /environment/external_objects (carla_to_carma_external_objects/ExternalObjectList)
 """
 
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 from rclpy.time import Time as RclpyTime
+import threading
+import traceback
 
 from derived_object_msgs.msg import ObjectArray as DerivedObjectArray
 from derived_object_msgs.msg import Object as DerivedObject
@@ -45,36 +47,33 @@ class CarlaToCarmaObjectsNode(Node):
         self.role_name = self.get_parameter('role_name').get_parameter_value().string_value
         self.get_logger().info(f"Using role_name: '{self.role_name}'")
 
+        # Store previous objects for velocity calculation and tracking
+        self.prev_objects = {}
+        self.prev_objects_lock = threading.Lock() # Initialize the lock for thread safety
+
         # Object type lookup based on derived_object_msgs/Object constants
-        # Taken directly from 'ros2 interface show derived_object_msgs/msg/Object'
         self.object_type_lookup = {
             DerivedObject.CLASSIFICATION_UNKNOWN: ExternalObject.UNKNOWN,
-            DerivedObject.CLASSIFICATION_UNKNOWN_SMALL: ExternalObject.UNKNOWN, # Map to UNKNOWN or a specific size if CARMA supports
-            DerivedObject.CLASSIFICATION_UNKNOWN_MEDIUM: ExternalObject.UNKNOWN, # Map to UNKNOWN or a specific size if CARMA supports
-            DerivedObject.CLASSIFICATION_UNKNOWN_BIG: ExternalObject.UNKNOWN, # Map to UNKNOWN or a specific size if CARMA supports
+            DerivedObject.CLASSIFICATION_UNKNOWN_SMALL: ExternalObject.UNKNOWN,
+            DerivedObject.CLASSIFICATION_UNKNOWN_MEDIUM: ExternalObject.UNKNOWN,
+            DerivedObject.CLASSIFICATION_UNKNOWN_BIG: ExternalObject.UNKNOWN,
             DerivedObject.CLASSIFICATION_PEDESTRIAN: ExternalObject.PEDESTRIAN,
-            DerivedObject.CLASSIFICATION_BIKE: ExternalObject.MOTORCYCLE, # Or create a BICYCLE type in ExternalObject if distinct
+            DerivedObject.CLASSIFICATION_BIKE: ExternalObject.MOTORCYCLE, 
             DerivedObject.CLASSIFICATION_CAR: ExternalObject.SMALL_VEHICLE,
             DerivedObject.CLASSIFICATION_TRUCK: ExternalObject.LARGE_VEHICLE,
             DerivedObject.CLASSIFICATION_MOTORCYCLE: ExternalObject.MOTORCYCLE,
-            DerivedObject.CLASSIFICATION_OTHER_VEHICLE: ExternalObject.UNKNOWN, # Or a more specific mapping if available
-            DerivedObject.CLASSIFICATION_BARRIER: ExternalObject.UNKNOWN, # Or a specific mapping for barriers
-            DerivedObject.CLASSIFICATION_SIGN: ExternalObject.UNKNOWN, # Or a specific mapping for signs
+            DerivedObject.CLASSIFICATION_OTHER_VEHICLE: ExternalObject.UNKNOWN,
+            DerivedObject.CLASSIFICATION_BARRIER: ExternalObject.UNKNOWN, 
+            DerivedObject.CLASSIFICATION_SIGN: ExternalObject.UNKNOWN,
         }
-        # Using constants from message definition itself in place of ints as more robust and readable
-
         self.get_logger().info(f"Object type lookup table configured using derived_object_msgs constants.")
-
-
-        # Store previous objects for velocity calculation and tracking
-        self.prev_objects = {}
 
         # QoS Profile for publisher
         qos_profile_pub = QoSProfile(
             reliability=ReliabilityPolicy.RELIABLE,
             history=HistoryPolicy.KEEP_LAST,
-            depth=1,
-            durability=DurabilityPolicy.VOLATILE
+            depth=5, # Keep a few messages in case of bursty subscribers
+            durability=DurabilityPolicy.VOLATILE # Objects are dynamic, no need for latching
         )
         self.external_objects_pub = self.create_publisher(
             ExternalObjectList,
@@ -84,9 +83,9 @@ class CarlaToCarmaObjectsNode(Node):
 
         # QoS Profile for subscriber
         qos_profile_sub = QoSProfile(
-            reliability=ReliabilityPolicy.RELIABLE,
+            reliability=ReliabilityPolicy.RELIABLE, # Assume input should be reliable
             history=HistoryPolicy.KEEP_LAST,
-            depth=10
+            depth=10 # Allow a small buffer for incoming messages
         )
         carla_objects_topic = f'/carla/{self.role_name}/objects'
         self.carla_objects_sub = self.create_subscription(
@@ -97,145 +96,172 @@ class CarlaToCarmaObjectsNode(Node):
         self.get_logger().info(f"Subscribed to DerivedObjectArray on '{carla_objects_topic}'")
 
         # Timer for cleaning up stale objects
-        self.cleanup_timer_period = 1.0  # (seconds)
+        self.cleanup_timer_period = 1.0  # seconds
         self.cleanup_timer = self.create_timer(self.cleanup_timer_period, self.cleanup_stale_objects)
-        self.max_no_update_cycles = 10
+        self.max_no_update_cycles = 10 # Number of cleanup cycles an object can be missed
 
     def carla_objects_callback(self, carla_obj_array_msg: DerivedObjectArray):
         """Callback for CARLA objects, converts and publishes as CARMA ExternalObjectList."""
-        current_ros_time = self.get_clock().now()
+        current_ros_time = self.get_clock().now() # RclpyTime object
 
         carma_objects_list_msg = ExternalObjectList()
         carma_objects_list_msg.header = carla_obj_array_msg.header # Propagate header
 
         active_ids_in_current_message = set()
+        processed_carma_objects = []
 
+        # Process objects and prepare data for prev_objects update
+        # This part does not need the lock yet, as it's local to the callback
         for carla_obj in carla_obj_array_msg.objects:
-            obj_id = carla_obj.id # uint32 so no complex conversion needed
+            obj_id = carla_obj.id 
             active_ids_in_current_message.add(obj_id)
 
-            carma_obj_msg = self.convert_carla_to_carma(carla_obj, current_ros_time)
+            # Pass obj_id to convert_carla_to_carma for velocity calculation context
+            carma_obj_msg = self.convert_carla_to_carma(carla_obj, current_ros_time, obj_id)
             if carma_obj_msg:
-                carma_objects_list_msg.objects.append(carma_obj_msg)
-                self.prev_objects[obj_id] = {
-                    'object_msg': carma_obj_msg,
-                    'raw_pose': carla_obj.pose,
-                    'raw_header_stamp_ros': RclpyTime.from_msg(carla_obj.header.stamp),
-                    'update_time_ros': current_ros_time,
-                    'no_update_count': 0
-                }
-
-        self.external_objects_pub.publish(carma_objects_list_msg)
-
-        # Mark objects not in current message for potential cleanup
-        for obj_id_key in list(self.prev_objects.keys()):
-            if obj_id_key not in active_ids_in_current_message:
-                if 'no_update_count' in self.prev_objects[obj_id_key]:
-                     self.prev_objects[obj_id_key]['no_update_count'] += 1
-                else: # Should never happen if logic is correct
-                    self.prev_objects[obj_id_key]['no_update_count'] = 1
-
-    def convert_carla_to_carma(self, carla_obj: DerivedObject, current_ros_time: RclpyTime) -> ExternalObject:
-        """Converts a single CARLA DerivedObject to a CARMA ExternalObject."""
-        carma_obj = ExternalObject()
-
-        # Initialize presence vector
-        carma_obj.presence_vector = (
-            ExternalObject.ID_PRESENCE_VECTOR |
-            ExternalObject.POSE_PRESENCE_VECTOR |
-            ExternalObject.VELOCITY_PRESENCE_VECTOR |
-            ExternalObject.SIZE_PRESENCE_VECTOR |
-            ExternalObject.CONFIDENCE_PRESENCE_VECTOR |
-            ExternalObject.DYNAMIC_OBJ_PRESENCE
-        )
-
-        # ID: carla_obj.id is uint32, directly compatible.
-        carma_obj.id = carla_obj.id
-
-        # Pose
-        carma_obj.pose.pose = carla_obj.pose
-
-        # Velocity: Calculated from position and time differences.
-        # Currently tries to use Carla.obj.twist first, if all zeroes or not populated use manual velocity calculations
-    
-        # Check if CARLA provides twist information directly
-        if (abs(carla_obj.twist.linear.x) > 1e-3 or \
-            abs(carla_obj.twist.linear.y) > 1e-3 or \
-            abs(carla_obj.twist.linear.z) > 1e-3): # Check if twist is non-trivial
-            carma_obj.velocity.twist = carla_obj.twist
-            # self.get_logger().info(f"Using twist from CARLA for object {carma_obj.id}")
-        else: # Calculate if dne or zero
-            carma_obj.velocity.twist.linear.x = 0.0
-            carma_obj.velocity.twist.linear.y = 0.0
-            carma_obj.velocity.twist.linear.z = 0.0
-            obj_id_int = carma_obj.id
-            if obj_id_int in self.prev_objects and 'raw_pose' in self.prev_objects[obj_id_int]:
-                prev_data = self.prev_objects[obj_id_int]
-                prev_pose = prev_data['raw_pose']
-                prev_stamp_ros = prev_data['raw_header_stamp_ros']
-                current_stamp_ros = RclpyTime.from_msg(carla_obj.header.stamp)
-                
-                time_diff_secs = (current_stamp_ros.nanoseconds - prev_stamp_ros.nanoseconds) / 1e9
-
-                if time_diff_secs > 1e-9: # Avoid division by zero or some tiny dt
-                    dx = carla_obj.pose.position.x - prev_pose.position.x
-                    dy = carla_obj.pose.position.y - prev_pose.position.y
-                    dz = carla_obj.pose.position.z - prev_pose.position.z
-                    
-                    carma_obj.velocity.twist.linear.x = dx / time_diff_secs
-                    carma_obj.velocity.twist.linear.y = dy / time_diff_secs
-                    carma_obj.velocity.twist.linear.z = dz / time_diff_secs
-                elif obj_id_int in self.prev_objects and 'object_msg' in self.prev_objects[obj_id_int]:
-                    carma_obj.velocity.twist.linear = self.prev_objects[obj_id_int]['object_msg'].velocity.twist.linear
+                processed_carma_objects.append(carma_obj_msg)
         
-        # Confidence (CARLA ground truth, so confidence is 1.0)
-        carma_obj.confidence = 1.0 # Defaulting to 1.0 as per original script for ground truth
+        carma_objects_list_msg.objects = processed_carma_objects
+        self.external_objects_pub.publish(carma_objects_list_msg)
+        # self.get_logger().debug(f"Published {len(carma_objects_list_msg.objects)} external objects.")
 
-        # Size (bounding box dimensions)
-        if len(carla_obj.shape.dimensions) >= 3: # Check if dimensions are available
-            # Assuming BOX_X, BOX_Y, BOX_Z order
-            carma_obj.size.x = carla_obj.shape.dimensions[0] # Typically length
-            carma_obj.size.y = carla_obj.shape.dimensions[1] # Typically width
-            carma_obj.size.z = carla_obj.shape.dimensions[2] # Typically height
-        else:
-            carma_obj.presence_vector &= ~ExternalObject.SIZE_PRESENCE_VECTOR # Clear size bit
-            self.get_logger().warn(f"Object ID {carma_obj.id} has insufficient shape dimensions. Size not set.")
+        # Safely update prev_objects and no_update_counts
+        with self.prev_objects_lock:
+            # Add/Update currently seen objects
+            for carma_obj_converted, carla_obj_original in zip(processed_carma_objects, carla_obj_array_msg.objects):
+                original_carla_object = None
+                for co in carla_obj_array_msg.objects:
+                    if co.id == carma_obj_converted.id:
+                        original_carla_object = co
+                        break
+                
+                if original_carla_object:
+                    self.prev_objects[carma_obj_converted.id] = {
+                        'object_msg': carma_obj_converted, 
+                        'raw_pose': original_carla_object.pose,   
+                        'raw_header_stamp_ros': RclpyTime.from_msg(original_carla_object.header.stamp), 
+                        'update_time_ros': current_ros_time, 
+                        'no_update_count': 0 
+                    }
 
-        # Dynamic Object (CARLA /objects topic provides dynamic objects)
-        carma_obj.dynamic_obj = True
+            # Increment no_update_count for objects not in the current message
+            for obj_id_key in self.prev_objects: 
+                if obj_id_key not in active_ids_in_current_message:
+                    if 'no_update_count' in self.prev_objects[obj_id_key]:
+                        self.prev_objects[obj_id_key]['no_update_count'] += 1
+                    else:
+                        self.prev_objects[obj_id_key]['no_update_count'] = 1
+                        self.get_logger().warn(f"Object ID {obj_id_key} was missing 'no_update_count', initialized to 1.")
 
-        # Object Type: Use the constants from DerivedObject for keys
-        if carla_obj.object_classified: # bool
-            classification_key = carla_obj.classification # uint8
-            if classification_key in self.object_type_lookup:
-                carma_obj.object_type = self.object_type_lookup[classification_key]
+
+    def convert_carla_to_carma(self, carla_obj: DerivedObject, current_ros_time: RclpyTime, obj_id_int: int) -> ExternalObject | None:
+        """Converts a single CARLA DerivedObject to a CARMA ExternalObject."""
+        try:
+            carma_obj = ExternalObject()
+            carma_obj.header = carla_obj.header # Propagate individual object header
+
+            # Initialize presence vector
+            carma_obj.presence_vector = (
+                ExternalObject.ID_PRESENCE_VECTOR |
+                ExternalObject.POSE_PRESENCE_VECTOR |
+                ExternalObject.VELOCITY_PRESENCE_VECTOR |
+                ExternalObject.SIZE_PRESENCE_VECTOR |
+                ExternalObject.CONFIDENCE_PRESENCE_VECTOR |
+                ExternalObject.DYNAMIC_OBJ_PRESENCE
+            )
+
+            carma_obj.id = obj_id_int # Use passed obj_id_int
+            carma_obj.pose.pose = carla_obj.pose
+
+            # Velocity
+            if (abs(carla_obj.twist.linear.x) > 1e-3 or \
+                abs(carla_obj.twist.linear.y) > 1e-3 or \
+                abs(carla_obj.twist.linear.z) > 1e-3):
+                carma_obj.velocity.twist = carla_obj.twist
+            else: 
+                carma_obj.velocity.twist.linear.x = 0.0
+                carma_obj.velocity.twist.linear.y = 0.0
+                carma_obj.velocity.twist.linear.z = 0.0
+                carma_obj.velocity.twist.angular.x = 0.0
+                carma_obj.velocity.twist.angular.y = 0.0
+                carma_obj.velocity.twist.angular.z = 0.0
+
+                with self.prev_objects_lock: # Access prev_objects safely
+                    if obj_id_int in self.prev_objects and \
+                       self.prev_objects[obj_id_int].get('no_update_count', -1) == 0 and \
+                       'raw_pose' in self.prev_objects[obj_id_int]:
+                        
+                        prev_data = self.prev_objects[obj_id_int]
+                        prev_pose = prev_data['raw_pose']
+                        prev_stamp_ros = prev_data['raw_header_stamp_ros']
+                        
+                        current_obj_stamp_ros = RclpyTime.from_msg(carla_obj.header.stamp)
+                        time_diff_secs = (current_obj_stamp_ros.nanoseconds - prev_stamp_ros.nanoseconds) / 1e9
+
+                        if time_diff_secs > 1e-9: 
+                            dx = carla_obj.pose.position.x - prev_pose.position.x
+                            dy = carla_obj.pose.position.y - prev_pose.position.y
+                            dz = carla_obj.pose.position.z - prev_pose.position.z
+                            
+                            carma_obj.velocity.twist.linear.x = dx / time_diff_secs
+                            carma_obj.velocity.twist.linear.y = dy / time_diff_secs
+                            carma_obj.velocity.twist.linear.z = dz / time_diff_secs
+                        # If dt is too small, velocity remains zero or could use last known CARMA velocity
+                        elif 'object_msg' in prev_data: # Check if 'object_msg' is in prev_data
+                             carma_obj.velocity.twist.linear = prev_data['object_msg'].velocity.twist.linear
+            
+            carma_obj.confidence = 1.0 
+
+            if len(carla_obj.shape.dimensions) >= 3:
+                carma_obj.size.x = carla_obj.shape.dimensions[0]
+                carma_obj.size.y = carla_obj.shape.dimensions[1]
+                carma_obj.size.z = carla_obj.shape.dimensions[2]
+            else:
+                carma_obj.presence_vector &= ~ExternalObject.SIZE_PRESENCE_VECTOR
+                self.get_logger().warn(f"Object ID {carma_obj.id} has insufficient shape dimensions. Size not set.")
+
+            carma_obj.dynamic_obj = True
+
+            if carla_obj.object_classified:
+                classification_key = carla_obj.classification
+                if classification_key in self.object_type_lookup:
+                    carma_obj.object_type = self.object_type_lookup[classification_key]
+                else:
+                    carma_obj.object_type = ExternalObject.UNKNOWN
+                    self.get_logger().debug(f"Obj ID {carma_obj.id} unmapped CARLA classification: {classification_key}, mapping to UNKNOWN.")
                 carma_obj.presence_vector |= ExternalObject.OBJECT_TYPE_PRESENCE_VECTOR
             else:
                 carma_obj.object_type = ExternalObject.UNKNOWN
-                carma_obj.presence_vector |= ExternalObject.OBJECT_TYPE_PRESENCE_VECTOR 
-                self.get_logger().debug(f"Obj ID {carma_obj.id} unmapped classification: {classification_key}")
-        else:
-            carma_obj.object_type = ExternalObject.UNKNOWN
-            carma_obj.presence_vector &= ~ExternalObject.OBJECT_TYPE_PRESENCE_VECTOR 
-            self.get_logger().debug(f"Obj ID {carma_obj.id} not classified by CARLA.")
+                carma_obj.presence_vector &= ~ExternalObject.OBJECT_TYPE_PRESENCE_VECTOR
+                self.get_logger().debug(f"Obj ID {carma_obj.id} not classified by input. Type not set.")
 
-        return carma_obj
+            return carma_obj
+        except Exception as e:
+            self.get_logger().error(f"Error converting object ID {carla_obj.id if carla_obj else 'UNKNOWN'}: {e}\n{traceback.format_exc()}")
+            return None
 
     def cleanup_stale_objects(self):
-        """Periodically called by a timer to remove objects that haven't been updated."""
-        ids_to_remove = []
-        for obj_id, data in self.prev_objects.items():
-            if data.get('no_update_count', 0) > self.max_no_update_cycles:
-                ids_to_remove.append(obj_id)
-                self.get_logger().info(f"Removing stale object ID {obj_id} after {data['no_update_count']} cycles.")
-
-        for obj_id in ids_to_remove:
-            if obj_id in self.prev_objects:
-                del self.prev_objects[obj_id]
+        """Periodically called by a timer to remove objects that haven't been updated for several cycles."""
+        with self.prev_objects_lock: 
+            ids_to_remove = []
+            for obj_id, data in self.prev_objects.items():
+                if data.get('no_update_count', 0) > self.max_no_update_cycles:
+                    ids_to_remove.append(obj_id)
+            
+            for obj_id in ids_to_remove:
+                # Log before deleting, using the count from when it was marked for removal.
+                # It's possible no_update_count changed again if callback ran between list creation and this loop,
+                # but since the lock is held for this whole method now, this won't happen.
+                count = self.prev_objects[obj_id].get('no_update_count', 'N/A')
+                self.get_logger().info(f"Removing stale object ID {obj_id} due to inactivity (missed {count} update cycles).")
+                if obj_id in self.prev_objects: # Should always be true here with the lock
+                    del self.prev_objects[obj_id]
 
     def on_shutdown(self):
         """Called when the node is shutting down for cleanup."""
-        self.get_logger().info("Shutting down CarlaToCarmaObjectsNode.")
+        self.get_logger().info(f"Shutting down {self.get_name()}.")
+        if hasattr(self, 'cleanup_timer') and self.cleanup_timer and not self.cleanup_timer.is_canceled():
+            self.cleanup_timer.cancel()
 
 def main(args=None):
     """Main entry point for the ROS2 node."""
@@ -245,15 +271,18 @@ def main(args=None):
         node = CarlaToCarmaObjectsNode()
         rclpy.spin(node)
     except KeyboardInterrupt:
-        if node: node.get_logger().info("KeyboardInterrupt received, shutting down.")
+        if node: node.get_logger().info(f"{node.get_name()} shutting down due to KeyboardInterrupt.")
     except Exception as e:
-        if node: node.get_logger().error(f"Unhandled exception: {e}")
-        else: print(f"Unhandled exception before node init: {e}")
+        # Ensure logger is available or use print
+        logger = rclpy.logging.get_logger("carla_to_carma_external_objects_node_main")
+        if node : logger = node.get_logger()
+        logger.error(f"Unhandled exception in {node.get_name() if node else 'CarlaToCarmaObjectsNode'}: {e}\n{traceback.format_exc()}")
     finally:
         if node:
-            node.on_shutdown()
+            node.on_shutdown() 
             node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok(): 
+            rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
