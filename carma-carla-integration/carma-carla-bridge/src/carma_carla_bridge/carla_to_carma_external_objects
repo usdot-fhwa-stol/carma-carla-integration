@@ -23,7 +23,7 @@
 """
 Converts CARLA native ROS2 detected objects to CARMA ExternalObjectList messages.
 Subscribes to: /carla/<role_name>/objects (derived_object_msgs/ObjectArray)
-Publishes: /environment/external_objects (carla_to_carma_external_objects/ExternalObjectList)
+Publishes: /environment/external_objects (cav_msgs/ExternalObjectList)
 """
 
 import rclpy
@@ -123,7 +123,6 @@ class CarlaToCarmaObjectsNode(Node):
         
         carma_objects_list_msg.objects = processed_carma_objects
         self.external_objects_pub.publish(carma_objects_list_msg)
-        # self.get_logger().debug(f"Published {len(carma_objects_list_msg.objects)} external objects.")
 
         # Safely update prev_objects and no_update_counts
         with self.prev_objects_lock:
