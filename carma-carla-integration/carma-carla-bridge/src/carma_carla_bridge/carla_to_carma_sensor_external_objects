@@ -31,8 +31,6 @@ from rclpy.exceptions import ROSInterruptException
 
 from scipy.spatial.transform import Rotation
 
-external_objects_pub = rospy.Publisher('/environment/external_objects', ExternalObjectList, queue_size=1)
-
 class CarlaToCarmaSensorExternalObjects(Node):
     def __init__(self):
         super().__init__('carla_to_carma_sensor_external_objects')
