@@ -116,7 +116,27 @@ class CarlaToCarmaSensorExternalObjects(Node):
         return client, world, api, parent_actor_id, sensor_config, noise_model_config
     
     def create_sensor_for_sensorlib(self, world, api, parent_actor_id, sensor_config, noise_model_config):
-        print('')
+        simulated_sensor_config = sensor_config["simulated_sensor"]
+        carla_sensor_config = sensor_config["lidar_sensor"]
+        self.declare_parameter('sensor_id')
+        self.declare_parameter('detection_cycle_delay_seconds')
+        sensor_id = self.get_parameter('sensor_id').value
+        detection_cycle_delay_seconds = self.get_parameter('detection_cycle_delay_seconds')
+
+        user_offset = carla.Location(0, 0, 2.0)  # Assumes the lidar location is 2 meters from the ground attached to the vehicle
+        lidar_transform = carla.Transform(user_offset)
+
+        # Assuming infrastructure_id is still 1 as it has no relation to CARLA
+        infrastructure_id = "1"
+
+        sensor = api.create_simulated_semantic_lidar_sensor(
+            simulated_sensor_config, carla_sensor_config, noise_model_config,
+            detection_cycle_delay_seconds,
+            infrastructure_id, sensor_id,
+            lidar_transform.location, lidar_transform.rotation, parent_actor_id
+        )
+        return sensor
+    
     def publish(self, object_msg_list):
         self.external_objects_pub.publish(object_msg_list)
     def timer_callback(self):
