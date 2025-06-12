@@ -318,6 +318,18 @@ def get_data_from_sensorlib(sensor, node):
 
     node.publish(object_msg_list)
 
-if __name__ == '__main__':
+def main():
+    rclpy.init()
     print("carla_to_carma_sensor_external_objects")
-    convert_objects()
+    try:
+        node = CarlaToCarmaSensorExternalObjects()
+        if node.sensor is not None:
+            rclpy.spin(node)
+    except ROSInterruptException:
+        node.get_logger().info("Node interrupted. Shutting down.")
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+        
+if __name__ == '__main__':
+    main()
