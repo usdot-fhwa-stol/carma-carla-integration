@@ -30,8 +30,9 @@ from rclpy.duration import Duration
 from rclpy.exceptions import ROSInterruptException
 
 from scipy.spatial.transform import Rotation
+import traceback
 
-class CarlaToCarmaSensorExternalObjects(Node):
+class CarlaToCarmaSensorExternalObjectsNode(Node):
     def __init__(self):
         super().__init__('carla_to_carma_sensor_external_objects')
 
@@ -215,18 +216,24 @@ def get_data_from_sensorlib(sensor, node):
 
     node.publish(object_msg_list)
 
-def main():
-    rclpy.init()
+def main(args=None):
+    rclpy.init(args=args)
     print("carla_to_carma_sensor_external_objects")
     try:
-        node = CarlaToCarmaSensorExternalObjects()
-        if node.sensor is not None:
-            rclpy.spin(node)
-    except ROSInterruptException:
-        node.get_logger().info("Node interrupted. Shutting down.")
+        node = CarlaToCarmaSensorExternalObjectsNode()
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        if node: node.get_logger().info(f"{node.get_name()} shutting down due to KeyboardInterrupt.")
+    except Exception as e:
+        # Ensure logger is available or use print
+        logger = rclpy.logging.get_logger("carla_to_carma_sensor_external_objects_node_main")
+        if node : logger = node.get_logger()
+        logger.error(f"Unhandled exception in {node.get_name() if node else 'CarlaToCarmaObjectsNode'}: {e}\n{traceback.format_exc()}")
     finally:
-        node.destroy_node()
-        rclpy.shutdown()
-        
+        if node:
+            node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
 if __name__ == '__main__':
     main()
