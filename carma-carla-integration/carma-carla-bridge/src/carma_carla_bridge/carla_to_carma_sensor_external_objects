@@ -21,10 +21,14 @@ from src.CarlaCDASimAPI import CarlaCDASimAPI
 from src.util.SimulatedSensorUtils import SimulatedSensorUtils
 import carla
 
-from cav_msgs.msg import ExternalObjectList, ExternalObject
+from carla_to_carma_external_objects.msg import ExternalObjectList, ExternalObject
 import numpy as np
-import rospy
-from rospy.exceptions import ROSInterruptException
+import rclpy
+from rclpy.node import Node
+from rclpy.time import Time
+from rclpy.duration import Duration
+from rclpy.exceptions import ROSInterruptException
+
 from scipy.spatial.transform import Rotation
 
 external_objects_pub = rospy.Publisher('/environment/external_objects', ExternalObjectList, queue_size=1)
