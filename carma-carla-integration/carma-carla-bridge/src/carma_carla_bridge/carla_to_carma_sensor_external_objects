@@ -33,6 +33,17 @@ from scipy.spatial.transform import Rotation
 
 external_objects_pub = rospy.Publisher('/environment/external_objects', ExternalObjectList, queue_size=1)
 
+class CarlaToCarmaSensorExternalObjects(Node):
+    def __init__(self):
+        print('')
+    def setup_carla_client_and_config(self):
+        print('')
+    def create_sensor_for_sensorlib(self, world, api, parent_actor_id, sensor_config, noise_model_config):
+        print('')
+    def publish(self, object_msg_list):
+        self.external_objects_pub.publish(object_msg_list)
+    def timer_callback(self):
+        print('')
 
 def convert_objects():
     """
