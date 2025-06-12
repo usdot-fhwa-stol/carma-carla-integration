@@ -35,7 +35,41 @@ external_objects_pub = rospy.Publisher('/environment/external_objects', External
 
 class CarlaToCarmaSensorExternalObjects(Node):
     def __init__(self):
-        print('')
+        super().__init__('carla_to_carma_sensor_external_objects')
+
+        self.declare_parameter('sensor_object_pub_rate', 10)
+        self.pub_rate = self.get_parameter('sensor_object_pub_rate').value
+        self.sensor_creation_rate = self.create_rate(1.0)
+
+        setup_result = self.setup_carla_client_and_config()
+        if setup_result is None:
+            self.get_logger().fatal("Unable to set up CARLA client and configuration due to missing actor.")
+            return None
+
+        self.external_objects_pub = self.create_publisher(ExternalObjectList, '/environment/external_objects', 1)
+        self.timer = self.create_timer(1.0 / self.pub_rate, self.timer_callback)
+
+        client, world, api, parent_actor_id, sensor_config, noise_model_config = setup_result
+        sensor_creation_start_time = self.get_clock().now()
+        sensor_creation_timeout = 60
+        self.sensor = None
+        while rclpy.ok() and self.sensor is None:
+            self.get_logger().info("Attempting to create vehicle sensor...")
+            self.sensor = self.create_sensor_for_sensorlib(world, api, parent_actor_id, sensor_config, noise_model_config)
+
+            if self.sensor:
+                break
+            elif (self.get_clock().now() - sensor_creation_start_time) > Duration(seconds=sensor_creation_timeout):
+                self.get_logger().error(f"Sensor creation timed out after {sensor_creation_timeout} seconds.")
+                return
+            else:
+                self.get_logger().warn("Sensor creation failed, will retry after a short delay.")
+                self.sensor_creation_rate.sleep()
+        
+        if self.sensor is None:
+            self.get_logger().fatal("Unable to create sensor since ROS is down")
+            return None
+
     def setup_carla_client_and_config(self):
         print('')
     def create_sensor_for_sensorlib(self, world, api, parent_actor_id, sensor_config, noise_model_config):
@@ -43,7 +77,10 @@ class CarlaToCarmaSensorExternalObjects(Node):
     def publish(self, object_msg_list):
         self.external_objects_pub.publish(object_msg_list)
     def timer_callback(self):
-        print('')
+        if not rclpy.ok():
+            return
+        if self.sensor is not None:
+            get_data_from_sensorlib(self.sensor, self)
 
 def convert_objects():
     """
