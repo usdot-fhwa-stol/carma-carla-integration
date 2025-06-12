@@ -71,7 +71,50 @@ class CarlaToCarmaSensorExternalObjects(Node):
             return None
 
     def setup_carla_client_and_config(self):
-        print('')
+        self.declare_parameter('host', 'localhost')
+        self.declare_parameter('port', 2000)
+        self.declare_parameter('role_name')
+
+        carla_host_address = self.get_parameter('host').value
+        carla_port = self.get_parameter('port').value
+
+        client = carla.Client(carla_host_address, carla_port)
+        client.set_timeout(10.0)
+        world = client.get_world()
+        api = CarlaCDASimAPI.build_from_world(world)
+
+        sensor_config = SimulatedSensorUtils.load_config_from_file(
+            "/home/carma/carla-sensor-lib/config/simulated_sensor_config.yaml"
+        )
+        noise_model_config = SimulatedSensorUtils.load_config_from_file(
+            "/home/carma/carla-sensor-lib/config/noise_model_config.yaml"
+        )
+
+        sensor_config["simulated_sensor"]["use_sensor_centric_frame"] = False
+        self.role_name = self.get_parameter('role_name').value
+        parent_actor_id = None
+        actor_search_timeout = 60
+        search_start_time = self.get_clock().now()
+
+        while (self.get_clock().now() - search_start_time) < Duration(seconds=actor_search_timeout):
+            for actor in world.get_actors():
+                if actor.attributes.get('role_name') == self.role_name:
+                    parent_actor_id = actor.id
+                    break
+            if parent_actor_id:
+                break
+            if not rclpy.ok():
+                raise ROSInterruptException("ROS shutdown requested while searching for actor.")
+            Time.sleep(1)
+        
+        if not parent_actor_id:
+            self.get_logger().error(
+                f"Failed to find parent actor with role_name '{self.role_name}' within {actor_search_timeout} seconds."
+            )
+            return None
+        
+        return client, world, api, parent_actor_id, sensor_config, noise_model_config
+    
     def create_sensor_for_sensorlib(self, world, api, parent_actor_id, sensor_config, noise_model_config):
         print('')
     def publish(self, object_msg_list):
