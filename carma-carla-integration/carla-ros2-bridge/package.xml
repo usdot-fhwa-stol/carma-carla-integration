@@ -12,6 +12,7 @@
   <depend>rclpy</depend>
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
+  <depend>carla_msgs</depend>
   
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>
