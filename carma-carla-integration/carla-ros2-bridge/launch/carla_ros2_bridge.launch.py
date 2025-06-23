@@ -1,4 +1,6 @@
 import launch
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 def generate_launch_description():
@@ -38,6 +40,13 @@ def generate_launch_description():
     )
 
     return launch.LaunchDescription([
+        DeclareLaunchArgument('host', default_value='localhost'),
+        DeclareLaunchArgument('port', default_value='2000'),
+        DeclareLaunchArgument('timeout', default_value='10.0'),
+        DeclareLaunchArgument('synchronous_mode', default_value='false'),
+        DeclareLaunchArgument('synchronous_mode_wait_for_vehicle_control_command', default_value='false'),
+        DeclareLaunchArgument('fixed_delta_seconds', default_value='0.05'),
+        DeclareLaunchArgument('role_name', default_value='hero'),
         carla_bridge_node,
         ackermann_control_node
     ])
