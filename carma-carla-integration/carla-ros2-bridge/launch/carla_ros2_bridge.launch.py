@@ -7,19 +7,6 @@ def generate_launch_description():
     """
     Launches both the CARLA Bridge and the Ackermann Control nodes.
     """
-    # Ackermann control node that translates CARMA commands
-    ackermann_control_node = Node(
-        package='carla_ros2_bridge',
-        executable='ackermann_control',
-        name='ackermann_control_node',
-        output='screen',
-        emulate_tty=True,
-        parameters=[
-            # This node also needs the role_name to find the right topics
-            {'role_name': 'hero'}
-        ]
-    )
-
     return launch.LaunchDescription([
         # Declare arguments
         DeclareLaunchArgument('host', default_value='localhost'),
@@ -48,5 +35,22 @@ def generate_launch_description():
                 {'ego_vehicle_role_name': LaunchConfiguration('role_name')},
             ]
         ),
-        ackermann_control_node
+        
+        # Ackermann control node
+        Node(
+            package='carla_ros2_bridge',
+            executable='ackermann_control',
+            name='ackermann_control_node',
+            output='screen',
+            emulate_tty=True,
+            parameters=[
+                {'role_name': LaunchConfiguration('role_name')},
+                {'speed_Kp': 0.05},
+                {'speed_Ki': 0.0},
+                {'speed_Kd': 0.5},
+                {'accel_Kp': 0.05},
+                {'accel_Ki': 0.0},
+                {'accel_Kd': 0.05},
+            ]
+        )
     ])
