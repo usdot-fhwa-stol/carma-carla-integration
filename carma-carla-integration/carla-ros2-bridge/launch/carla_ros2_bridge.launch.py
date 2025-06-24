@@ -9,13 +9,18 @@ def generate_launch_description():
     """
     return launch.LaunchDescription([
         # Declare arguments
-        DeclareLaunchArgument('host', default_value='localhost'),
-        DeclareLaunchArgument('port', default_value='2000'),
-        DeclareLaunchArgument('timeout', default_value='10.0'),
-        DeclareLaunchArgument('synchronous_mode', default_value='false'),
-        DeclareLaunchArgument('synchronous_mode_wait_for_vehicle_control_command', default_value='false'),
-        DeclareLaunchArgument('fixed_delta_seconds', default_value='0.05'),
-        DeclareLaunchArgument('role_name', default_value='hero'),
+        DeclareLaunchArgument(name='host', default_value='localhost'),
+        DeclareLaunchArgument(name='port', default_value='2000'),
+        DeclareLaunchArgument(name='timeout', default_value='10.0'),
+        DeclareLaunchArgument(name='role_name', default_value='hero'),
+        DeclareLaunchArgument(name='vehicle_filter', default_value='vehicle.*'),
+        DeclareLaunchArgument(name='spawn_point', default_value='None'),
+        DeclareLaunchArgument(name='town', default_value='Town01'),
+        DeclareLaunchArgument(name='passive', default_value='False'),
+        DeclareLaunchArgument(name='synchronous_mode', default_value='false'),
+        DeclareLaunchArgument(name='synchronous_mode_wait_for_vehicle_control_command', default_value='false'),
+        DeclareLaunchArgument(name='fixed_delta_seconds', default_value='0.05'),
+
 
         # Main CARLA bridge node
         Node(
