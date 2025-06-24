@@ -1,11 +1,14 @@
 import launch
+import os
+from ament_index_python.packages import get_package_share_directory
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, TextSubstitution
 from launch_ros.actions import Node
+from launch.conditions import IfCondition
 
 def generate_launch_description():
     """
-    Launches both the CARLA Bridge and the Ackermann Control nodes.
+    Launches both the CARLA Bridge and conditionally the Ackermann Control node and vehicle spawn script.
     """
     return launch.LaunchDescription([
         # Declare arguments
@@ -20,7 +23,17 @@ def generate_launch_description():
         DeclareLaunchArgument(name='synchronous_mode', default_value='false'),
         DeclareLaunchArgument(name='synchronous_mode_wait_for_vehicle_control_command', default_value='false'),
         DeclareLaunchArgument(name='fixed_delta_seconds', default_value='0.05'),
-
+        DeclareLaunchArgument(name='launch_spawn_hero_vehicle', default_value='true'),
+        DeclareLaunchArgument(name='launch_ackermann_control', default_value='false'),
+        DeclareLaunchArgument(
+            name='hero_config_path',
+            default_value=TextSubstitution(text=os.path.join(
+                get_package_share_directory('carla_ros2_bridge'),
+                'configs',
+                'stack.json'
+            )),
+            description='Path to the hero vehicle JSON config'
+        ),
 
         # Main CARLA bridge node
         Node(
@@ -56,6 +69,22 @@ def generate_launch_description():
                 {'accel_Kp': 0.05},
                 {'accel_Ki': 0.0},
                 {'accel_Kd': 0.05},
-            ]
-        )
+            ],  
+            condition=IfCondition(LaunchConfiguration('launch_ackermann_control')),
+        ),
+
+        # Vehicle spawn script
+        Node(
+            package='carla_ros2_bridge',
+            executable='spawn_hero_vehicle',
+            name='spawn_vehicle_node',
+            output='screen',
+            emulate_tty=True,
+            arguments=[
+                '--host', LaunchConfiguration('host'),
+                '--port', LaunchConfiguration('port'),
+                '--file', LaunchConfiguration('hero_config_path'),
+            ],
+            condition=IfCondition(LaunchConfiguration('launch_spawn_hero_vehicle')),
+        ),
     ])
