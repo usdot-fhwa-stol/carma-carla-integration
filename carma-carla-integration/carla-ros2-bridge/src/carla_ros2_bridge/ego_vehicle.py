@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 #
 # Copyright (c) 2018-2020 Intel Corporation
 #
@@ -20,7 +19,7 @@ from . import transforms as trans
 
 from rclpy.qos import QoSProfile, DurabilityPolicy
 
-from carla_ros_bridge.vehicle import Vehicle
+from .vehicle import Vehicle
 
 from carla_msgs.msg import (
     CarlaEgoVehicleInfo,
@@ -74,33 +73,6 @@ class EgoVehicle(Vehicle):
             CarlaEgoVehicleInfo,
             self.get_topic_prefix() + "/vehicle_info",
             qos_profile=QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
-
-        # --- PORTING DEBUG Comment out control subscribers to focus on publishing logic first ---
-        # The creation of subscribers will be ported in a later step i think
-        #
-        # self.control_subscriber = node.create_subscription(
-        #     CarlaEgoVehicleControl,
-        #     self.get_topic_prefix() + "/vehicle_control_cmd",
-        #     lambda data: self.control_command_updated(data, manual_override=False),
-        #     qos_profile=10)
-        #
-        # self.manual_control_subscriber = node.create_subscription(
-        #     CarlaEgoVehicleControl,
-        #     self.get_topic_prefix() + "/vehicle_control_cmd_manual",
-        #     lambda data: self.control_command_updated(data, manual_override=True),
-        #     qos_profile=10)
-        #
-        # self.control_override_subscriber = node.create_subscription(
-        #     Bool,
-        #     self.get_topic_prefix() + "/vehicle_control_manual_override",
-        #     self.control_command_override,
-        #     qos_profile=QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
-        #
-        # self.enable_autopilot_subscriber = node.create_subscription(
-        #     Bool,
-        #     self.get_topic_prefix() + "/enable_autopilot",
-        #     self.enable_autopilot_updated,
-        #     qos_profile=10)
 
     def get_marker_color(self):
         """
@@ -185,15 +157,6 @@ class EgoVehicle(Vehicle):
             # The 'gear_switch_time' attribute is now 'gear_change_time'
             vehicle_info.gear_switch_time = float(vehicle_physics.gear_change_time)
 
-            # The following attributes no longer exist so we can just remove but keep for now ig
-            # vehicle_info.damping_rate_full_throttle = vehicle_physics.damping_rate_full_throttle
-            # vehicle_info.damping_rate_zero_throttle_clutch_engaged = \
-            #     vehicle_physics.damping_rate_zero_throttle_clutch_engaged
-            # vehicle_info.damping_rate_zero_throttle_clutch_disengaged = \
-            #     vehicle_physics.damping_rate_zero_throttle_clutch_disengaged
-            # vehicle_info.clutch_strength = vehicle_physics.clutch_strength
-
-            # These attributes still exist with the same names
             vehicle_info.mass = float(vehicle_physics.mass)
             vehicle_info.drag_coefficient = float(vehicle_physics.drag_coefficient)
             vehicle_info.center_of_mass.x = vehicle_physics.center_of_mass.x
@@ -224,67 +187,13 @@ class EgoVehicle(Vehicle):
         # Use the node's logger
         self.node.get_logger().debug(f"Destroying EgoVehicle(id={self.get_id()})")
 
-        # --- Temporarily disable destroying control subscribers as they are not created in __init__ ---
-        # self.node.destroy_subscription(self.control_subscriber)
-        # self.node.destroy_subscription(self.enable_autopilot_subscriber)
-        # self.node.destroy_subscription(self.control_override_subscriber)
-        # self.node.destroy_subscription(self.manual_control_subscriber)
-
         # Destroy the publishers created in __init__
         self.node.destroy_publisher(self.vehicle_status_publisher)
         self.node.destroy_publisher(self.vehicle_info_publisher)
         
         # Forward call
         Vehicle.destroy(self)
-
-    '''
-    ROS2 Debug. Commenting these out as well
-    def control_command_override(self, enable):
-        """
-        Set the vehicle control mode according to ros topic
-        """
-        self.vehicle_control_override = enable.data
-
-    def control_command_updated(self, ros_vehicle_control, manual_override):
-        """
-        Receive a CarlaEgoVehicleControl msg and send to CARLA
-
-        This function gets called whenever a ROS CarlaEgoVehicleControl is received.
-        If the mode is valid (either normal or manual), the received ROS message is
-        converted into carla.VehicleControl command and sent to CARLA.
-        This bridge is not responsible for any restrictions on velocity or steering.
-        It's just forwarding the ROS input to CARLA
-
-        :param manual_override: manually override the vehicle control command
-        :param ros_vehicle_control: current vehicle control input received via ROS
-        :type ros_vehicle_control: carla_msgs.msg.CarlaEgoVehicleControl
-        :return:
-        """
-        if manual_override == self.vehicle_control_override:
-            vehicle_control = VehicleControl()
-            vehicle_control.hand_brake = ros_vehicle_control.hand_brake
-            vehicle_control.brake = ros_vehicle_control.brake
-            vehicle_control.steer = ros_vehicle_control.steer
-            vehicle_control.throttle = ros_vehicle_control.throttle
-            vehicle_control.reverse = ros_vehicle_control.reverse
-            vehicle_control.manual_gear_shift = ros_vehicle_control.manual_gear_shift
-            vehicle_control.gear = ros_vehicle_control.gear
-            self.carla_actor.apply_control(vehicle_control)
-            self._vehicle_control_applied_callback(self.get_id())
-
-     def enable_autopilot_updated(self, enable_auto_pilot):
-        """
-        Enable/disable auto pilot
-
-        :param enable_auto_pilot: should the autopilot be enabled?
-        :type enable_auto_pilot: std_msgs.Bool
-        :return:
-        """
-        self.node.logdebug("Ego vehicle: Set autopilot to {}".format(enable_auto_pilot.data))
-        self.carla_actor.set_autopilot(enable_auto_pilot.data)
-    '''
-
-
+        
     @staticmethod
     def get_vector_length_squared(carla_vector):
         """
