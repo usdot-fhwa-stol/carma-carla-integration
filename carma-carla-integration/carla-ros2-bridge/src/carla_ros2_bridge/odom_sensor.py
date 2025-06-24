@@ -47,6 +47,8 @@ class OdometrySensor(object):
         This will be called periodically by the main bridge node.
         """
         # Get current timestamp from the node's clock
+        # Assuming the 'use_sim_time' parameter is set to True in the launch file, so the node's
+        # clock is driven by the /clock topic published by the CARLA simulator.
         timestamp = self.node.get_clock().now().to_msg()
 
         odometry = Odometry(header=self.parent.get_msg_header("map", timestamp=timestamp))
