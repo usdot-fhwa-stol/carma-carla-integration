@@ -25,8 +25,8 @@ setup(
     
     entry_points={
         'console_scripts': [
-            # This base PR only provides the main bridge executable
             'bridge = carla_ros2_bridge.bridge:main',
+            'spawn_hero_vehicle = carla_scripts.spawn_vehicle:main',
         ],
     },
 )
