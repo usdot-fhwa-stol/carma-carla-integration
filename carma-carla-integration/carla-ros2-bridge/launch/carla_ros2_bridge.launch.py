@@ -5,6 +5,7 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from launch.conditions import IfCondition
+from launch.actions import TimerAction
 
 def generate_launch_description():
     """
@@ -34,7 +35,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             name='synchronous_mode',
-            default_value='false',
+            default_value='True',
             description='Enable/disable synchronous mode. If enabled, the ROS bridge waits until the expected data is received for all sensors'
         ),
         DeclareLaunchArgument(
@@ -79,32 +80,38 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             name='hero_config_path',
-            default_value=PathJoinSubstitution(text=os.path.join(
+            default_value=PathJoinSubstitution([
                 FindPackageShare('carla_ros2_bridge'),
                 'configs',
                 'stack.json'
-            )),
+            ]),
             description='Path to the hero vehicle JSON config'
         ),
 
         # Main CARLA bridge node
-        Node(
-            package='carla_ros2_bridge',
-            executable='bridge',
-            name='carla_ros_bridge',
-            output='screen',
-            emulate_tty=True,
-            parameters=[
-                {'use_sim_time': True},
-                {'host': LaunchConfiguration('host')},
-                {'port': LaunchConfiguration('port')},
-                {'timeout': LaunchConfiguration('timeout')},
-                {'synchronous_mode': LaunchConfiguration('synchronous_mode')},
-                {'synchronous_mode_wait_for_vehicle_control_command': LaunchConfiguration('synchronous_mode_wait_for_vehicle_control_command')},
-                {'fixed_delta_seconds': LaunchConfiguration('fixed_delta_seconds')},
-                {'ego_vehicle_role_name': LaunchConfiguration('role_name')},
+        TimerAction(
+            period=5.0,  # seconds to wait before starting the bridge
+            actions=[
+                Node(
+                    package='carla_ros2_bridge',
+                    executable='bridge',
+                    name='carla_ros_bridge',
+                    output='screen',
+                    emulate_tty=True,
+                    parameters=[
+                        {'use_sim_time': True},
+                        {'host': LaunchConfiguration('host')},
+                        {'port': LaunchConfiguration('port')},
+                        {'timeout': LaunchConfiguration('timeout')},
+                        {'synchronous_mode': LaunchConfiguration('synchronous_mode')},
+                        {'synchronous_mode_wait_for_vehicle_control_command': LaunchConfiguration('synchronous_mode_wait_for_vehicle_control_command')},
+                        {'fixed_delta_seconds': LaunchConfiguration('fixed_delta_seconds')},
+                        {'ego_vehicle_role_name': LaunchConfiguration('role_name')},
+                    ]
+                )
             ]
         ),
+
         
         # Ackermann control node
         Node(
@@ -125,17 +132,18 @@ def generate_launch_description():
             condition=IfCondition(LaunchConfiguration('launch_ackermann_control')),
         ),
 
-        # Vehicle spawn script
+        # Vehicle spawn node
         Node(
             package='carla_ros2_bridge',
-            executable='spawn_hero_vehicle',
+            executable='spawn_vehicle',
             name='spawn_vehicle_node',
             output='screen',
             emulate_tty=True,
-            arguments=[
-                '--host', LaunchConfiguration('host'),
-                '--port', LaunchConfiguration('port'),
-                '--file', LaunchConfiguration('hero_config_path'),
+            parameters=[
+                {'host': LaunchConfiguration('host')},
+                {'port': LaunchConfiguration('port')},
+                {'config_file': LaunchConfiguration('hero_config_path')},
+                {'autopilot': True},
             ],
             condition=IfCondition(LaunchConfiguration('launch_spawn_hero_vehicle')),
         ),
