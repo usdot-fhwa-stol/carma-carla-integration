@@ -26,7 +26,8 @@ setup(
     entry_points={
         'console_scripts': [
             'bridge = carla_ros2_bridge.bridge:main',
-            'spawn_hero_vehicle = carla_scripts.spawn_vehicle:main',
+            'spawn_vehicle = carla_ros2_bridge.spawn_vehicle:main',
+            'ackermann_control = carla_ros2_bridge.ackermann_control.carla_ackermann_control_node:main',
         ],
     },
 )
