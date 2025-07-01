@@ -1,5 +1,36 @@
 #!/usr/bin/env python3
-
+# Copyright (C) 2021 LEIDOS.
+# Developped by Ryan Fleming @ UGA MSC Lab 2025
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+#
+#
+# This file is loosely based on the reference architecture developed by the Computer Vision Center (CVC) at the Universitat Autonoma de
+# Barcelona (UAB).
+# https://https://github.com/carla-simulator/carla/blob/ue5-dev/PythonAPI/examples/ros2/ros2_native.py
+#
+# That file has the following license and some code snippets from it may be present in this file as well and are under the same license.
+#
+# Copyright (c) 2024 Computer Vision Center (CVC) at the Universitat Autonoma de
+# Barcelona (UAB).
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://opensource.org/licenses/MIT>.
+#
+"""
+VehicleSpawner class which handles spawning vehicle described by config file 
+at path specificed by parameter 'config_file'
+"""
 import json
 import carla
 import rclpy
