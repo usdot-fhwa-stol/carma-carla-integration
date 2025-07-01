@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Copyright (C) 2021 LEIDOS.
-# Developped by Ryan Fleming @ UGA MSC Lab 2025
+# Developed by Ryan Fleming @ UGA MSC Lab 2025
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
