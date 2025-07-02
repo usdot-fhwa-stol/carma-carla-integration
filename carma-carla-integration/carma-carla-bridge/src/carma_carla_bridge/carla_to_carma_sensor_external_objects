@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Copyright (C) 2023 LEIDOS.
+# Migrated to ROS2 under Ryan Fleming @ UGA MSC Lab 2025
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -13,6 +14,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+"""
+Converts objects detected by lidar sensor from carla-sensor-lib to CARMA ExternalObjectList messages.
+Subscribes to: None
+Publishes: /environment/external_objects (cav_msgs/ExternalObjectList) 
+"""
 
 import sys
 
@@ -23,116 +29,156 @@ import carla
 
 from cav_msgs.msg import ExternalObjectList, ExternalObject
 import numpy as np
-import rospy
-from rospy.exceptions import ROSInterruptException
+import time
+import rclpy
+from rclpy.node import Node
+from rclpy.time import Time
+from rclpy.duration import Duration
+from rclpy.exceptions import ROSInterruptException
+
 from scipy.spatial.transform import Rotation
+import traceback
 
-external_objects_pub = rospy.Publisher('/environment/external_objects', ExternalObjectList, queue_size=1)
+class CarlaToCarmaSensorExternalObjectsNode(Node):
+    def __init__(self):
+        super().__init__('carla_to_carma_sensor_external_objects')
 
+        # Parameter declarations with logging
+        self.declare_parameter('sensor_object_pub_rate', 10)
+        self.pub_rate = self.get_parameter('sensor_object_pub_rate').value
+        self.get_logger().info(f"Parameter [sensor_object_pub_rate]: {self.pub_rate}")
 
-def convert_objects():
-    """
-    Main loop
-    """
-    rospy.init_node('carla_to_carma_sensor_external_objects', anonymous=True)
-    pub_rate = rospy.get_param('~sensor_object_pub_rate', 10)
-    rate = rospy.Rate(pub_rate)
-    sensor_creation_timeout = 60
-    sensor_creation_rate = rospy.Rate(1)
+        self.sensor_creation_rate = self.create_rate(1.0)
 
-    setup_result = setup_carla_client_and_config()
-    if setup_result is None:
-        rospy.logfatal("Unable to set up CARLA client and configuration due to missing actor.")
-        return
+        # CARLA setup
+        self.get_logger().info("Initializing CARLA client and retrieving configuration...")
+        setup_result = self.setup_carla_client_and_config()
+        if setup_result is None:
+            self.get_logger().fatal("CARLA setup failed — sensor cannot be created.")
+            return None
 
-    client, world, api, parent_actor_id, sensor_config, noise_model_config = setup_result
+        self.get_logger().info("Creating /environment/external_objects publisher...")
+        self.external_objects_pub = self.create_publisher(ExternalObjectList, '/environment/external_objects', 1)
+        self.timer = self.create_timer(1.0 / self.pub_rate, self.timer_callback)
 
-    sensor_creation_start_time = rospy.Time.now()
+        client, world, api, parent_actor_id, sensor_config, noise_model_config = setup_result
 
-    sensor = None
-    while not rospy.is_shutdown() and sensor is None:
-        rospy.loginfo("Attempting to create vehicle sensor...")
-        sensor = create_sensor_for_sensorlib(world, api, parent_actor_id, sensor_config, noise_model_config)
+        # Sensor creation loop with logging
+        sensor_creation_start_time = self.get_clock().now()
+        sensor_creation_timeout = 60
+        self.sensor = None
+        while rclpy.ok() and self.sensor is None:
+            self.get_logger().info("Attempting to create simulated semantic lidar sensor...")
+            self.sensor = self.create_sensor_for_sensorlib(world, api, parent_actor_id, sensor_config, noise_model_config)
 
-        if sensor:
-            break  # Exit the loop if the sensor is created successfully.
-        elif rospy.Time.now() - sensor_creation_start_time > rospy.Duration(sensor_creation_timeout):
-            rospy.logerr(f"Sensor creation timed out after {sensor_creation_timeout} seconds.")
-            return
-        else:
-            rospy.logwarn("Sensor creation failed, will retry after a short delay.")
-            sensor_creation_rate.sleep()
-
-    if sensor is None:
-        rospy.logfatal("Unable to create sensor since ROS is down")
-        return
-
-    while not rospy.is_shutdown():
-        get_data_from_sensorlib(sensor)
-        rate.sleep()
-
-def setup_carla_client_and_config():
-    carla_host_address = rospy.get_param('~host')
-    carla_port = rospy.get_param('~port')
-    client = carla.Client(carla_host_address, carla_port)
-    client.set_timeout(10.0)
-    world = client.get_world()
-
-    api = CarlaCDASimAPI.build_from_world(world)
-
-    sensor_config = SimulatedSensorUtils.load_config_from_file(
-        "/home/carma/carla-sensor-lib/config/simulated_sensor_config.yaml"
-    )
-    noise_model_config = SimulatedSensorUtils.load_config_from_file(
-        "/home/carma/carla-sensor-lib/config/noise_model_config.yaml"
-    )
-    #change sensor config to non sensor centric
-    sensor_config["simulated_sensor"]["use_sensor_centric_frame"] = False
-    role_name = rospy.get_param('~role_name')
-    parent_actor_id = None
-    actor_search_timeout = 60
-    search_start_time = rospy.Time.now()
-
-    while rospy.Time.now() - search_start_time < rospy.Duration(actor_search_timeout):
-        for actor in world.get_actors():
-            if actor.attributes.get('role_name') == role_name:
-                parent_actor_id = actor.id
+            if self.sensor:
+                self.get_logger().info("Sensor created successfully.")
                 break
-        if parent_actor_id:
-            break
-        if rospy.is_shutdown():
-            raise ROSInterruptException("ROS shutdown requested while searching for actor.")
-        rospy.sleep(1)  # sleep for a second before retrying
+            elif (self.get_clock().now() - sensor_creation_start_time) > Duration(seconds=sensor_creation_timeout):
+                self.get_logger().error(f"Sensor creation timed out after {sensor_creation_timeout} seconds.")
+                return
+            else:
+                self.get_logger().warn("Sensor creation failed; retrying shortly...")
+                self.sensor_creation_rate.sleep()
 
-    if not parent_actor_id:
-        rospy.logerr("Failed to find parent actor with role_name '{}' within {} seconds.".format(role_name, actor_search_timeout))
-        return None
+    def setup_carla_client_and_config(self):
+        # Declare + log parameters
+        self.declare_parameter('host', 'localhost')
+        self.declare_parameter('port', 2000)
+        self.declare_parameter('role_name', 'hero')
 
-    return client, world, api, parent_actor_id, sensor_config, noise_model_config
+        carla_host_address = self.get_parameter('host').value
+        carla_port = self.get_parameter('port').value
+        self.role_name = self.get_parameter('role_name').value
 
-def create_sensor_for_sensorlib(world, api, parent_actor_id, sensor_config, noise_model_config):
-    simulated_sensor_config = sensor_config["simulated_sensor"]
-    carla_sensor_config = sensor_config["lidar_sensor"]
-    sensor_id = rospy.get_param('~sensor_id')
-    detection_cycle_delay_seconds = rospy.get_param('~detection_cycle_delay_seconds')
+        self.get_logger().info(f"CARLA host: {carla_host_address}, port: {carla_port}, role_name: {self.role_name}")
 
-    user_offset = carla.Location(0, 0, 2.0)  # Assumes the lidar location is 2 meters from the ground attached to the vehicle
-    lidar_transform = carla.Transform(user_offset)
+        # Connect to CARLA
+        try:
+            client = carla.Client(carla_host_address, carla_port)
+            client.set_timeout(10.0)
+            world = client.get_world()
+            self.get_logger().info("Successfully connected to CARLA and retrieved world.")
+        except Exception as e:
+            self.get_logger().error(f"Failed to connect to CARLA: {e}")
+            return None
 
-    # Assuming infrastructure_id is still 1 as it has no relation to CARLA
-    infrastructure_id = "1"
+        api = CarlaCDASimAPI.build_from_world(world)
 
-    sensor = api.create_simulated_semantic_lidar_sensor(
-        simulated_sensor_config, carla_sensor_config, noise_model_config,
-        detection_cycle_delay_seconds,
-        infrastructure_id, sensor_id,
-        lidar_transform.location, lidar_transform.rotation, parent_actor_id
-    )
-    return sensor
+        # Load sensor config
+        self.get_logger().info("Loading sensor and noise model config files...")
+        sensor_config = SimulatedSensorUtils.load_config_from_file(
+            "/home/carma/carla-sensor-lib/config/simulated_sensor_config.yaml"
+        )
+        noise_model_config = SimulatedSensorUtils.load_config_from_file(
+            "/home/carma/carla-sensor-lib/config/noise_model_config.yaml"
+        )
+        sensor_config["simulated_sensor"]["use_sensor_centric_frame"] = False
 
+        # Search for actor with matching role_name
+        self.get_logger().info(f"Searching for vehicle with role_name = '{self.role_name}'")
+        parent_actor_id = None
+        actor_search_timeout = 15
+        search_start_time = self.get_clock().now()
 
+        while (self.get_clock().now() - search_start_time) < Duration(seconds=actor_search_timeout):
+            for actor in world.get_actors():
+                if actor.attributes.get('role_name') == self.role_name:
+                    parent_actor_id = actor.id
+                    self.get_logger().info(f"Found actor with ID {parent_actor_id} for role_name '{self.role_name}'")
+                    break
+            if parent_actor_id:
+                break
+            if not rclpy.ok():
+                raise ROSInterruptException("ROS shutdown requested while searching for actor.")
+            self.get_logger().warn("Vehicle not found yet; retrying...")
+            time.sleep(1)
 
-def get_data_from_sensorlib(sensor):
+        if not parent_actor_id:
+            self.get_logger().error(
+                f"Timed out after {actor_search_timeout} seconds searching for actor with role_name '{self.role_name}'."
+            )
+            return None
+
+        return client, world, api, parent_actor_id, sensor_config, noise_model_config
+
+    def create_sensor_for_sensorlib(self, world, api, parent_actor_id, sensor_config, noise_model_config):
+        # Log sensor parameters
+        self.declare_parameter('sensor_id', 'sim_lidar_1')
+        self.declare_parameter('detection_cycle_delay_seconds', 1.0)
+
+        sensor_id = self.get_parameter('sensor_id').value
+        delay = self.get_parameter('detection_cycle_delay_seconds').value
+
+        self.get_logger().info(f"Creating sensor with ID '{sensor_id}', delay {delay}s")
+
+        user_offset = carla.Location(0, 0, 2.0)
+        lidar_transform = carla.Transform(user_offset)
+        infrastructure_id = "1"
+
+        sensor = api.create_simulated_semantic_lidar_sensor(
+            sensor_config["simulated_sensor"],
+            sensor_config["lidar_sensor"],
+            noise_model_config,
+            delay,
+            infrastructure_id,
+            sensor_id,
+            lidar_transform.location,
+            lidar_transform.rotation,
+            parent_actor_id
+        )
+        return sensor
+    
+    def publish(self, object_msg_list):
+        self.external_objects_pub.publish(object_msg_list)
+
+    def timer_callback(self):
+        if not rclpy.ok():
+            return
+        if self.sensor is not None:
+            get_data_from_sensorlib(self.sensor, self)
+
+def get_data_from_sensorlib(sensor, node):
 
     results = sensor.get_detected_objects()
     object_msg_list = ExternalObjectList()
@@ -140,7 +186,7 @@ def get_data_from_sensorlib(sensor):
 
     for object in results:
         object_msg = ExternalObject()
-        object_msg.header.stamp = rospy.Time.now()
+        object_msg.header.stamp = node.get_clock().now().to_msg()
         object_msg.header.frame_id = "map"
 
         object_msg.id = object.objectId
@@ -190,7 +236,7 @@ def get_data_from_sensorlib(sensor):
         else:
             object_msg.object_type = 0
 
-        object_msg.dynamic_obj = 1
+        object_msg.dynamic_obj = True
 
         object_msg.presence_vector = object_msg.presence_vector + \
                                  ExternalObject.ID_PRESENCE_VECTOR + \
@@ -202,10 +248,26 @@ def get_data_from_sensorlib(sensor):
                                  ExternalObject.OBJECT_TYPE_PRESENCE_VECTOR
         object_msg_list.objects.append(object_msg)
 
-    external_objects_pub.publish(object_msg_list)
+    node.publish(object_msg_list)
 
-
+def main(args=None):
+    rclpy.init(args=args)
+    print("carla_to_carma_sensor_external_objects")
+    try:
+        node = CarlaToCarmaSensorExternalObjectsNode()
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        if node: node.get_logger().info(f"{node.get_name()} shutting down due to KeyboardInterrupt.")
+    except Exception as e:
+        # Ensure logger is available or use print
+        logger = rclpy.logging.get_logger("carla_to_carma_sensor_external_objects_node_main")
+        if node : logger = node.get_logger()
+        logger.error(f"Unhandled exception in {node.get_name() if node else 'CarlaToCarmaObjectsNode'}: {e}\n{traceback.format_exc()}")
+    finally:
+        if node:
+            node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 if __name__ == '__main__':
-    print("carla_to_carma_sensor_external_objects")
-    convert_objects()
+    main()
