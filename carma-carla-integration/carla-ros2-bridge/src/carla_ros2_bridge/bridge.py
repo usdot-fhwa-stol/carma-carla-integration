@@ -1,10 +1,18 @@
 #!/usr/bin/env python
+# Copyright (C) 2021 LEIDOS.
+# Developed by Will Varner/Ryan Fleming @ UGA MSC Lab 2025
 #
-# Copyright (c) 2018-2020 Intel Corporation
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
 #
-# This work is licensed under the terms of the MIT license.
-# For a copy, see <https://opensource.org/licenses/MIT>.
+# http://www.apache.org/licenses/LICENSE-2.0
 #
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
 """
 Rosbridge class:
 
@@ -15,6 +23,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from threading import Thread, Lock, Event
+import time
 
 from rosgraph_msgs.msg import Clock
 
@@ -54,9 +63,8 @@ class CarlaRosBridge(Node):
         params['timeout'] = self.declare_parameter('timeout', 2.0).get_parameter_value().double_value
         params['synchronous_mode'] = self.declare_parameter('synchronous_mode', True).get_parameter_value().bool_value
         params['fixed_delta_seconds'] = self.declare_parameter('fixed_delta_seconds', 0.05).get_parameter_value().double_value
-        
+
         # Get the role_name for the ego vehicle
-        # For simplicity, we'll handle one ego vehicle. The original bridge handles a list.
         params['ego_vehicle_role_name'] = self.declare_parameter(
             'ego_vehicle_role_name', 'hero').get_parameter_value().string_value
 
@@ -64,58 +72,73 @@ class CarlaRosBridge(Node):
 
     def initialize_bridge(self, carla_client):
         """
-        Connects to the CARLA world and populates the actor list.
+        Connects to the CARLA world and waits for the ego vehicle before initializing actors.
         """
         self.carla_world = carla_client.get_world()
-        
+
         # Set synchronous mode settings
         settings = self.carla_world.get_settings()
         settings.synchronous_mode = self.params['synchronous_mode']
         settings.fixed_delta_seconds = self.params['fixed_delta_seconds']
         self.carla_world.apply_settings(settings)
-        
-        self.get_logger().info("Finding and creating actors...")
-        
-        # Find all actors in the world and create our handler objects
+        self.get_logger().info("[Bridge] Applied synchronous settings to CARLA world")
+
+        traffic_manager = carla_client.get_trafficmanager()
+        traffic_manager.set_synchronous_mode(self.params['synchronous_mode'])
+        self.get_logger().info("[Bridge] Configured traffic manager for synchronous mode")
+
+        # Wait for ego vehicle to appear
+        timeout_seconds = 30
+        poll_interval = 1.0
+        waited = 0
+
+        self.get_logger().info(f"[Bridge] Waiting for ego vehicle with role_name '{self.params['ego_vehicle_role_name']}'")
+
+        while rclpy.ok() and waited < timeout_seconds:
+            actors = self.carla_world.get_actors()
+            for actor in actors:
+                if actor.attributes.get('role_name') == self.params['ego_vehicle_role_name']:
+                    self.ego_vehicle = EgoVehicle(
+                        uid=actor.id, name=actor.attributes.get('role_name', 'ego'),
+                        parent=None, node=self, carla_actor=actor,
+                        vehicle_control_applied_callback=lambda id: None
+                    )
+                    self.actors[actor.id] = self.ego_vehicle
+                    self.get_logger().info(f"[Bridge] Found ego vehicle with role_name 'f{self.ego_vehicle.name}'")
+                    break
+            if self.ego_vehicle:
+                break
+            time.sleep(poll_interval)
+            waited += poll_interval
+
+        if not self.ego_vehicle:
+            self.get_logger().error(f"[Bridge] Ego vehicle with role name '{self.params['ego_vehicle_role_name']}' not found after {timeout_seconds} seconds!")
+            return
+
+        # Populate remaining actors
         for actor in self.carla_world.get_actors():
-            if actor.attributes.get('role_name') == self.params['ego_vehicle_role_name']:
-                # Found the Ego Vehicle
-                self.ego_vehicle = EgoVehicle(
-                    uid=actor.id, name=actor.attributes.get('role_name', 'ego'),
-                    parent=None, node=self, carla_actor=actor,
-                    # We are not handling the control callback for now
-                    vehicle_control_applied_callback=lambda id: None
-                )
-                self.actors[actor.id] = self.ego_vehicle
+            if actor.id == self.ego_vehicle.uid:
+                continue
             elif isinstance(actor, carla.Vehicle):
-                # Found a regular vehicle
                 self.actors[actor.id] = Vehicle(
                     uid=actor.id, name=f"vehicle_{actor.id}",
                     parent=None, node=self, carla_actor=actor
                 )
             elif isinstance(actor, carla.Walker):
-                # Found a walker/pedestrian
                 self.actors[actor.id] = Walker(
                     uid=actor.id, name=f"walker_{actor.id}",
                     parent=None, node=self, carla_actor=actor
                 )
 
-        if not self.ego_vehicle:
-            self.get_logger().warning(f"Ego vehicle with role name '{self.params['ego_vehicle_role_name']}' not found in the world!")
-            return
-
-        # Now "sensor" components that are attached to the ego vehicle
+        # Attach sensors
         self.odometry_sensor = OdometrySensor(parent_actor=self.ego_vehicle, node=self)
         self.object_sensor = ObjectSensor(parent_actor=self.ego_vehicle, node=self, actor_list=self.actors)
-        
-        # Start the main update loop
+
         self.get_logger().info("Initialization complete. Starting update loop.")
         self.update_thread.start()
 
+
     def _update_loop(self):
-        """
-        The main execution loop of the bridge.
-        """
         if not self.params['synchronous_mode']:
             self.get_logger().error("This ported bridge currently only supports synchronous mode.")
             return
@@ -123,11 +146,10 @@ class CarlaRosBridge(Node):
         while rclpy.ok() and not self.shutdown.is_set():
             # Tick the CARLA world
             frame_id = self.carla_world.tick()
-            
             # Get the timestamp from the world snapshot
             world_snapshot = self.carla_world.get_snapshot()
             timestamp = self.get_clock().now().to_msg() # Use ROS time for consistency
-            
+
             # Update all actor states
             for actor_handler in self.actors.values():
                 actor_handler.update(timestamp)
@@ -142,13 +164,12 @@ class CarlaRosBridge(Node):
         """
         self.get_logger().info("Shutting down CARLA ROS 2 Bridge...")
         self.shutdown.set()
-        self.update_thread.join()
-        
-        # Destroy all managed actors
+        if self.update_thread.is_alive():
+            self.update_thread.join()
+
         for actor in self.actors.values():
             actor.destroy()
-        
-        # Destroy sensor components
+
         if self.odometry_sensor:
             self.odometry_sensor.destroy()
         if self.object_sensor:
@@ -157,30 +178,25 @@ class CarlaRosBridge(Node):
         super().destroy_node()
 
 def main(args=None):
-    """
-    Main function for the CARLA ROS 2 Bridge.
-    """
     rclpy.init(args=args)
-    
+
     carla_bridge = None
     carla_client = None
-    
+
     try:
         carla_bridge = CarlaRosBridge()
         params = carla_bridge.params
-        
+
         carla_bridge.get_logger().info(f"Connecting to CARLA at {params['host']}:{params['port']}...")
         carla_client = carla.Client(host=params['host'], port=params['port'])
         carla_client.set_timeout(params['timeout'])
-        
+
         # Initialize the bridge with the CARLA client
         carla_bridge.initialize_bridge(carla_client)
-        
+
         # Use a MultiThreadedExecutor to allow the main update loop to run in its own thread
         executor = MultiThreadedExecutor()
         executor.add_node(carla_bridge)
-        
-        # Spin the executor
         executor.spin()
 
     except (RuntimeError, IOError) as e:
