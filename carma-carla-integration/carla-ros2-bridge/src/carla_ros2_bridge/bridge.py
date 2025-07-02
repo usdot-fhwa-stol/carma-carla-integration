@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Copyright (C) 2021 LEIDOS.
-# Developed by Ryan Fleming @ UGA MSC Lab 2025
+# Developed by Will Varner/Ryan Fleming @ UGA MSC Lab 2025
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -104,6 +104,7 @@ class CarlaRosBridge(Node):
                         vehicle_control_applied_callback=lambda id: None
                     )
                     self.actors[actor.id] = self.ego_vehicle
+                    self.get_logger().info(f"[Bridge] Found ego vehicle with role_name 'f{self.ego_vehicle.name}'")
                     break
             if self.ego_vehicle:
                 break
