@@ -18,6 +18,8 @@
 Publish to CARMA :cav_msgs::DriverStatus
     Topic: /hardware_interface/driver_discovery;
 """
+import rclpy
+from rclpy.node import Node
 import rospy
 from cav_msgs.msg import DriverStatus
 
