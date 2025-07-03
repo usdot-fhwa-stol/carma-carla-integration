@@ -34,6 +34,13 @@ class DriverStatusNode(Node):
         self.declare_parameter('camera_enabled', True)
         self.declare_parameter('gnss_enabled', True)
 
+        # Read parameters
+        self.pub_rate = self.get_parameter('driver_status_pub_rate').value
+        self.lidar_enabled = self.get_parameter('lidar_enabled').value
+        self.controller_enabled = self.get_parameter('controller_enabled').value
+        self.camera_enabled = self.get_parameter('camera_enabled').value
+        self.gnss_enabled = self.get_parameter('gnss_enabled').value
+
     def publish_driver_status(self):
         print()
 
