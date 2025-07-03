@@ -49,6 +49,20 @@ class DriverStatusNode(Node):
     def publish_driver_status(self):
         print()
 
+# status value should only be a value described by DriverStatus.msg status enumeration:
+# uint8  OFF=0, uint8  OPERATIONAL=1, uint8  DEGRADED=2, uint8  FAULT=3
+def create_driver_status(name: str, status: int, **categories) -> DriverStatus:
+    msg = DriverStatus()
+    msg.name = name
+    msg.status = status
+
+    # Set attributes passed as parameters in DriverStatus message
+    for field in DriverStatus.__slots__:
+        if field in categories:
+            setattr(msg, field, categories[field])
+
+    return msg
+
 driver_status_pub = rospy.Publisher('/hardware_interface/driver_discovery', DriverStatus, queue_size=10)
 
 def driver_status():
