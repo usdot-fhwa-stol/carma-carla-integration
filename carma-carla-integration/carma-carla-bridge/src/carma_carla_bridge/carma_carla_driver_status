@@ -22,6 +22,8 @@ import rclpy
 from rclpy.node import Node
 from cav_msgs.msg import DriverStatus
 
+import traceback
+
 class DriverStatusNode(Node):
     def __init__(self):
         super.__init__('carma_carla_driver_status')
@@ -47,7 +49,7 @@ class DriverStatusNode(Node):
 
     def publish_driver_status(self):
         msgs = [
-            create_driver_status(
+            create_driver_status_msg(
                 name        = '/hardware_interface/carla_driver',
                 status      = DriverStatus.OPERATIONAL,
                 lidar       = self.lidar_enabled,
@@ -55,17 +57,17 @@ class DriverStatusNode(Node):
                 camera      = self.camera_enabled,
                 gnss        = self.gnss_enabled
             ),
-            create_driver_status(
+            create_driver_status_msg(
                 name        = '/hardware_interface/carla_camera_driver',
                 status      = DriverStatus.OPERATIONAL,
                 camera      = self.camera_enabled
             ),
-            create_driver_status(
+            create_driver_status_msg(
                 name        = '/hardware_interface/carla_lidar_driver',
                 status      = DriverStatus.OPERATIONAL,
                 lidar       = self.lidar_enabled
             ),
-            create_driver_status(
+            create_driver_status_msg(
                 name        = '/hardware_interface/carla_gnss_driver',
                 status      = DriverStatus.OPERATIONAL,
                 gnss        = self.gnss_enabled
@@ -77,7 +79,7 @@ class DriverStatusNode(Node):
 
 # status value should only be a value described by DriverStatus status enumeration:
 # uint8  OFF=0, uint8  OPERATIONAL=1, uint8  DEGRADED=2, uint8  FAULT=3
-def create_driver_status(name: str, status: int, **categories) -> DriverStatus:
+def create_driver_status_msg(name: str, status: int, **categories) -> DriverStatus:
     msg = DriverStatus()
     msg.name = name
     msg.status = status
@@ -88,3 +90,24 @@ def create_driver_status(name: str, status: int, **categories) -> DriverStatus:
             setattr(msg, field, categories[field])
 
     return msg
+
+def main(args=None):
+    rclpy.init(args=args)
+    try:
+        node = DriverStatusNode()
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        if node: node.get_logger().info(f"{node.get_name()} shutting down due to KeyboardInterrupt.")
+    except Exception as e:
+        # Ensure logger is available or use print
+        logger = rclpy.logging.get_logger("carma_carla_driver_status_node_main")
+        if node : logger = node.get_logger()
+        logger.error(f"Unhandled exception in {node.get_name() if node else 'DriverStatusNode'}: {e}\n{traceback.format_exc()}")
+    finally:
+        if node:
+            node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
