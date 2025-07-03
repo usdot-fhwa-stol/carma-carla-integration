@@ -23,6 +23,13 @@ from rclpy.node import Node
 import rospy
 from cav_msgs.msg import DriverStatus
 
+class DriverStatusNode(Node):
+    def __init__(self):
+        super.__init__('carma_carla_driver_status')
+
+    def publish_driver_status(self):
+        print()
+
 driver_status_pub = rospy.Publisher('/hardware_interface/driver_discovery', DriverStatus, queue_size=10)
 
 def driver_status():
