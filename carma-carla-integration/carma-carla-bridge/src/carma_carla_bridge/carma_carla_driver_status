@@ -27,6 +27,13 @@ class DriverStatusNode(Node):
     def __init__(self):
         super.__init__('carma_carla_driver_status')
 
+        # Parameter declarations
+        self.declare_parameter('driver_status_pub_rate', 10)
+        self.declare_parameter('lidar_enabled', True)
+        self.declare_parameter('controller_enabled', True)
+        self.declare_parameter('camera_enabled', True)
+        self.declare_parameter('gnss_enabled', True)
+
     def publish_driver_status(self):
         print()
 
