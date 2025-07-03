@@ -47,9 +47,36 @@ class DriverStatusNode(Node):
         self.timer = self.create_timer(1.0 / self.pub_rate, self.publish_driver_status)
 
     def publish_driver_status(self):
-        print()
+        msgs = [
+            create_driver_status(
+                name        = '/hardware_interface/carla_driver',
+                status      = DriverStatus.OPERATIONAL,
+                lidar       = self.lidar_enabled,
+                controller  = self.controller_enabled,
+                camera      = self.camera_enabled,
+                gnss        = self.gnss_enabled
+            ),
+            create_driver_status(
+                name        = '/hardware_interface/carla_camera_driver',
+                status      = DriverStatus.OPERATIONAL,
+                camera      = self.camera_enabled
+            ),
+            create_driver_status(
+                name        = '/hardware_interface/carla_lidar_driver',
+                status      = DriverStatus.OPERATIONAL,
+                lidar       = self.lidar_enabled
+            ),
+            create_driver_status(
+                name        = '/hardware_interface/carla_gnss_driver',
+                status      = DriverStatus.OPERATIONAL,
+                gnss        = self.gnss_enabled
+            )
+        ]
 
-# status value should only be a value described by DriverStatus.msg status enumeration:
+        for msg in msgs:
+            self.publisher.publish(msg)
+
+# status value should only be a value described by DriverStatus status enumeration:
 # uint8  OFF=0, uint8  OPERATIONAL=1, uint8  DEGRADED=2, uint8  FAULT=3
 def create_driver_status(name: str, status: int, **categories) -> DriverStatus:
     msg = DriverStatus()
