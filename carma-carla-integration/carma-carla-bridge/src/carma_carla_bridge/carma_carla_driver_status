@@ -20,7 +20,6 @@ Publish to CARMA :cav_msgs::DriverStatus
 """
 import rclpy
 from rclpy.node import Node
-import rospy
 from cav_msgs.msg import DriverStatus
 
 class DriverStatusNode(Node):
@@ -89,58 +88,3 @@ def create_driver_status(name: str, status: int, **categories) -> DriverStatus:
             setattr(msg, field, categories[field])
 
     return msg
-
-driver_status_pub = rospy.Publisher('/hardware_interface/driver_discovery', DriverStatus, queue_size=10)
-
-def driver_status():
-    """
-    main loop
-    """
-    rospy.init_node('carma_carla_driver_status', anonymous=True)
-    pub_rate = rospy.get_param('~driver_status_pub_rate', 10)
-    rate = rospy.Rate(pub_rate)
-
-    ## initial msg parameters
-    lidar_enabled = rospy.get_param('~lidar_enabled', True)
-    controller_enabled = rospy.get_param('~controller_enabled', True)
-    camera_enabled = rospy.get_param('~camera_enabled', True)
-    gnss_enabled = rospy.get_param('~gnss_enabled', True)
-
-    while not rospy.is_shutdown():
-
-        ## SSC
-        driver_status_msg = DriverStatus()
-        driver_status_msg.name          = '/hardware_interface/carla_driver'
-        driver_status_msg.status        = DriverStatus.OPERATIONAL
-        driver_status_msg.lidar         = lidar_enabled
-        driver_status_msg.controller    = controller_enabled
-        driver_status_msg.camera        = camera_enabled
-        driver_status_msg.gnss          = gnss_enabled
-        
-        ## camera driver
-        camera_driver_status_msg = DriverStatus()
-        camera_driver_status_msg.name   = '/hardware_interface/carla_camera_driver'
-        camera_driver_status_msg.status = DriverStatus.OPERATIONAL
-        camera_driver_status_msg.camera = camera_enabled
-
-        ## lidar driver
-        lidar_driver_status_msg = DriverStatus()
-        lidar_driver_status_msg.name    = '/hardware_interface/carla_lidar_driver'
-        lidar_driver_status_msg.status  = DriverStatus.OPERATIONAL
-        lidar_driver_status_msg.lidar   = lidar_enabled
-
-        ## gnss driver
-        gnss_driver_status_msg = DriverStatus()
-        gnss_driver_status_msg.name     = '/hardware_interface/carla_gnss_driver'
-        gnss_driver_status_msg.status   = DriverStatus.OPERATIONAL
-        gnss_driver_status_msg.gnss     = gnss_enabled
-
-        driver_status_pub.publish(driver_status_msg)
-        driver_status_pub.publish(camera_driver_status_msg)
-        driver_status_pub.publish(lidar_driver_status_msg)
-        driver_status_pub.publish(gnss_driver_status_msg)
-        rate.sleep()
-
-if __name__ == '__main__':
-    print("carma_carla_driver_status")
-    driver_status()
