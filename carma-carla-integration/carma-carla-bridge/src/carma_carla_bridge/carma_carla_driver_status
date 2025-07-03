@@ -41,6 +41,11 @@ class DriverStatusNode(Node):
         self.camera_enabled = self.get_parameter('camera_enabled').value
         self.gnss_enabled = self.get_parameter('gnss_enabled').value
 
+        # Create publisher
+        self.publisher = self.create_publisher(DriverStatus, '/hardware_interface/driver_discovery', 10)
+        # Create timer with specified rate and callback
+        self.timer = self.create_timer(1.0 / self.pub_rate, self.publish_driver_status)
+
     def publish_driver_status(self):
         print()
 
