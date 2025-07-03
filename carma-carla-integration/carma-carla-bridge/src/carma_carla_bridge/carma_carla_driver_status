@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-# Copyright (C) 2021 LEIDOS.
+# Copyright (C) 2023 LEIDOS.
+# Migrated to ROS2 under Ryan Fleming @ UGA MSC Lab 2025
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -13,7 +14,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-
 """
 Publish to CARMA :cav_msgs::DriverStatus
     Topic: /hardware_interface/driver_discovery;
@@ -21,12 +21,13 @@ Publish to CARMA :cav_msgs::DriverStatus
 import rclpy
 from rclpy.node import Node
 from cav_msgs.msg import DriverStatus
+from std_msgs.msg import Header
 
 import traceback
 
 class DriverStatusNode(Node):
     def __init__(self):
-        super.__init__('carma_carla_driver_status')
+        super().__init__('carma_carla_driver_status')
 
         # Parameter declarations
         self.declare_parameter('driver_status_pub_rate', 10)
@@ -43,14 +44,18 @@ class DriverStatusNode(Node):
         self.gnss_enabled = self.get_parameter('gnss_enabled').value
 
         # Create publisher
-        self.publisher = self.create_publisher(DriverStatus, '/hardware_interface/driver_discovery', queue_size=10)
-        
+        self.publisher = self.create_publisher(DriverStatus, '/hardware_interface/driver_discovery', 10)
+
+        # Create clock
+        self.clock = self.get_clock()
+
+        self.get_logger().info(f"{self.get_name()} starting with pub rate: {self.pub_rate}")
         # Create timer with specified rate and callback
         self.timer = self.create_timer(1.0 / self.pub_rate, self.publish_driver_status)
 
     def publish_driver_status(self):
         msgs = [
-            create_driver_status_msg(
+            self.create_driver_status_msg(
                 name        = '/hardware_interface/carla_driver',
                 status      = DriverStatus.OPERATIONAL,
                 lidar       = self.lidar_enabled,
@@ -58,17 +63,17 @@ class DriverStatusNode(Node):
                 camera      = self.camera_enabled,
                 gnss        = self.gnss_enabled
             ),
-            create_driver_status_msg(
+            self.create_driver_status_msg(
                 name        = '/hardware_interface/carla_camera_driver',
                 status      = DriverStatus.OPERATIONAL,
                 camera      = self.camera_enabled
             ),
-            create_driver_status_msg(
+            self.create_driver_status_msg(
                 name        = '/hardware_interface/carla_lidar_driver',
                 status      = DriverStatus.OPERATIONAL,
                 lidar       = self.lidar_enabled
             ),
-            create_driver_status_msg(
+            self.create_driver_status_msg(
                 name        = '/hardware_interface/carla_gnss_driver',
                 status      = DriverStatus.OPERATIONAL,
                 gnss        = self.gnss_enabled
@@ -78,19 +83,26 @@ class DriverStatusNode(Node):
         for msg in msgs:
             self.publisher.publish(msg)
 
-# status value should only be a value described by DriverStatus status enumeration:
-# uint8  OFF=0, uint8  OPERATIONAL=1, uint8  DEGRADED=2, uint8  FAULT=3
-def create_driver_status_msg(name: str, status: int, **categories) -> DriverStatus:
-    msg = DriverStatus()
-    msg.name = name
-    msg.status = status
+    # status value should only be a value described by DriverStatus status enumeration:
+    # uint8  OFF=0, uint8  OPERATIONAL=1, uint8  DEGRADED=2, uint8  FAULT=3
+    def create_driver_status_msg(self, name: str, status: int, **categories) -> DriverStatus:
+        msg = DriverStatus()
 
-    # Set attributes passed as parameters in DriverStatus message
-    for field in DriverStatus.__slots__:
-        if field in categories:
-            setattr(msg, field, categories[field])
+        # Set msg header
+        msg.header = Header()
+        msg.header.stamp = self.clock.now().to_msg()
+        msg.header.frame_id = ''
 
-    return msg
+        msg.name = name
+        msg.status = status
+
+        for key, value in categories.items():
+            if hasattr(msg, key):
+                setattr(msg, key, value)
+            else:
+                raise AttributeError(f"DriverStatus has no field named '{key}'")
+
+        return msg
 
 def main(args=None):
     rclpy.init(args=args)
