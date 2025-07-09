@@ -26,6 +26,7 @@ from rclpy.node import Node
 import rospy
 import sys
 import ast
+import time
 from cav_msgs.msg import RouteEvent
 from cav_msgs.msg import Plugin
 from cav_srvs.srv import SetGuidanceActive, PluginList
@@ -98,7 +99,23 @@ class CarmaCarlaGuidance(Node):
                 self.get_logger().debug(f"Active plugins: {active_names}")
     
     def engage_guidance(self):
-        print()
+        seconds_passed = 0.0
+        while seconds_passed < self.start_delay:
+            self.get_logger().info(f"Engaging the guidance in: {self.start_delay - seconds_passed:.0f}")
+            seconds_passed += 1.0
+            time.sleep(1)
+
+        self.get_logger().info("Attempting to engage guidance")
+        request = SetGuidanceActive.Request()
+        request.guidance_active = True
+        future = self.set_guidance_active_client.call_async(request)
+        rclpy.spin_until_future_complete(self, future)
+
+        if future.result() and future.result().guidance_status:
+            self.get_logger().info("Guidance engaged")
+            rclpy.shutdown()  # Stop spinning after successful engagement
+        else:
+            self.get_logger().error("Failed to set guidance status, retrying...")
 
     def check_plugin_status(self, active_plugins):
         active_names = [p.name for p in active_plugins if p.available and p.activated]
