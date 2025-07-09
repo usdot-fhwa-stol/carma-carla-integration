@@ -30,6 +30,13 @@ from cav_msgs.msg import RouteEvent
 from cav_msgs.msg import Plugin
 from cav_srvs.srv import SetGuidanceActive, PluginList
 from std_msgs.msg import Bool
+
+class CarmaCarlaGuidance(Node):
+    def __init__():
+        super().__init__('carma_carla_guidance')
+    def timer_callback():
+        print()
+
 route_selected = False
 
 def route_event_callback(route_event_msg):
