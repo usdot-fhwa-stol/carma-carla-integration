@@ -87,6 +87,15 @@ class CarmaCarlaGuidance(Node):
 
         active_plugins = plugins_future.result().plugins
 
+    def check_plugin_status(self, active_plugins):
+        active_names = [p.name for p in active_plugins if p.available and p.activated]
+        missing = list(set(self.plugin_list) - set(active_names))
+        if len(missing) > 0:
+            self.get_logger().warn(f"Some plugins are not activated: {missing}")
+            return False
+        self.get_logger().info("All plugins activated...!")
+        return True
+
 route_selected = False
 
 def route_event_callback(route_event_msg):
