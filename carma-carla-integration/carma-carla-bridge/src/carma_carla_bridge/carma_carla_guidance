@@ -21,6 +21,8 @@ Call Services from CARMA:
     Service: /guidance/set_guidance_active
              /guidance/plugins/get_active_plugins
 """
+import rclpy
+from rclpy.node import Node
 import rospy
 import sys
 import ast
