@@ -32,9 +32,24 @@ from cav_srvs.srv import SetGuidanceActive, PluginList
 from std_msgs.msg import Bool
 
 class CarmaCarlaGuidance(Node):
-    def __init__():
+    def __init__(self):
         super().__init__('carma_carla_guidance')
-    def timer_callback():
+
+        # Get Parameters
+        self.declare_parameter("selected_plugins", "[]")
+        self.declare_parameter("start_delay_in_seconds", 15.0)
+        plugin_list_str = self.get_parameter("selected_plugins").get_parameter_value().string_value
+        self.plugin_list = ast.literal_eval(plugin_list_str)
+        self.start_delay = self.get_parameter("start_delay_in_seconds").get_parameter_value().double_value
+
+        if not self.plugin_list:
+            self.get_logger().error(
+                "No input plugin found. Check the config file at /opt/carma/simulation/vehicle_config.json"
+            )
+            rclpy.shutdown()
+            return
+        
+    def timer_callback(self):
         print()
 
 route_selected = False
