@@ -127,6 +127,11 @@ class CarmaCarlaGuidance(Node):
         self.get_logger().info("All plugins activated...!")
         return True
     
+    def route_event_callback(self, msg):
+        if msg.event == RouteEvent.ROUTE_SELECTED or msg.event == RouteEvent.ROUTE_STARTED:
+            self.get_logger().info("Route Selected")
+            self.route_selected = True
+    
 route_selected = False
 
 def route_event_callback(route_event_msg):
