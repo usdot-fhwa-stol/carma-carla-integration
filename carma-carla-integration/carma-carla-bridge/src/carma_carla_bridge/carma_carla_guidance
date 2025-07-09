@@ -67,11 +67,25 @@ class CarmaCarlaGuidance(Node):
         # Wait for required services
         self.wait_for_services()
 
-        # Start the main loop
+        # Set main loop
         self.timer = self.create_timer(1.0, self.timer_callback)
 
     def timer_callback(self):
-        print()
+        # Publish active status
+        status_msg = Bool()
+        status_msg.data = True
+        self.status_pub.publish(status_msg)
+
+        # Call get_active_plugins service synchronously
+        plugins_request = PluginList.Request()
+        plugins_future = self.get_active_plugins_client.call_async(plugins_request)
+        rclpy.spin_until_future_complete(self, plugins_future)
+
+        if not plugins_future.result():
+            self.get_logger().warn("Failed to retrieve active plugins. Retrying in 1 second.")
+            return
+
+        active_plugins = plugins_future.result().plugins
 
 route_selected = False
 
