@@ -49,6 +49,27 @@ class CarmaCarlaGuidance(Node):
             rclpy.shutdown()
             return
         
+         # route selected state
+        self.route_selected = False
+
+        # Publishers/Subscribers
+        self.status_pub = self.create_publisher(Bool, '/carla/guidance_bridge_node/active_status', 10)
+        self.create_subscription(RouteEvent, '/guidance/route_event', self.route_event_callback, 10)
+
+        # CARMA Services
+        self.set_guidance_active_client = self.create_client(SetGuidanceActive, '/guidance/set_guidance_active')
+        self.get_active_plugins_client = self.create_client(PluginList, '/guidance/plugins/get_active_plugins')
+
+        # Logging
+        self.get_logger().info(f"Start delay in seconds: {self.start_delay}")
+        self.get_logger().info(f"List of plugins from config: {self.plugin_list}")
+
+        # Wait for required services
+        self.wait_for_services()
+
+        # Start the main loop
+        self.timer = self.create_timer(1.0, self.timer_callback)
+
     def timer_callback(self):
         print()
 
