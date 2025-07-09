@@ -26,6 +26,7 @@ from rclpy.node import Node
 
 import ast
 import time
+import traceback
 
 from cav_msgs.msg import RouteEvent
 from cav_msgs.msg import Plugin
@@ -131,3 +132,25 @@ class CarmaCarlaGuidance(Node):
         if msg.event == RouteEvent.ROUTE_SELECTED or msg.event == RouteEvent.ROUTE_STARTED:
             self.get_logger().info("Route Selected")
             self.route_selected = True
+
+def main(args=None):
+    rclpy.init(args=args)
+    print("carma_carla_guidance")
+    try:
+        node = CarmaCarlaGuidance()
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        if node: node.get_logger().info(f"{node.get_name()} shutting down due to KeyboardInterrupt.")
+    except Exception as e:
+        # Ensure logger is available or use print
+        logger = rclpy.logging.get_logger("carma_carla_guidance_main")
+        if node : logger = node.get_logger()
+        logger.error(f"Unhandled exception in {node.get_name() if node else 'carma_carla_guidance'}: {e}\n{traceback.format_exc()}")
+    finally:
+        if node:
+            node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
