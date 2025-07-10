@@ -56,7 +56,12 @@ class CarmaCarlaRoute(Node):
         self.run_main_loop()
 
     def pose_cb(self, msg):
-        print()
+        """
+        callback current_pose to make sure carla_to_carma_localization start to send vehicle position info to CARMA
+        PoseStamped message type:
+            geometry_msgs::PoseStamped
+        """
+        self.received_pose = True
 
     def guidance_bridge_node_status_callback(self, msg):
         self.is_guidance_bridge_node_active = msg.data
