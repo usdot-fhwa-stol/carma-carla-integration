@@ -21,6 +21,9 @@ Call Services from CARMA:
     Service: /guidance/get_available_routes
              /guidance/set_active_route
 """
+import rclpy
+from rclpy.node import Node
+import time
 
 import rospy
 from geometry_msgs.msg import PoseStamped, Pose
