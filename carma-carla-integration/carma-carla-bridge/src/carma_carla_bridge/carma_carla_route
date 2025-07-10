@@ -24,6 +24,7 @@ Call Services from CARMA:
 import rclpy
 from rclpy.node import Node
 import time
+import traceback
 
 import rospy
 from geometry_msgs.msg import PoseStamped, Pose
@@ -163,3 +164,25 @@ class CarmaCarlaRoute(Node):
             if self.set_route(self.selected_route_id):
                 break
             time.sleep(1)
+
+def main(args=None):
+    rclpy.init(args=args)
+    print("carma_carla_route")
+    try:
+        node = CarmaCarlaRoute()
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        if node: node.get_logger().info(f"{node.get_name()} shutting down due to KeyboardInterrupt.")
+    except Exception as e:
+        # Ensure logger is available or use print
+        logger = rclpy.logging.get_logger("carma_carla_route_main")
+        if node : logger = node.get_logger()
+        logger.error(f"Unhandled exception in {node.get_name() if node else 'CarmaCarlaRoute'}: {e}\n{traceback.format_exc()}")
+    finally:
+        if node:
+            node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
