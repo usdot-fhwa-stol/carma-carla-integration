@@ -62,7 +62,26 @@ class CarmaCarlaRoute(Node):
         print()
 
     def get_available_route_ids(self):
-        print()
+        """
+        Getting available route function
+        if successfully got available route, return available route ID python list
+        else, return None
+        """
+        client = self.create_client(GetAvailableRoutes, '/guidance/get_available_routes')
+        if not client.wait_for_service(timeout_sec=10.0):
+            self.get_logger().error("/guidance/get_available_routes service not available.")
+            return None
+
+        req = GetAvailableRoutes.Request()
+        future = client.call_async(req)
+        rclpy.spin_until_future_complete(self, future)
+
+        if future.result() is not None:
+            route_ids = [route.route_id for route in future.result().available_routes]
+            return route_ids
+        else:
+            self.get_logger().error("Service call to /guidance/get_available_routes failed.")
+            return None
 
     def set_route(self, route_id):
         print()
