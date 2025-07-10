@@ -84,7 +84,34 @@ class CarmaCarlaRoute(Node):
             return None
 
     def set_route(self, route_id):
-        print()
+        """
+        Set selected route to CARMA platform
+        """
+        client = self.create_client(SetActiveRoute, '/guidance/set_active_route')
+        if not client.wait_for_service(timeout_sec=10.0):
+            self.get_logger().error("/guidance/set_active_route service not available.")
+            return False
+
+        req = SetActiveRoute.Request()
+        req.choice = 0
+        req.route_id = route_id
+
+        future = client.call_async(req)
+        try:
+            rclpy.spin_until_future_complete(self, future)
+
+            if future.result() is not None and not future.result().error_status:
+                self.get_logger().info("Call to set_active_route succeeded!")
+                return True
+            else:
+                self.get_logger().error("Error status response from /guidance/set_active_route or empty result.")
+                return False
+        except:
+            self.get_logger().error("Exception occured during the set_active_route call... "
+                "Possible that route node's world model is not yet loaded... "
+                "Retrying in 1 sec")
+        
+        return False
 
     def check_selected_route(self, available_route_ids, selected_route_id):
         """
