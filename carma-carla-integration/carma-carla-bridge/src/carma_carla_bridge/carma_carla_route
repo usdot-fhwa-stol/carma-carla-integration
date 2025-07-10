@@ -59,7 +59,8 @@ class CarmaCarlaRoute(Node):
         print()
 
     def guidance_bridge_node_status_callback(self, msg):
-        print()
+        self.is_guidance_bridge_node_active = msg.data
+        self.get_logger().info(f"Guidance bridge node status: {msg.data}")
 
     def get_available_route_ids(self):
         """
