@@ -87,7 +87,19 @@ class CarmaCarlaRoute(Node):
         print()
 
     def check_selected_route(self, available_route_ids, selected_route_id):
-        print()
+        """
+        Checking if the selected route can be matched with an available route
+        """
+        matches = [rid for rid in available_route_ids if rid == selected_route_id]
+        if len(matches) == 1:
+            self.get_logger().info(f"Route found: {selected_route_id}")
+            return selected_route_id
+        elif len(matches) > 1:
+            self.get_logger().error("Duplicate route files found.")
+        else:
+            self.get_logger().warn(f"Route: {selected_route_id} not found, /guidance/route node could be not ready. "
+                      "Otherwise, please check selected_route parameter in carma-config and CARMA route folder (by default: /opt/carma/routes)...")
+        return None
 
     def run_main_loop(self):
         while rclpy.ok():
