@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Copyright (C) 2021 LEIDOS.
+# Ported to ROS2 by Will Varner @ UGA MSC Lab
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -15,46 +16,81 @@
 
 
 """
-Publish to CARMA :cav_msgs::RobotEnabled
-    Topic: /hardware_interface/controller/robot_status
+Publish to CARMA: cav_msgs::RobotEnabled
+Topic: /hardware_interface/controller/robot_status
 
-Subscribe from CARMA :cav_msgs::GuidanceState
-    Topic: /guidance/state
+Subscribe from CARMA: cav_msgs::GuidanceState
+Topic: /guidance/state
 """
-import rospy
+import rclpy
+from rclpy.node import Node
 from cav_msgs.msg import RobotEnabled, GuidanceState
 
-robot_status_pub = rospy.Publisher('/hardware_interface/controller/robot_status', RobotEnabled, queue_size=10)
-robot_status_msg = RobotEnabled()
-
-def guidance_state_callback(guidance_state_msg):
+class RobotStatusNode(Node):
     """
-    callback for guidance state subscribing from CARMA
-    guidance_state_msg type:
-        cav_msgs::GuidanceState
+    The RobotStatusNode class encapsulates the logic for monitoring CARMA's guidance
+    state and publishing the robot's operational status.
     """
-    global robot_status_msg
+    def __init__(self):
+        """
+        Initializes the node, publisher, subscriber, and a timer for periodic publishing.
+        """
+        super().__init__('carma_carla_robot_status')
 
-    if guidance_state_msg.state == GuidanceState.ENGAGED or guidance_state_msg.state == GuidanceState.ACTIVE:
-        robot_status_msg.robot_active = True
-    else:
-        robot_status_msg.robot_active = False
+        # Declare parameters for the publisher rate
+        self.declare_parameter('robot_status_pub_rate', 10)
 
-def robot_status():
+        # Create the publisher for the robot's status
+        self.robot_status_pub = self.create_publisher(
+            RobotEnabled,
+            '/hardware_interface/controller/robot_status',
+            10)
+
+        # Create the subscriber for CARMA's guidance state
+        self.guidance_state_sub = self.create_subscription(
+            GuidanceState,
+            '/guidance/state',
+            self.guidance_state_callback,
+            1) # QoS depth of 1 is sufficient
+
+        # Initialize the message to be published
+        self.robot_status_msg = RobotEnabled()
+        self.robot_status_msg.robot_enabled = True # This is always true as per the original logic
+        self.robot_status_msg.robot_active = False # Default to not active
+
+        # Create a timer to publish the status at a regular interval
+        pub_rate = self.get_parameter('robot_status_pub_rate').value
+        self.timer = self.create_timer(1.0 / pub_rate, self.publish_status)
+
+        self.get_logger().info("carma_carla_robot_status node has started.")
+
+    def guidance_state_callback(self, msg):
+        """
+        Callback for the /guidance/state subscriber. Updates the robot_active status.
+        """
+        # Check if the guidance state is ENGAGED or ACTIVE
+        if msg.state == GuidanceState.ENGAGED or msg.state == GuidanceState.ACTIVE:
+            self.robot_status_msg.robot_active = True
+        else:
+            self.robot_status_msg.robot_active = False
+
+    def publish_status(self):
+        """
+        Timer callback to publish the current robot status.
+        """
+        self.robot_status_pub.publish(self.robot_status_msg)
+
+def main(args=None):
     """
-    main loop
+    Main entry point for the node.
     """
-    rospy.init_node('carma_carla_robot_status', anonymous=True)
-    pub_rate = rospy.get_param('~robot_status_pub_rate', 10)
-    rate = rospy.Rate(pub_rate)
+    rclpy.init(args=args)
+    robot_status_node = RobotStatusNode()
+    rclpy.spin(robot_status_node)
 
-    rospy.Subscriber('/guidance/state', GuidanceState, guidance_state_callback, queue_size=1)
-    robot_status_msg.robot_enabled = True
-
-    while not rospy.is_shutdown():
-        robot_status_pub.publish(robot_status_msg)
-        rate.sleep()
+    # Destroy the node explicitly (garbage collector will also handle it)
+    robot_status_node.destroy_node()
+    rclpy.shutdown()
 
 if __name__ == '__main__':
-    print("carma_carla_robot_status")
-    robot_status()
+    main()
