@@ -36,6 +36,25 @@ class CarmaCarlaRoute(Node):
     def __init__(self):
         super().__init__('carma_carla_route')
 
+        self.received_pose = False
+        self.is_guidance_bridge_node_active = False
+
+        # Declare and get selected_route
+        self.selected_route_id = self.declare_parameter('selected_route', '').get_parameter_value().string_value
+
+        if not self.selected_route_id:
+            self.get_logger().error("No input route found. Please check config file at /opt/carma/simulation/vehicle_config.json.")
+            rclpy.shutdown()
+            return
+
+        time.sleep(2)  # sleep the node for n second to make sure current_pose has been set to CARMA platform properly
+
+        self.available_route_ids = self.get_available_route_ids()
+        self.pose_sub = self.create_subscription(PoseStamped, '/localization/current_pose', self.pose_cb, 10)
+        self.status_sub = self.create_subscription(Bool, '/carla/guidance_bridge_node/active_status', self.guidance_bridge_node_status_callback, 10)
+
+        self.run_main_loop()
+
     def pose_cb(self, msg):
         print()
 
