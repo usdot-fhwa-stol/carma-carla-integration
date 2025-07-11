@@ -54,6 +54,10 @@ class CarmaCarlaRoute(Node):
         self.pose_sub = self.create_subscription(PoseStamped, '/localization/current_pose', self.pose_cb, 10)
         self.status_sub = self.create_subscription(Bool, '/carla/guidance_bridge_node/active_status', self.guidance_bridge_node_status_callback, 10)
 
+        # Spin background thread to handle subcriber callbacks
+        self.spin_thread = threading.Thread(target=rclpy.spin, args=(self,), daemon=True)
+        self.spin_thread.start()
+
         self.run_main_loop()
 
     def pose_cb(self, msg):
