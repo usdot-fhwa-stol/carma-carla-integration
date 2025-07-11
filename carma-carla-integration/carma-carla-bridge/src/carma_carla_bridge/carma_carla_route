@@ -54,7 +54,7 @@ class CarmaCarlaRoute(Node):
         self.pose_sub = self.create_subscription(PoseStamped, '/localization/current_pose', self.pose_cb, 10)
         self.status_sub = self.create_subscription(Bool, '/carla/guidance_bridge_node/active_status', self.guidance_bridge_node_status_callback, 10)
 
-        self.create_timer(0.1, self.timer_callback)
+        self.run_main_loop()
 
     def pose_cb(self, msg):
         """
@@ -122,7 +122,7 @@ class CarmaCarlaRoute(Node):
 
     def check_selected_route(self, available_route_ids, selected_route_id):
         """
-        Check if the selected route can be matched with an available route
+        Checking if the selected route can be matched with an available route
         """
         matches = [rid for rid in available_route_ids if rid == selected_route_id]
         if len(matches) == 1:
@@ -135,34 +135,35 @@ class CarmaCarlaRoute(Node):
                       "Otherwise, please check selected_route parameter in carma-config and CARMA route folder (by default: /opt/carma/routes)...")
         return None
 
-    def timer_callback(self):
-        if not self.received_pose:
-           self.get_logger().info("Localization Incomplete... "
-               "Waiting to receive a pose before attempting to set the Route")
-           time.sleep(1)
-           return
+    def run_main_loop(self):
+        while rclpy.ok():
+            if not self.received_pose:
+                self.get_logger().info("Localization Incomplete... "
+                    "Waiting to receive a pose before attempting to set the Route")
+                time.sleep(1)
+                continue
 
-        if self.available_route_ids is None:
-            self.get_logger().error("No routes available, make sure the route folder at "
-                "/opt/carma/routes has route file")
+            if self.available_route_ids is None:
+                self.get_logger().error("No routes available, make sure the route folder at "
+                    "/opt/carma/routes has route file")
+                time.sleep(1)
+                continue
+
+            if (not self.check_selected_route(self.available_route_ids, self.selected_route_id)
+                or not self.is_guidance_bridge_node_active):
+                # Check again for available routes as sometimes the
+                # Route node may not have loaded all the available routes
+                self.get_logger().warn(f"Selected route: {self.selected_route_id} "
+                    "was not available, retrieving available routes "
+                    "again to see if it becomes available")
+                self.available_route_ids = self.get_available_route_ids()
+                time.sleep(1)
+                continue
+
+            time.sleep(2)
+            if self.set_route(self.selected_route_id):
+                break
             time.sleep(1)
-            return
-
-        if (not self.check_selected_route(self.available_route_ids, self.selected_route_id)
-            or not self.is_guidance_bridge_node_active):
-            # Check again for available routes as sometimes the
-            # Route node may not have loaded all the available routes
-            self.get_logger().warn(f"Selected route: {self.selected_route_id} "
-                "was not available, retrieving available routes "
-                "again to see if it becomes available")
-            self.available_route_ids = self.get_available_route_ids()
-            time.sleep(1)
-            return
-
-        time.sleep(2)
-        if self.set_route(self.selected_route_id):
-            rclpy.shutdown()
-        time.sleep(1)
 
 def main(args=None):
     rclpy.init(args=args)
