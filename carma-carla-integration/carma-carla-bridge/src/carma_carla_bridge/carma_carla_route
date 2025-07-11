@@ -170,7 +170,6 @@ def main(args=None):
     print("carma_carla_route")
     try:
         node = CarmaCarlaRoute()
-        rclpy.spin(node)
     except KeyboardInterrupt:
         if node: node.get_logger().info(f"{node.get_name()} shutting down due to KeyboardInterrupt.")
     except Exception as e:
