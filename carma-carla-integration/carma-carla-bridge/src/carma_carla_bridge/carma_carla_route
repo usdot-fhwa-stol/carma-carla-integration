@@ -54,10 +54,6 @@ class CarmaCarlaRoute(Node):
         self.pose_sub = self.create_subscription(PoseStamped, '/localization/current_pose', self.pose_cb, 10)
         self.status_sub = self.create_subscription(Bool, '/carla/guidance_bridge_node/active_status', self.guidance_bridge_node_status_callback, 10)
 
-        # Spin background thread to handle subcriber callbacks
-        self.spin_thread = threading.Thread(target=rclpy.spin, args=(self,), daemon=True)
-        self.spin_thread.start()
-
         self.run_main_loop()
 
     def pose_cb(self, msg):
@@ -108,6 +104,7 @@ class CarmaCarlaRoute(Node):
         req.route_id = route_id
 
         future = client.call_async(req)
+        
         try:
             rclpy.spin_until_future_complete(self, future)
 
@@ -141,16 +138,15 @@ class CarmaCarlaRoute(Node):
 
     def run_main_loop(self):
         while rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=1.0)
             if not self.received_pose:
                 self.get_logger().info("Localization Incomplete... "
                     "Waiting to receive a pose before attempting to set the Route")
-                time.sleep(1)
                 continue
 
             if self.available_route_ids is None:
                 self.get_logger().error("No routes available, make sure the route folder at "
                     "/opt/carma/routes has route file")
-                time.sleep(1)
                 continue
 
             if (not self.check_selected_route(self.available_route_ids, self.selected_route_id)
@@ -161,13 +157,13 @@ class CarmaCarlaRoute(Node):
                     "was not available, retrieving available routes "
                     "again to see if it becomes available")
                 self.available_route_ids = self.get_available_route_ids()
-                time.sleep(1)
                 continue
+            
+            # Optional: give services some time to stabilize
+            rclpy.spin_once(self, timeout_sec=2.0)
 
-            time.sleep(2)
             if self.set_route(self.selected_route_id):
                 break
-            time.sleep(1)
 
 def main(args=None):
     rclpy.init(args=args)
