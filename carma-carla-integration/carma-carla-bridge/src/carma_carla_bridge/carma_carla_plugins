@@ -29,6 +29,8 @@ Call Services from CARMA:
     Service :/guidance/plugins/get_registered_plugins
             :/guidance/plugins/activate_plugin
 """
+import rclpy
+from rclpy.node import Node
 import rospy
 import ast
 from cav_msgs.msg import Plugin, PluginList, PluginStatus
