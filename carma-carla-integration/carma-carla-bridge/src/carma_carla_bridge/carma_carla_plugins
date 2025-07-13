@@ -31,6 +31,7 @@ Call Services from CARMA:
 """
 import rclpy
 from rclpy.node import Node
+import time
 import rospy
 import ast
 from cav_msgs.msg import Plugin, PluginList, PluginStatus
@@ -63,9 +64,59 @@ class CarmaCarlaPlugins(Node):
             self.get_logger().info('Waiting for get_registered_plugins service...')
 
         self.activate_plugins()
-    
-    def activate_plugins():
-        print()
+
+    def activate_plugins(self):
+        while rclpy.ok():
+            try:
+                request = PluginList.Request()
+                future = self.registration_client.call_async(request)
+                rclpy.spin_until_future_complete(self, future)
+                response = future.result()
+                if response is None:
+                    raise RuntimeError("Service call returned None")
+                registered_plugins = response.plugins
+            except Exception as e:
+                self.get_logger().warn(f"Service call to {self.registration_client.srv_name} failed: {e}"
+                    "Service call can sometimes fail due to ROS, but please make sure the platform has started without any error."
+                    "Retrying in 1 second..")
+                time.sleep(1)
+                continue
+            
+            # check if selected plugins and required plugins are listed in registered plugins
+            # if not, sleep loop for a second and recall the registered plugin ROS service for updating
+            if not check_registration_plugin(registered_plugins, self.plugin_list, self.get_logger()):
+                time.sleep(1)
+                continue
+
+            while self.plugin_list and rclpy.ok():
+                plugin_name = self.plugin_list[-1]
+                try:
+                    request = PluginActivation.Request()
+                    request.plugin_name = plugin_name
+                    request.activated = True
+
+                    future = self.activation_client.call_async(request)
+                    rclpy.spin_until_future_complete(self, future)
+                    response = future.result()
+                    if response is None:
+                        raise RuntimeError("Service call returned None")
+
+                    self.plugin_list.pop()
+                    if response.newstate:
+                        self.get_logger().info(f"{plugin_name} has been activated.")
+                    else:
+                        self.get_logger().error(f"{plugin_name} was not able to be activated.")
+                except Exception as e:
+                    self.get_logger().warn(f"Service call to {self.activation_client.srv_name  } failed: {e}"
+                        "Service call can sometimes fail due to ROS, but "
+                        f"please make sure the plugin {plugin_name} is configured and "
+                        "ready to be activated. Retrying in 1 second...")
+                    time.sleep(1)
+            
+            # Exit node after activating all plugins
+            break
+
+        rclpy.shutdown()
 
 def check_registration_plugin(registered_plugins, plugin_list):
     """
