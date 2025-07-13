@@ -118,6 +118,16 @@ class CarmaCarlaPlugins(Node):
 
         rclpy.shutdown()
 
+    def check_registration_plugin(self, registered_plugins, plugin_list):
+        registered_plugin_name_list = [plugin.name for plugin in registered_plugins]
+
+        missing_plugins = list(set(plugin_list) - set(registered_plugin_name_list))
+        if missing_plugins:
+            self.get_logger().info("Selected/required plugins not found in registered plugins list:")
+            self.get_logger().info(str(missing_plugins))
+            return False
+        return True
+
 def check_registration_plugin(registered_plugins, plugin_list):
     """
     check registered plugin with plugin list
