@@ -38,7 +38,31 @@ from cav_srvs.srv import PluginList, PluginActivation
 
 class CarmaCarlaPlugins(Node):
     def __init__(self):
-        print()
+        super().__init__('carma_carla_plugins')
+
+        # Declare parameter and retrieve it
+        self.declare_parameter('selected_plugins', '[]')
+        plugin_list_str = self.get_parameter('selected_plugins').get_parameter_value().string_value
+        self.plugin_list = ast.literal_eval(plugin_list_str)
+
+        if not self.plugin_list or len(self.plugin_list) == 0:
+            self.get_logger().error(
+                "No input plugin found, please check the config file at /opt/carma/simulation/vehicle_config.json")
+            rclpy.shutdown()
+            return
+
+        self.activation_client = self.create_client(PluginActivation,
+                                                    '/guidance/plugins/activate_plugin')
+        self.registration_client = self.create_client(PluginList,
+                                                      '/guidance/plugins/get_registered_plugins')
+
+        while not self.activation_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('Waiting for activate_plugin service...')
+
+        while not self.registration_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('Waiting for get_registered_plugins service...')
+
+        self.activate_plugins()
     
     def activate_plugins():
         print()
