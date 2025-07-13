@@ -36,6 +36,13 @@ import ast
 from cav_msgs.msg import Plugin, PluginList, PluginStatus
 from cav_srvs.srv import PluginList, PluginActivation
 
+class CarmaCarlaPlugins(Node):
+    def __init__(self):
+        print()
+    
+    def activate_plugins():
+        print()
+
 def check_registration_plugin(registered_plugins, plugin_list):
     """
     check registered plugin with plugin list
