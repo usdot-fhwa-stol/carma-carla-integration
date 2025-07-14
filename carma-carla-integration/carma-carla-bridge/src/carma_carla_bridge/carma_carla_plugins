@@ -32,7 +32,6 @@ Call Services from CARMA:
 import rclpy
 from rclpy.node import Node
 import time
-import rospy
 import ast
 from cav_msgs.msg import Plugin, PluginList, PluginStatus
 from cav_srvs.srv import PluginList, PluginActivation
@@ -87,7 +86,7 @@ class CarmaCarlaPlugins(Node):
             
             # check if selected plugins and required plugins are listed in registered plugins
             # if not, sleep loop for a second and recall the registered plugin ROS service for updating
-            if not check_registration_plugin(registered_plugins, self.plugin_list, self.get_logger()):
+            if not self.check_registration_plugin(registered_plugins, self.plugin_list):
                 time.sleep(1)
                 continue
 
