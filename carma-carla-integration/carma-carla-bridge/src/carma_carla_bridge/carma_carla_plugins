@@ -49,7 +49,6 @@ class CarmaCarlaPlugins(Node):
         if not self.plugin_list or len(self.plugin_list) == 0:
             self.get_logger().error(
                 "No input plugin found, please check the config file at /opt/carma/simulation/vehicle_config.json")
-            rclpy.shutdown()
             return
 
         self.activation_client = self.create_client(PluginActivation,
