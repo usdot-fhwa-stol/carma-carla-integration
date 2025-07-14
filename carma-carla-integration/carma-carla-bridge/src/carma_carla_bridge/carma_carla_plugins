@@ -33,6 +33,7 @@ import rclpy
 from rclpy.node import Node
 import time
 import ast
+import traceback
 from cav_msgs.msg import Plugin, PluginList, PluginStatus
 from cav_srvs.srv import PluginList, PluginActivation
 
@@ -134,3 +135,24 @@ class CarmaCarlaPlugins(Node):
             self.get_logger().info(str(missing_plugins))
             return False
         return True
+
+def main(args=None):
+    rclpy.init(args=args)
+    print("carma_carla_plugins")
+    try:
+        node = CarmaCarlaPlugins()
+    except KeyboardInterrupt:
+        if node: node.get_logger().info(f"{node.get_name()} shutting down due to KeyboardInterrupt.")
+    except Exception as e:
+        # Ensure logger is available or use print
+        logger = rclpy.logging.get_logger("carma_carla_plugins_main")
+        if node : logger = node.get_logger()
+        logger.error(f"Unhandled exception in {node.get_name() if node else 'carma_carla_plugins'}: {e}\n{traceback.format_exc()}")
+    finally:
+        if node:
+            node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
