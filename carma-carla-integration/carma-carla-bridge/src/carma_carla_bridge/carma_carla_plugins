@@ -34,7 +34,6 @@ from rclpy.node import Node
 import time
 import ast
 import traceback
-from cav_msgs.msg import Plugin, PluginList, PluginStatus
 from cav_srvs.srv import PluginList, PluginActivation
 
 class CarmaCarlaPlugins(Node):
@@ -43,7 +42,7 @@ class CarmaCarlaPlugins(Node):
 
         # Declare parameter and retrieve it
         self.declare_parameter('selected_plugins', '[]')
-        plugin_list_str = self.get_parameter('selected_plugins').get_parameter_value().string_value
+        plugin_list_str = self.get_parameter('selected_plugins').value
         self.plugin_list = ast.literal_eval(plugin_list_str)
 
         if not self.plugin_list or len(self.plugin_list) == 0:
@@ -72,10 +71,13 @@ class CarmaCarlaPlugins(Node):
             try:
                 request = PluginList.Request()
                 future = self.registration_client.call_async(request)
-                rclpy.spin_until_future_complete(self, future)
+                rclpy.spin_until_future_complete(self, future, timeout_sec=2.0)
+
+                if not future.done():
+                    self.get_logger().warn(f"Service call to {self.registration_client.srv_name} timed out.")
+                    continue
+
                 response = future.result()
-                if response is None:
-                    raise RuntimeError("Service call returned None")
                 registered_plugins = response.plugins
             except Exception as e:
                 self.get_logger().warn(f"Service call to {self.registration_client.srv_name} failed: {e}"
@@ -98,23 +100,26 @@ class CarmaCarlaPlugins(Node):
                     request.activated = True
 
                     future = self.activation_client.call_async(request)
-                    rclpy.spin_until_future_complete(self, future)
-                    response = future.result()
-                    if response is None:
-                        raise RuntimeError("Service call returned None")
+                    rclpy.spin_until_future_complete(self, future, timeout_sec=3.0)
 
-                    self.plugin_list.pop()
-                    if response.newstate:
-                        self.get_logger().info(f"{plugin_name} has been activated.")
-                    else:
-                        self.get_logger().error(f"{plugin_name} was not able to be activated.")
+                    if not future.done():
+                        self.get_logger().warn(f"Service call to {self.activation_client.srv_name} timed out.")
+                        continue
+
+                    response = future.result()
                 except Exception as e:
-                    self.get_logger().warn(f"Service call to {self.activation_client.srv_name  } failed: {e}"
+                    self.get_logger().warn(f"Service call to {self.activation_client.srv_name} failed: {e}"
                         "Service call can sometimes fail due to ROS, but "
                         f"please make sure the plugin {plugin_name} is configured and "
                         "ready to be activated. Retrying in 1 second...")
                     time.sleep(1)
-            
+                    continue
+                else:
+                    if response.newstate:
+                        self.get_logger().info(f"{plugin_name} has been activated.")
+                    else:
+                        self.get_logger().error(f"{plugin_name} was not able to be activated.")
+                    self.plugin_list.pop()
             # Exit node after activating all plugins
             break
 
@@ -138,6 +143,7 @@ class CarmaCarlaPlugins(Node):
 def main(args=None):
     rclpy.init(args=args)
     print("carma_carla_plugins")
+    node = None
     try:
         node = CarmaCarlaPlugins()
     except KeyboardInterrupt:
