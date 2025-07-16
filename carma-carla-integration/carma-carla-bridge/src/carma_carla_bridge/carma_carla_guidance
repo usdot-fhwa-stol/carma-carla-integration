@@ -70,35 +70,36 @@ class CarmaCarlaGuidance(Node):
         self.set_guidance_active_client.wait_for_service()
         self.get_active_plugins_client.wait_for_service()
 
-        # Set main loop
-        self.timer = self.create_timer(1.0, self.timer_callback)
+        # Main loop
+        while rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=1.5)
+            
+            # Publish active status
+            status_msg = Bool()
+            status_msg.data = True
+            self.status_pub.publish(status_msg)
 
-    def timer_callback(self):
-        # Publish active status
-        status_msg = Bool()
-        status_msg.data = True
-        self.status_pub.publish(status_msg)
+            # Call get_active_plugins service synchronously
+            plugins_request = PluginList.Request()
+            plugins_future = self.get_active_plugins_client.call_async(plugins_request)
+            rclpy.spin_until_future_complete(self, plugins_future)
 
-        # Call get_active_plugins service synchronously
-        plugins_request = PluginList.Request()
-        plugins_future = self.get_active_plugins_client.call_async(plugins_request)
-        rclpy.spin_until_future_complete(self, plugins_future)
+            if not plugins_future.result():
+                self.get_logger().warn("Failed to retrieve active plugins. Retrying in 1 second.")
+                continue
 
-        if not plugins_future.result():
-            self.get_logger().warn("Failed to retrieve active plugins. Retrying in 1 second.")
-            return
+            active_plugins = plugins_future.result().plugins
 
-        active_plugins = plugins_future.result().plugins
-
-        if self.route_selected and self.check_plugin_status(active_plugins):
-            self.engage_guidance()
-        else:
-            if not self.route_selected:
-                self.get_logger().debug("Could not engage guidance: route not selected")
-            if not self.check_plugin_status(active_plugins):
-                active_names = [plugin.name for plugin in active_plugins]
-                self.get_logger().debug("Could not engage guidance: missing some required plugins")
-                self.get_logger().debug(f"Active plugins: {active_names}")
+            if self.route_selected and self.check_plugin_status(active_plugins):
+                if self.engage_guidance():
+                    break
+            else:
+                if not self.route_selected:
+                    self.get_logger().debug("Could not engage guidance: route not selected")
+                if not self.check_plugin_status(active_plugins):
+                    active_names = [plugin.name for plugin in active_plugins]
+                    self.get_logger().debug("Could not engage guidance: missing some required plugins")
+                    self.get_logger().debug(f"Active plugins: {active_names}")
     
     def engage_guidance(self):
         seconds_passed = 0.0
@@ -115,9 +116,10 @@ class CarmaCarlaGuidance(Node):
 
         if future.result() and future.result().guidance_status:
             self.get_logger().info("Guidance engaged")
-            rclpy.shutdown()  # Stop spinning after successful engagement
+            return True
         else:
             self.get_logger().error("Failed to set guidance status, retrying...")
+            return False
 
     def check_plugin_status(self, active_plugins):
         active_names = [p.name for p in active_plugins if p.available and p.activated]
