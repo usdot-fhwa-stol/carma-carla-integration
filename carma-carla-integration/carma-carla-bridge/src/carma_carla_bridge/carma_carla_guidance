@@ -66,8 +66,11 @@ class CarmaCarlaGuidance(Node):
         self.get_logger().info(f"List of plugins from config: {self.plugin_list}")
 
         # Wait for required services
-        self.set_guidance_active_client.wait_for_service()
-        self.get_active_plugins_client.wait_for_service()
+        self.get_logger().info('Waiting for services')
+        while not self.get_active_plugins_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info("waiting for get_active_plugins service...")
+        while not self.set_guidance_active_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('waiting for set_guidance_active service...')
 
         # Initially wait for route event callback
         rclpy.spin_once(self, timeout_sec=2.0)
