@@ -3,9 +3,6 @@ name: Docker build
 on:
   pull_request:
       types: [opened, synchronize, reopened]
-  push:
-    branches:
-      - fix_CI_builds
 
 jobs:
   docker:
