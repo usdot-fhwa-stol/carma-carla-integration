@@ -80,7 +80,7 @@ class CarmaCarlaGuidance(Node):
         while rclpy.ok():
             
             start_time = time.time()
-            while time.time() - start_time < 1.5:
+            while time.time() - start_time < 1.0:
                 rclpy.spin_once(self, timeout_sec=1.0)
             
             # Publish active status
@@ -92,7 +92,11 @@ class CarmaCarlaGuidance(Node):
             try:
                 plugins_request = PluginList.Request()
                 plugins_future = self.get_active_plugins_client.call_async(plugins_request)
-                rclpy.spin_until_future_complete(self, plugins_future)
+                rclpy.spin_until_future_complete(self, plugins_future, timeout_sec=2.0)
+
+                if not plugins_future.done():
+                    self.get_logger().warn(f"Service call to {self.get_active_plugins_client.srv_name} timed out.")
+                    continue
             except Exception as e:
                 self.get_logger().warn(f"Service call to {self.get_active_plugins_client.srv_name} failed: {e}")
                 self.get_logger().warn("Service call can sometimes fail due to ROS, but please make sure the selected plugins are activated. Retrying in 1 second..")
