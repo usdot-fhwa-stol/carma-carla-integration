@@ -73,9 +73,6 @@ class CarmaCarlaGuidance(Node):
         while not self.set_guidance_active_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('waiting for set_guidance_active service...')
 
-        # Initially wait for route event callback
-        rclpy.spin_once(self, timeout_sec=2.0)
-
         # Main loop
         while rclpy.ok():
             
@@ -120,7 +117,7 @@ class CarmaCarlaGuidance(Node):
         while seconds_passed < self.start_delay:
             self.get_logger().info(f"Engaging the guidance in: {self.start_delay - seconds_passed:.0f}")
             seconds_passed += 1.0
-            rclpy.spin_once(self, timeout_sec=1.0)
+            time.sleep(1.0)
 
         self.get_logger().info("Attempting to engage guidance")
         try:
@@ -161,6 +158,7 @@ class CarmaCarlaGuidance(Node):
 def main(args=None):
     rclpy.init(args=args)
     print("carma_carla_guidance")
+    node = None
     try:
         node = CarmaCarlaGuidance()
     except KeyboardInterrupt:
