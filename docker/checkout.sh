@@ -42,6 +42,6 @@ git clone https://github.com/usdot-fhwa-stol/carla-sensor-lib "${dir}"/src/carla
 if [[ "${BRANCH}" == "develop" ]] || [[ "${BRANCH}" == "master" ]]; then
       git clone  https://github.com/usdot-fhwa-stol/autoware.ai.git "${dir}"/src/autoware.ai --branch carma-develop
 else
-      git clone  https://github.com/usdot-fhwa-stol/autoware.ai.git "${dir}"/src/autoware.ai --branch develop
+      git clone  https://github.com/usdot-fhwa-stol/autoware.ai.git "${dir}"/src/autoware.ai --branch carma-develop
 
 fi
