@@ -94,12 +94,11 @@ class CarmaCarlaGuidance(Node):
                 if not plugins_future.done():
                     self.get_logger().warn(f"Service call to {self.get_active_plugins_client.srv_name} timed out.")
                     continue
+                active_plugins = plugins_future.result().plugins
             except Exception as e:
                 self.get_logger().warn(f"Service call to {self.get_active_plugins_client.srv_name} failed: {e}")
                 self.get_logger().warn("Service call can sometimes fail due to ROS, but please make sure the selected plugins are activated. Retrying in 1 second..")
                 continue
-
-            active_plugins = plugins_future.result().plugins
 
             if self.route_selected and self.check_plugin_status(active_plugins):
                 if self.engage_guidance():
