@@ -105,11 +105,11 @@ class CarmaCarlaGuidance(Node):
                     break
             else:
                 if not self.route_selected:
-                    self.get_logger().debug("Could not engage guidance: route not selected")
+                    self.get_logger().warn("Could not engage guidance: route not selected")
                 if not self.check_plugin_status(active_plugins):
                     active_names = [plugin.name for plugin in active_plugins]
-                    self.get_logger().debug("Could not engage guidance: missing some required plugins")
-                    self.get_logger().debug(f"Active plugins: {active_names}")
+                    self.get_logger().warn("Could not engage guidance: missing some required plugins")
+                    self.get_logger().warn(f"Active plugins: {active_names}")
     
     def engage_guidance(self):
         seconds_passed = 0.0
