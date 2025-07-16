@@ -36,12 +36,12 @@ while [[ $# -gt 0 ]]; do
             ;;
       esac
 done
-git clone https://github.com/usdot-fhwa-stol/carma-msgs.git "${dir}"/src/carma-msgs --branch "${BRANCH}" --depth 1
-git clone https://github.com/usdot-fhwa-stol/carma-utils.git "${dir}"/src/carma-utils --branch "${BRANCH}" --depth 1
-git clone https://github.com/usdot-fhwa-stol/carla-sensor-lib "${dir}"/src/carla-sensor-lib --branch "${BRANCH}" --depth 1
+git clone https://github.com/usdot-fhwa-stol/carma-msgs.git "${dir}"/src/carma-msgs --branch  develop
+git clone https://github.com/usdot-fhwa-stol/carma-utils.git "${dir}"/src/carma-utils --branch  develop
+git clone https://github.com/usdot-fhwa-stol/carla-sensor-lib "${dir}"/src/carla-sensor-lib --branch  develop
 if [[ "${BRANCH}" == "develop" ]] || [[ "${BRANCH}" == "master" ]]; then
-      git clone  https://github.com/usdot-fhwa-stol/autoware.ai.git "${dir}"/src/autoware.ai --branch carma-"${BRANCH}" --depth 1
+      git clone  https://github.com/usdot-fhwa-stol/autoware.ai.git "${dir}"/src/autoware.ai --branch carma-develop
 else
-      git clone  https://github.com/usdot-fhwa-stol/autoware.ai.git "${dir}"/src/autoware.ai --branch "${BRANCH}" --depth 1
+      git clone  https://github.com/usdot-fhwa-stol/autoware.ai.git "${dir}"/src/autoware.ai --branch develop
 
 fi
