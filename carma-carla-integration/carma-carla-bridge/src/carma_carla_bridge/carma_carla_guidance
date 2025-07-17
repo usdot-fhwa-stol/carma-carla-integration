@@ -51,9 +51,6 @@ class CarmaCarlaGuidance(Node):
             )
             return
         
-        # create loop rate timer
-        self.main_loop_rate = self.create_rate(1.0)
-        
          # route selected state
         self.route_selected = False
 
@@ -78,6 +75,11 @@ class CarmaCarlaGuidance(Node):
 
         # Main loop
         while rclpy.ok():
+            
+            start_time = time.time()
+            while time.time() - start_time < 1.0:
+                rclpy.spin_once(self, timeout_sec=1.0)
+            
             # Publish active status
             status_msg = Bool()
             status_msg.data = True
@@ -108,9 +110,6 @@ class CarmaCarlaGuidance(Node):
                     active_names = [plugin.name for plugin in active_plugins]
                     self.get_logger().warn("Could not engage guidance: missing some required plugins")
                     self.get_logger().warn(f"Active plugins: {active_names}")
-            
-            # Sleep for 1 second while allowing callbacks
-            self.main_loop_rate.sleep()
     
     def engage_guidance(self):
         seconds_passed = 0.0
