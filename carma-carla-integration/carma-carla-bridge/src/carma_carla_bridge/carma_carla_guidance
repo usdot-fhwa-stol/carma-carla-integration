@@ -26,7 +26,6 @@ import rclpy
 from rclpy.node import Node
 
 import ast
-import time
 import traceback
 
 from cav_msgs.msg import RouteEvent
@@ -62,6 +61,16 @@ class CarmaCarlaGuidance(Node):
         self.set_guidance_active_client = self.create_client(SetGuidanceActive, '/guidance/set_guidance_active')
         self.get_active_plugins_client = self.create_client(PluginList, '/guidance/plugins/get_active_plugins')
 
+        # futures for aysnc CARMA service calls
+        self.plugin_list_future = None
+        self.engage_guidance_future = None
+        self.attempting_engage = False
+        self.engage_delay_waited_seconds = 0
+
+        # store results of service calls
+        self.active_plugins = []
+        self.guidance_status = False
+
         # Logging
         self.get_logger().info(f"Start delay in seconds: {self.start_delay}")
         self.get_logger().info(f"List of plugins from config: {self.plugin_list}")
@@ -73,67 +82,82 @@ class CarmaCarlaGuidance(Node):
         while not self.set_guidance_active_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('waiting for set_guidance_active service...')
 
-        # Main loop
-        while rclpy.ok():
-            
-            start_time = time.time()
-            while time.time() - start_time < 1.0:
-                rclpy.spin_once(self, timeout_sec=1.0)
-            
-            # Publish active status
-            status_msg = Bool()
-            status_msg.data = True
-            self.status_pub.publish(status_msg)
+        # create timer
+        self.create_timer(1.0, self.main_cb)
+    
+    def main_cb(self):
+        # publish node active status
+        status_msg = Bool()
+        status_msg.data = True
+        self.status_pub.publish(status_msg)
 
-            # Call get_active_plugins service synchronously
+        if not self.plugin_list_future:
             try:
-                plugins_request = PluginList.Request()
-                plugins_future = self.get_active_plugins_client.call_async(plugins_request)
-                rclpy.spin_until_future_complete(self, plugins_future, timeout_sec=2.0)
-
-                if not plugins_future.done():
-                    self.get_logger().warn(f"Service call to {self.get_active_plugins_client.srv_name} timed out.")
-                    continue
-                active_plugins = plugins_future.result().plugins
+                request = PluginList.Request()
+                self.plugin_list_future = self.get_active_plugins_client.call_async(request)
+                self.plugin_list_future.add_done_callback(self.pluginlist_cb)
+                return
             except Exception as e:
+                self.get_logger().warn(f"Failed to send PluginList request: {e}")
+                return
+        elif not self.plugin_list_future.done():
+            self.get_logger().info("Waiting for PluginList service response...")
+            return
+
+        if not self.route_selected:
+            self.get_logger().warn("Could not engage guidance: route not selected")
+            return
+        elif not self.check_plugin_status(self.plugin_list):
+            active_names = [plugin.name for plugin in self.active_plugins]
+            self.get_logger().warn("Could not engage guidance: missing some required plugins")
+            self.get_logger().warn(f"Active plugins: {active_names}")
+        else:
+            if not self.attempting_engage:
+                if self.engage_delay_waited_seconds >= self.start_delay:
+                    self.attempting_engage = True
+                    return
+                self.get_logger().info(f"Engaging the guidance in: {self.start_delay - self.engage_delay_waited_seconds:.0f}")
+                self.engage_delay_waited_seconds += 1.0
+                return
+            else:
+                if not self.engage_guidance_future:
+                    request = SetGuidanceActive.Request()
+                    request.guidance_active = True
+                    self.engage_guidance_future = self.set_guidance_active_client.call_async(request)
+                    self.engage_guidance_future.add_done_callback(self.engage_guidance_cb)
+                    return
+                elif not self.engage_guidance_future.done():
+                    self.get_logger().info("Waiting for SetEngageGuidance service response...")
+                elif self.guidance_status:
+                    self.destroy_node()
+                    rclpy.shutdown()
+    
+    def pluginlist_cb(self, future):
+        try:
+            response = future.result()
+            self.active_plugins = response.plugins
+            self.get_logger().info("Received active plugins")
+        except Exception as e:
                 self.get_logger().warn(f"Service call to {self.get_active_plugins_client.srv_name} failed: {e}")
                 self.get_logger().warn("Service call can sometimes fail due to ROS, but please make sure the selected plugins are activated. Retrying in 1 second..")
-                continue
-
-            if self.route_selected and self.check_plugin_status(active_plugins):
-                if self.engage_guidance():
-                    break
-            else:
-                if not self.route_selected:
-                    self.get_logger().warn("Could not engage guidance: route not selected")
-                if not self.check_plugin_status(active_plugins):
-                    active_names = [plugin.name for plugin in active_plugins]
-                    self.get_logger().warn("Could not engage guidance: missing some required plugins")
-                    self.get_logger().warn(f"Active plugins: {active_names}")
+                self.active_plugins = []
+                self.plugin_list_future = None
     
-    def engage_guidance(self):
-        seconds_passed = 0.0
-        while seconds_passed < self.start_delay:
-            self.get_logger().info(f"Engaging the guidance in: {self.start_delay - seconds_passed:.0f}")
-            seconds_passed += 1.0
-            time.sleep(1.0)
-
-        self.get_logger().info("Attempting to engage guidance")
+    def engage_guidance_cb(self, future):
         try:
-            request = SetGuidanceActive.Request()
-            request.guidance_active = True
-            future = self.set_guidance_active_client.call_async(request)
-            rclpy.spin_until_future_complete(self, future)
-            if future.result() and future.result().guidance_status:
+            result = future.result()
+            if result.guidance_status:
                 self.get_logger().info("Guidance engaged")
-                return True
+                self.guidance_status = True
             else:
-                self.get_logger().error("Failed to set guidance status, retrying...")
-                return False
+                self.get_logger().error("Guidance engagement failed, retrying...")
         except Exception as e:
             self.get_logger().warn(f"Service call to {self.set_guidance_active_client.srv_name} failed: {e}")
-            self.get_logger().warn("Service call can sometimes fail due to ROS, but please make sure the platform has started without any error. Retrying in 1 second..")
-            return False
+            self.get_logger().warn("Service call can sometimes fail due to ROS, but please make sure the platform has started without any error. Retrying in 1 second..")  
+        finally:
+            self.attempting_engage = False
+            self.engage_delay_waited_seconds = 0.0
+            self.engage_guidance_future = None
 
     def check_plugin_status(self, active_plugins):
         """
@@ -160,6 +184,7 @@ def main(args=None):
     node = None
     try:
         node = CarmaCarlaGuidance()
+        rclpy.spin(node)
     except KeyboardInterrupt:
         if node: node.get_logger().info(f"{node.get_name()} shutting down due to KeyboardInterrupt.")
     except Exception as e:
