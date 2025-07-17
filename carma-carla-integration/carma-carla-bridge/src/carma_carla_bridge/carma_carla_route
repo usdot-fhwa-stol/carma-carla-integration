@@ -40,8 +40,6 @@ class CarmaCarlaRoute(Node):
         self.received_pose = False
         self.is_guidance_bridge_node_active = False
         self.route_set = False
-        self.route_verified = False
-
         self.get_available_routes_future = None
         self.set_route_future = None
         self.available_route_ids = []
@@ -94,18 +92,8 @@ class CarmaCarlaRoute(Node):
             self.get_available_routes_future.add_done_callback(self.get_available_routes_cb)
             return
         elif not self.get_available_routes_future.done():
-            self.get_logger().info("Waiting for get_available_routes service call to finish...")
+            self.get_logger().info("Waiting for GetAvailableRoutes service call to finish...")
             return
-
-        if not self.route_verified:
-            if self.selected_route_id in self.available_route_ids:
-                self.get_logger().info(f"Selected route {self.selected_route_id} is valid.")
-                self.route_verified = True
-            else:
-                self.get_logger().warn(f"Selected route {self.selected_route_id} not found in available routes.")
-                self.get_logger().warn("Retrying route query...")
-                self.get_available_routes_future = None
-                return
 
         if not self.set_route_future:
             self.get_logger().info(f"Sending SetActiveRoute for route: {self.selected_route_id}")
@@ -119,7 +107,7 @@ class CarmaCarlaRoute(Node):
             self.set_route_future = client.call_async(request)
             self.set_route_future.add_done_callback(self.set_route_cb)
         if not self.set_route_future.done():
-            self.get_logger().info("Waiting for set_active_route service call to finish")
+            self.get_logger().info("Waiting for SetActiveRoute service call to finish")
 
     def get_available_routes_cb(self, future):
         try:
@@ -129,7 +117,12 @@ class CarmaCarlaRoute(Node):
         except Exception as e:
             self.get_logger().error("Service call to /guidance/get_available_routes failed.")
         finally:
-            self.get_available_routes_future = None
+            if self.selected_route_id in self.available_route_ids:
+                self.get_logger().info(f"Selected route {self.selected_route_id} is valid.")
+            else:
+                self.get_logger().warn(f"Selected route {self.selected_route_id} not found in available routes.")
+                self.get_logger().warn("Retrying route query...")
+                self.get_available_routes_future = None
 
     def set_route_cb(self, future):
         try:
