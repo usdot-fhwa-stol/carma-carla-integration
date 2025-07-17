@@ -118,6 +118,8 @@ class CarmaCarlaRoute(Node):
             request.route_id = self.selected_route_id
             self.set_route_future = client.call_async(request)
             self.set_route_future.add_done_callback(self.set_route_cb)
+        if not self.set_route_future.done():
+            self.get_logger().info("Waiting for set_active_route service call to finish")
 
     def get_available_routes_cb(self, future):
         try:
