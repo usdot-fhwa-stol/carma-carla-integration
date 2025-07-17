@@ -24,164 +24,146 @@ Call Services from CARMA:
 """
 import rclpy
 from rclpy.node import Node
-import time
 import traceback
 
 from geometry_msgs.msg import PoseStamped
 from cav_srvs.srv import GetAvailableRoutes, SetActiveRoute
 from std_msgs.msg import Bool
 
+
 class CarmaCarlaRoute(Node):
 
     def __init__(self):
         super().__init__('carma_carla_route')
 
+        # Internal state
         self.received_pose = False
         self.is_guidance_bridge_node_active = False
+        self.route_set = False
+        self.route_verified = False
 
-        # Declare and get selected_route
+        self.get_available_routes_future = None
+        self.set_route_future = None
+        self.available_route_ids = []
+
+        # Declare and get selected_route parameter
         self.selected_route_id = self.declare_parameter('selected_route', '').get_parameter_value().string_value
-
         if not self.selected_route_id:
-            self.get_logger().error("No input route found. Please check config file at /opt/carma/simulation/vehicle_config.json.")
+            self.get_logger().error("No input route found. Please check config at /opt/carma/simulation/vehicle_config.json.")
             rclpy.shutdown()
             return
 
-        time.sleep(2)  # sleep the node for n second to make sure current_pose has been set to CARMA platform properly
+        self.get_logger().info(f"Selected route: {self.selected_route_id}")
 
-        self.available_route_ids = self.get_available_route_ids()
-        self.pose_sub = self.create_subscription(PoseStamped, '/localization/current_pose', self.pose_cb, 10)
-        self.status_sub = self.create_subscription(Bool, '/carla/guidance_bridge_node/active_status', self.guidance_bridge_node_status_callback, 10)
+        # Subscriptions
+        self.create_subscription(PoseStamped, '/localization/current_pose', self.pose_cb, 10)
+        self.create_subscription(Bool, '/carla/guidance_bridge_node/active_status', self.guidance_bridge_node_status_callback, 10)
 
-        self.run_main_loop()
+        # Timer-based loop (1 Hz)
+        self.create_timer(1.0, self.main_cb)
 
     def pose_cb(self, msg):
-        """
-        callback current_pose to make sure carla_to_carma_localization start to send vehicle position info to CARMA
-        PoseStamped message type:
-            geometry_msgs::PoseStamped
-        """
         self.received_pose = True
 
     def guidance_bridge_node_status_callback(self, msg):
         self.is_guidance_bridge_node_active = msg.data
 
-    def get_available_route_ids(self):
-        """
-        Getting available route function
-        if successfully got available route, return available route ID python list
-        else, return None
-        """
-        client = self.create_client(GetAvailableRoutes, '/guidance/get_available_routes')
-        if not client.wait_for_service(timeout_sec=10.0):
-            self.get_logger().error("/guidance/get_available_routes service not available.")
-            return None
+    def main_cb(self):
+        if self.route_set:
+            # Clean shutdown
+            self.get_logger().info("Shutting down after successful route set.")
+            self.destroy_node()
+            rclpy.shutdown()
 
-        req = GetAvailableRoutes.Request()
-        future = client.call_async(req)
-        rclpy.spin_until_future_complete(self, future)
+        if not self.received_pose:
+            self.get_logger().info("Waiting for /localization/current_pose...")
+            return
 
-        if future.result() is not None:
-            route_ids = [route.route_id for route in future.result().available_routes]
-            return route_ids
-        else:
-            self.get_logger().error("Service call to /guidance/get_available_routes failed.")
-            return None
+        if not self.is_guidance_bridge_node_active:
+            self.get_logger().warn("Guidance bridge not yet active.")
+            return
 
-    def set_route(self, route_id):
-        """
-        Set selected route to CARMA platform
-        """
-        client = self.create_client(SetActiveRoute, '/guidance/set_active_route')
-        if not client.wait_for_service(timeout_sec=10.0):
-            self.get_logger().error("/guidance/set_active_route service not available.")
-            return False
+        if not self.get_available_routes_future:
+            self.get_logger().info("Requesting available routes...")
+            client = self.create_client(GetAvailableRoutes, '/guidance/get_available_routes')
+            if not client.wait_for_service(timeout_sec=5.0):
+                self.get_logger().warn("/guidance/get_available_routes service not available.")
+                return
+            request = GetAvailableRoutes.Request()
+            self.get_available_routes_future = client.call_async(request)
+            self.get_available_routes_future.add_done_callback(self.get_available_routes_cb)
+            return
+        elif not self.get_available_routes_future.done():
+            self.get_logger().info("Waiting for get_available_routes service call to finish...")
+            return
 
-        req = SetActiveRoute.Request()
-        req.choice = 0
-        req.route_id = route_id
-
-        future = client.call_async(req)
-        
-        try:
-            rclpy.spin_until_future_complete(self, future)
-
-            if future.result() is not None and not future.result().error_status:
-                self.get_logger().info("Call to set_active_route succeeded!")
-                return True
+        if not self.route_verified:
+            if self.selected_route_id in self.available_route_ids:
+                self.get_logger().info(f"Selected route {self.selected_route_id} is valid.")
+                self.route_verified = True
             else:
-                self.get_logger().error("Error status response from /guidance/set_active_route or empty result.")
-                return False
-        except:
-            self.get_logger().error("Exception occured during the set_active_route call... "
-                "Possible that route node's world model is not yet loaded... "
-                "Retrying in 1 sec")
-        
-        return False
+                self.get_logger().warn(f"Selected route {self.selected_route_id} not found in available routes.")
+                self.get_logger().warn("Retrying route query...")
+                self.get_available_routes_future = None
+                return
 
-    def check_selected_route(self, available_route_ids, selected_route_id):
-        """
-        Checking if the selected route can be matched with an available route
-        """
-        matches = [rid for rid in available_route_ids if rid == selected_route_id]
-        if len(matches) == 1:
-            self.get_logger().info(f"Route found: {selected_route_id}")
-            return selected_route_id
-        elif len(matches) > 1:
-            self.get_logger().error("Duplicate route files found.")
-        else:
-            self.get_logger().warn(f"Route: {selected_route_id} not found, /guidance/route node could be not ready. "
-                      "Otherwise, please check selected_route parameter in carma-config and CARMA route folder (by default: /opt/carma/routes)...")
-        return None
+        if not self.set_route_future:
+            self.get_logger().info(f"Sending SetActiveRoute for route: {self.selected_route_id}")
+            client = self.create_client(SetActiveRoute, '/guidance/set_active_route')
+            if not client.wait_for_service(timeout_sec=1.0):
+                self.get_logger().warn("/guidance/set_active_route service not available.")
+                return
+            request = SetActiveRoute.Request()
+            request.choice = 0
+            request.route_id = self.selected_route_id
+            self.set_route_future = client.call_async(request)
+            self.set_route_future.add_done_callback(self.set_route_cb)
 
-    def run_main_loop(self):
-        while rclpy.ok():
-            start = time.time()
-            while time.time() - start < 1.5:
-                rclpy.spin_once(self, timeout_sec=1.0)
-            if not self.received_pose:
-                self.get_logger().info("Localization Incomplete... "
-                    "Waiting to receive a pose before attempting to set the Route")
-                continue
+    def get_available_routes_cb(self, future):
+        try:
+            result = future.result()
+            self.available_route_ids = [r.route_id for r in result.available_routes]
+            self.get_logger().info(f"Available routes: {self.available_route_ids}")
+        except Exception as e:
+            self.get_logger().error("Service call to /guidance/get_available_routes failed.")
+        finally:
+            self.get_available_routes_future = None
 
-            if self.available_route_ids is None:
-                self.get_logger().error("No routes available, make sure the route folder at "
-                    "/opt/carma/routes has route file")
-                continue
+    def set_route_cb(self, future):
+        try:
+            result = future.result()
+            if result and not result.error_status:
+                self.get_logger().info("Call to set_active_route succeeded!")
+                self.route_set = True
+            else:
+                self.get_logger().error("SetActiveRoute failed: Error status or null result.")
+        except Exception as e:
+            self.get_logger().error(f"Exception during SetActiveRoute: {e}")
+        finally:
+            self.set_route_future = None
 
-            if (not self.check_selected_route(self.available_route_ids, self.selected_route_id)
-                or not self.is_guidance_bridge_node_active):
-                # Check again for available routes as sometimes the
-                # Route node may not have loaded all the available routes
-                self.get_logger().warn(f"Selected route: {self.selected_route_id} "
-                    "was not available, retrieving available routes "
-                    "again to see if it becomes available")
-                self.available_route_ids = self.get_available_route_ids()
-                continue
-            
-            # Optional: give services some time to stabilize
-            rclpy.spin_once(self, timeout_sec=2.0)
-
-            if self.set_route(self.selected_route_id):
-                break
 
 def main(args=None):
     rclpy.init(args=args)
     print("carma_carla_route")
+    node = None
     try:
         node = CarmaCarlaRoute()
+        rclpy.spin(node)
     except KeyboardInterrupt:
-        if node: node.get_logger().info(f"{node.get_name()} shutting down due to KeyboardInterrupt.")
+        if node:
+            node.get_logger().info(f"{node.get_name()} shutting down due to KeyboardInterrupt.")
     except Exception as e:
-        # Ensure logger is available or use print
         logger = rclpy.logging.get_logger("carma_carla_route_main")
-        if node : logger = node.get_logger()
+        if node:
+            logger = node.get_logger()
         logger.error(f"Unhandled exception in {node.get_name() if node else 'CarmaCarlaRoute'}: {e}\n{traceback.format_exc()}")
     finally:
         if node:
             node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()
