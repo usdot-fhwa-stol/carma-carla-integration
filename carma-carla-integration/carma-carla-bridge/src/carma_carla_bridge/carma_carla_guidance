@@ -70,6 +70,7 @@ class CarmaCarlaGuidance(Node):
         # store results of service calls
         self.active_plugins = []
         self.guidance_status = False
+        self.selected_plugins_active = False
 
         # Logging
         self.get_logger().info(f"Start delay in seconds: {self.start_delay}")
@@ -91,6 +92,10 @@ class CarmaCarlaGuidance(Node):
         status_msg.data = True
         self.status_pub.publish(status_msg)
 
+        if self.guidance_status:
+                self.destroy_node()
+                rclpy.shutdown()
+
         if not self.plugin_list_future:
             try:
                 request = PluginList.Request()
@@ -107,10 +112,11 @@ class CarmaCarlaGuidance(Node):
         if not self.route_selected:
             self.get_logger().warn("Could not engage guidance: route not selected")
             return
-        elif not self.check_plugin_status(self.active_plugins):
+        elif not self.selected_plugins_active:
             active_names = [plugin.name for plugin in self.active_plugins]
             self.get_logger().warn("Could not engage guidance: missing some required plugins")
             self.get_logger().warn(f"Active plugins: {active_names}")
+            self.plugin_list_future = None
         else:
             if not self.attempting_engage:
                 if self.engage_delay_waited_seconds >= self.start_delay:
@@ -128,15 +134,13 @@ class CarmaCarlaGuidance(Node):
                     return
                 elif not self.engage_guidance_future.done():
                     self.get_logger().info("Waiting for SetEngageGuidance service response...")
-                elif self.guidance_status:
-                    self.destroy_node()
-                    rclpy.shutdown()
     
     def pluginlist_cb(self, future):
         try:
             response = future.result()
             self.active_plugins = response.plugins
             self.get_logger().info("Received active plugins")
+            self.selected_plugins_active = self.check_plugin_status(self.active_plugins)
         except Exception as e:
                 self.get_logger().warn(f"Service call to {self.get_active_plugins_client.srv_name} failed: {e}")
                 self.get_logger().warn("Service call can sometimes fail due to ROS, but please make sure the selected plugins are activated. Retrying in 1 second..")
