@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-# Copyright (C) 2021 LEIDOS.
+# Copyright (C) 2023 LEIDOS.
+# Migrated to ROS2 under Ryan Fleming @ UGA MSC Lab 2025
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -21,119 +22,184 @@ Call Services from CARMA:
     Service: /guidance/set_guidance_active
              /guidance/plugins/get_active_plugins
 """
-import rospy
-import sys
+import rclpy
+from rclpy.node import Node
+
 import ast
+import traceback
+
 from cav_msgs.msg import RouteEvent
 from cav_msgs.msg import Plugin
 from cav_srvs.srv import SetGuidanceActive, PluginList
 from std_msgs.msg import Bool
-route_selected = False
 
-def route_event_callback(route_event_msg):
-    """
-    callback for route event subscribing from CARMA
-    guidance_state_msg type:
-        cav_msgs::GuidanceState
-    """
+class CarmaCarlaGuidance(Node):
+    def __init__(self):
+        super().__init__('carma_carla_guidance')
 
-    global route_selected
-    if route_event_msg.event == RouteEvent.ROUTE_SELECTED or route_event_msg.event == RouteEvent.ROUTE_STARTED:
-        rospy.loginfo("Route Selected")
-        route_selected = True
+        # Get Parameters
+        self.declare_parameter("selected_plugins", "[]")
+        self.declare_parameter("start_delay_in_seconds", 15.0)
+        plugin_list_str = self.get_parameter("selected_plugins").get_parameter_value().string_value
+        self.selected_plugin_list = ast.literal_eval(plugin_list_str)
+        self.start_delay = self.get_parameter("start_delay_in_seconds").get_parameter_value().double_value
 
-def check_plugin_status(activate_plugins, plugin_list):
-    """
-    check active plugin with plugin list
-    plugin_list: selected plugins + required plugins
-    activate_plugins: the PluginList in /guidance/plugins/get_active_plugins ROS service
-    """
-    activate_plugins_name_list = []
-    for activate_plugin in activate_plugins:
-        if activate_plugin.available and activate_plugin.activated:
-            activate_plugins_name_list.append(activate_plugin.name)
-    if len(list( set(plugin_list) - set(activate_plugins_name_list) )) > 0:
-        # still have some plugin not being activated yet
-        rospy.logwarn("Some plugins are not activated...!")
-        return False
-    else:
-        rospy.loginfo("All plugins activated...!")
-        return True
+        if len(self.selected_plugin_list) == 0 or not self.selected_plugin_list:
+            self.get_logger().error(
+                "No input plugin found. Check the config file at /opt/carma/simulation/vehicle_config.json"
+            )
+            return
+        
+         # route selected state
+        self.route_selected = False
 
-def initialize():
-    """
-    main loop
-    """
-    rospy.init_node("carma_carla_guidance")
+        # Publishers/Subscribers
+        self.status_pub = self.create_publisher(Bool, '/carla/guidance_bridge_node/active_status', 10)
+        self.create_subscription(RouteEvent, '/guidance/route_event', self.route_event_callback, 10)
 
-    # initialize ROS topic
-    rospy.Subscriber("/guidance/route_event",RouteEvent, route_event_callback)
-    status_pub = rospy.Publisher('/carla/guidance_bridge_node/active_status', Bool, queue_size=10)
-    # get selected plugins
-    plugin_list_str = rospy.get_param("~selected_plugins")
-    start_delay_in_seconds = rospy.get_param("~start_delay_in_seconds", 15.0)
-    rospy.loginfo("Start delay in seconds: %f", start_delay_in_seconds)
-    plugin_list = ast.literal_eval(plugin_list_str)
-    if len(plugin_list) == 0:
-        rospy.logerr("No input plugin found, please check the config file at /opt/carma/simulation/vehicle_config.json")
-        return
+        # CARMA Services
+        self.set_guidance_active_client = self.create_client(SetGuidanceActive, '/guidance/set_guidance_active')
+        self.get_active_plugins_client = self.create_client(PluginList, '/guidance/plugins/get_active_plugins')
 
-    # initialize ROS service
-    set_guidance_active_serv = rospy.ServiceProxy('/guidance/set_guidance_active', SetGuidanceActive)
-    active_plugins_serv = rospy.ServiceProxy('/guidance/plugins/get_active_plugins', PluginList)
+        # futures for aysnc CARMA service calls
+        self.plugin_list_future = None
+        self.engage_guidance_future = None
+        self.attempting_engage = False
+        self.engage_delay_waited_seconds = 0
 
-    # make sure to wait for the services to be available
-    rospy.wait_for_service(set_guidance_active_serv.resolved_name)
-    rospy.wait_for_service(active_plugins_serv.resolved_name)
+        # store results of service calls
+        self.active_plugins = []
+        self.guidance_status = False
+        self.selected_plugins_active = False
 
-    # initialize ROS topic
-    rospy.loginfo('List of plugins from config: %s', plugin_list)
+        # Logging
+        self.get_logger().info(f"Start delay in seconds: {self.start_delay}")
+        self.get_logger().info(f"List of plugins from config: {self.selected_plugin_list}")
 
-    while not rospy.is_shutdown():
-        try:
-            active_plugins = active_plugins_serv().plugins
-        except rospy.ServiceException as e:
-            rospy.logwarn(f"Service call to {active_plugins_serv.resolved_name} failed: {e}")
-            rospy.logwarn("Service call can sometimes fail due to ROS, but please make sure the selected plugins are activated. Retrying in 1 second..")
+        # Wait for required services
+        self.get_logger().info('Waiting for services...')
+        while not self.get_active_plugins_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info("waiting for get_active_plugins service...")
+        while not self.set_guidance_active_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('waiting for set_guidance_active service...')
 
-            rospy.sleep(1)
-            continue
+        # create timer
+        self.create_timer(1.0, self.timer_cb)
+    
+    def timer_cb(self):
+        # publish node active status
+        status_msg = Bool()
+        status_msg.data = True
+        self.status_pub.publish(status_msg)
 
-        status_msg = True
-        status_pub.publish(status_msg)
+        if self.guidance_status:
+            self.destroy_node()
+            rclpy.shutdown()
 
-        if route_selected and check_plugin_status(active_plugins, plugin_list):
-            seconds_passed = 0.0
-            while (seconds_passed < start_delay_in_seconds):
-                rospy.loginfo("Engaging the guidance in: " + str(start_delay_in_seconds - seconds_passed))
-                seconds_passed += 1.0
-                rospy.sleep(1)
-
-            rospy.loginfo("Attempting to engage guidance")
+        if not self.plugin_list_future:
             try:
-                resp = set_guidance_active_serv(True)
-            except rospy.ServiceException as e:
-                rospy.logwarn(f"Service call to {set_guidance_active_serv.resolved_name} failed: {e}")
-                rospy.logwarn("Service call can sometimes fail due to ROS, but please make sure the platform has started without any error. Retrying in 1 second..")
-                rospy.sleep(1)
-                continue
+                request = PluginList.Request()
+                self.plugin_list_future = self.get_active_plugins_client.call_async(request)
+                self.plugin_list_future.add_done_callback(self.pluginlist_cb)
+                return
+            except Exception as e:
+                self.get_logger().warn(f"Failed to send PluginList request: {e}")
+                return
+        elif not self.plugin_list_future.done():
+            self.get_logger().info("Waiting for PluginList service response...")
+            return
 
-            if resp.guidance_status:
-                rospy.loginfo("Guidance engaged")
-                break
+        if not self.route_selected:
+            self.get_logger().warn("Could not engage guidance: route not selected")
+            return
+        elif not self.selected_plugins_active:
+            active_names = [plugin.name for plugin in self.active_plugins]
+            self.get_logger().warn("Could not engage guidance: missing some required plugins")
+            self.get_logger().warn(f"Active plugins: {active_names}")
+            self.plugin_list_future = None
+        else:
+            if not self.attempting_engage:
+                if self.engage_delay_waited_seconds >= self.start_delay:
+                    self.attempting_engage = True
+                    return
+                self.get_logger().info(f"Engaging the guidance in: {self.start_delay - self.engage_delay_waited_seconds:.0f}")
+                self.engage_delay_waited_seconds += 1.0
+                return
             else:
-                rospy.logerr("Failed to set guidance status")
-                continue
+                if not self.engage_guidance_future:
+                    request = SetGuidanceActive.Request()
+                    request.guidance_active = True
+                    self.engage_guidance_future = self.set_guidance_active_client.call_async(request)
+                    self.engage_guidance_future.add_done_callback(self.engage_guidance_cb)
+                    return
+                elif not self.engage_guidance_future.done():
+                    self.get_logger().info("Waiting for SetEngageGuidance service response...")
+    
+    def pluginlist_cb(self, future):
+        try:
+            response = future.result()
+            self.active_plugins = response.plugins
+            self.get_logger().info("Received active plugins")
+            self.selected_plugins_active = self.check_plugin_status(self.active_plugins)
+        except Exception as e:
+                self.get_logger().warn(f"Service call to {self.get_active_plugins_client.srv_name} failed: {e}")
+                self.get_logger().warn("Service call can sometimes fail due to ROS, but please make sure the selected plugins are activated. Retrying in 1 second..")
+                self.active_plugins = []
+                self.plugin_list_future = None
+    
+    def engage_guidance_cb(self, future):
+        try:
+            result = future.result()
+            if result.guidance_status:
+                self.get_logger().info("Guidance engaged")
+                self.guidance_status = True
+            else:
+                self.get_logger().error("Guidance engagement failed, retrying...")
+        except Exception as e:
+            self.get_logger().warn(f"Service call to {self.set_guidance_active_client.srv_name} failed: {e}")
+            self.get_logger().warn("Service call can sometimes fail due to ROS, but please make sure the platform has started without any error. Retrying in 1 second..")  
+        finally:
+            self.attempting_engage = False
+            self.engage_delay_waited_seconds = 0.0
+            self.engage_guidance_future = None
 
-        if not route_selected:
-            rospy.logdebug("Could not engage guidance: route not selected")
+    def check_plugin_status(self, active_plugins):
+        """
+        check active plugin with plugin list
+        plugin_list: selected plugins + required plugins
+        activate_plugins: the PluginList in /guidance/plugins/get_active_plugins ROS service
+        """
+        active_names = [p.name for p in active_plugins if p.available and p.activated]
+        missing = list(set(self.selected_plugin_list) - set(active_names))
+        if len(missing) > 0:
+            self.get_logger().warn(f"Some plugins are not activated: {missing}")
+            return False
+        self.get_logger().info("All plugins activated...!")
+        return True
+    
+    def route_event_callback(self, msg):
+        if msg.event == RouteEvent.ROUTE_SELECTED or msg.event == RouteEvent.ROUTE_STARTED:
+            self.route_selected = True
 
-        if not check_plugin_status(active_plugins, plugin_list):
-            rospy.logdebug("Could not engage guidance: missing some required plugins")
-            rospy.logdebug(f"Active plugins: {', '.join([plugin.name for plugin in active_plugins])}")
-
-        rospy.sleep(1)
+def main(args=None):
+    rclpy.init(args=args)
+    print("carma_carla_guidance")
+    node = None
+    try:
+        node = CarmaCarlaGuidance()
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        if node: node.get_logger().info(f"{node.get_name()} shutting down due to KeyboardInterrupt.")
+    except Exception as e:
+        # Ensure logger is available or use print
+        logger = rclpy.logging.get_logger("carma_carla_guidance_main")
+        if node : logger = node.get_logger()
+        logger.error(f"Unhandled exception in {node.get_name() if node else 'carma_carla_guidance'}: {e}\n{traceback.format_exc()}")
+    finally:
+        if node:
+            node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 if __name__ == '__main__':
-    rospy.loginfo("carma_carla_guidance starting")
-    initialize()
+    main()
