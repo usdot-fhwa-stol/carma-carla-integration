@@ -179,7 +179,6 @@ class CarmaCarlaGuidance(Node):
     
     def route_event_callback(self, msg):
         if msg.event == RouteEvent.ROUTE_SELECTED or msg.event == RouteEvent.ROUTE_STARTED:
-            # self.get_logger().info("Route Selected")
             self.route_selected = True
 
 def main(args=None):
