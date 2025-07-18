@@ -93,8 +93,8 @@ class CarmaCarlaGuidance(Node):
         self.status_pub.publish(status_msg)
 
         if self.guidance_status:
-                self.destroy_node()
-                rclpy.shutdown()
+            self.destroy_node()
+            rclpy.shutdown()
 
         if not self.plugin_list_future:
             try:
