@@ -84,9 +84,9 @@ class CarmaCarlaGuidance(Node):
             self.get_logger().info('waiting for set_guidance_active service...')
 
         # create timer
-        self.create_timer(1.0, self.main_cb)
+        self.create_timer(1.0, self.timer_cb)
     
-    def main_cb(self):
+    def timer_cb(self):
         # publish node active status
         status_msg = Bool()
         status_msg.data = True
