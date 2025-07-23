@@ -1,11 +1,13 @@
 from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument, GroupAction
+from launch.conditions import IfCondition, UnlessCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 def generate_launch_description():
     role_name = LaunchConfiguration('role_name')
 
-    return launch.LaunchDescription([
+    return LaunchDescription([
         # common params
         DeclareLaunchArgument('role_name', default_value='ego_vehicle'),
         DeclareLaunchArgument('wheelbase', default_value='2.7'),
@@ -79,5 +81,129 @@ def generate_launch_description():
             name=[role_name, 'camerafront_to_camera'],
             arguments=['0', '0', '0', '0', '0', '0', [role_name, '/camera/rgb/front'], 'camera', '10']
         ),
+
         
+        #############################################
+        ## topic remapping + data type conversions ##
+        #############################################
+
+        # localization #
+        # Extract the pose, twist from carla odometry.
+        Node(
+            package='carma_carla_bridge',
+            executable='carla_to_carma_localization',
+            name='carla_to_carma_localization',
+            output='screen',
+            parameters=[{'role_name': role_name}]
+        ),
+
+        # external objects #
+        # Extract the external objects from carla ObjectArray
+        GroupAction([
+            Node(
+                package='carma_carla_bridge',
+                executable='carla_to_carma_external_objects',
+                name='carla_to_carma_external_objects',
+                output='screen',
+                parameters=[{'role_name': role_name}]
+            )
+        ], condition=IfCondition(LaunchConfiguration('enable_sensor_objects'))),
+        GroupAction([
+            Node(
+                package='carma_carla_bridge',
+                executable='carla_to_carma_sensor_external_objects',
+                name='carla_to_carma_sensor_external_objects',
+                output='screen',
+                parameters=[
+                    {'role_name': role_name},
+                    {'sensor_object_pub_rate': LaunchConfiguration('robot_status_pub_rate')},
+                    {'host': LaunchConfiguration('host')},
+                    {'port': LaunchConfiguration('port')},
+                    {'sensor_id': LaunchConfiguration('sensor_id')},
+                    {'detection_cycle_delay_seconds': LaunchConfiguration('detection_cycle_delay_seconds')}
+                ]
+            )
+        ], condition=UnlessCondition(LaunchConfiguration('enable_sensor_objects'))),
+
+        # convert vehicle command to carla ackermann drive
+        Node(
+            package='carma_carla_bridge',
+            executable='carma_to_carla_ackermann_cmd',
+            name='carma_to_carla_ackermann_cmd',
+            output='screen',
+            parameters=[
+                {'role_name': role_name},
+                {'init_speed': LaunchConfiguration('init_speed')},
+                {'init_acceleration': LaunchConfiguration('init_acceleration')},
+                {'init_steering_angle': LaunchConfiguration('init_steering_angle')},
+                {'init_jerk': LaunchConfiguration('init_jerk')}
+            ]
+        ),
+
+        # convert the vehicle status from carla to carma
+        Node(
+            package='carma_carla_bridge',
+            executable='carla_to_carma_vehicle_status',
+            name='carla_to_carma_vehicle_status',
+            output='screen',
+            parameters=[
+                {'role_name': role_name},
+                {'max_steering_degree': LaunchConfiguration('max_steering_degree')}
+            ]
+        ),
+        Node(
+            package='carma_carla_bridge',
+            executable='carma_carla_robot_status',
+            name='carla_to_carma_robot_status',
+            output='screen',
+            parameters=[{'robot_status_pub_rate': LaunchConfiguration('robot_status_pub_rate')}]
+        ),
+        Node(
+            package='carma_carla_bridge',
+            executable='carma_carla_driver_status',
+            name='carla_to_carma_driver_status',
+            output='screen',
+            parameters=[
+                {'driver_status_pub_rate': LaunchConfiguration('driver_status_pub_rate')},
+                {'lidar_enabled': LaunchConfiguration('lidar_enabled')},
+                {'controller_enabled': LaunchConfiguration('controller_enabled')},
+                {'camera_enabled': LaunchConfiguration('camera_enabled')},
+                {'gnss_enabled': LaunchConfiguration('gnss_enabled')}
+            ]
+        ),
+
+        # route #
+        # Set the vehicle route after localization.
+        Node(
+            package='carma_carla_bridge',
+            executable='carma_carla_route',
+            name='carma_carla_route',
+            output='screen',
+            parameters=[{'selected_route': LaunchConfiguration('selected_route')}]
+        ),
+
+        # plugins #
+        # Activate all registered plugins.
+        Node(
+            package='carma_carla_bridge',
+            executable='carma_carla_plugins',
+            name='carma_carla_plugins',
+            output='screen',
+            parameters=[{'selected_plugins': LaunchConfiguration('selected_plugins')}]
+        ),
+
+        # guidance #
+        # Set guidance to active once the plugins have been activated and the route has been selected.
+        Node(
+            package='carma_carla_bridge',
+            executable='carma_carla_guidance',
+            name='carma_carla_guidance',
+            output='screen',
+            parameters=[
+                {'selected_route': LaunchConfiguration('selected_route')},
+                {'selected_plugins': LaunchConfiguration('selected_plugins')},
+                {'start_delay_in_seconds': LaunchConfiguration('start_delay_in_seconds')}
+            ]
+        ),
+
     ])
