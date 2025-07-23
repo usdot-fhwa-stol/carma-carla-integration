@@ -1,14 +1,16 @@
 from launch import LaunchDescription
-from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import Node
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch_ros.substitutions import FindPackageShare
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch_ros.actions import SetParameter
 
 def generate_launch_description():
-    set_sim_time = SetParameter(name='use_sim_time', value=True)
-
     return LaunchDescription([
         ###################
         ## Configuration ##
         ###################
+        SetParameter(name='use_sim_time', value=True),
         DeclareLaunchArgument('agent', default_value='agent'),
         #  connecting default info 
         DeclareLaunchArgument('host', default_value='127.0.0.1'),
@@ -70,4 +72,71 @@ def generate_launch_description():
         DeclareLaunchArgument('sensor_object_pub_rate', default_value='10'),
         DeclareLaunchArgument('sensor_id', default_value='1'),
         DeclareLaunchArgument('detection_cycle_delay_seconds', default_value='0.1'),
+
+        ##########################
+        ##  CARLA CARMA bridge  ##
+        ##########################
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource([
+                PathJoinSubstitution([
+                    FindPackageShare('carma_carla_bridge'),
+                    'launch',
+                    'carma_carla_bridge.launch.py'
+                ])
+            ]),
+            launch_arguments={
+                'host': LaunchConfiguration('host'),
+                'port': LaunchConfiguration('port'),
+                'vehicle_filter': LaunchConfiguration('vehicle_model'),
+                'role_name': LaunchConfiguration('role_name'),
+                'spawn_point': LaunchConfiguration('spawn_point'),
+                'speed_Kp': LaunchConfiguration('speed_Kp'),
+                'speed_Ki': LaunchConfiguration('speed_Ki'),
+                'speed_Kd': LaunchConfiguration('speed_Kd'),
+                'accel_Kp': LaunchConfiguration('accel_Kp'),
+                'accel_Ki': LaunchConfiguration('accel_Ki'),
+                'accel_Kd': LaunchConfiguration('accel_Kd'),
+                'synchronous_mode': LaunchConfiguration('synchronous_mode'),
+                'synchronous_mode_wait_for_vehicle_control_command': LaunchConfiguration('synchronous_mode_wait_for_vehicle_control_command'),
+                'fixed_delta_seconds': LaunchConfiguration('fixed_delta_seconds'),
+            }.items()
+        ),
+
+        ##################
+        ## Agent bridge ##
+        ##################
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource([
+                PathJoinSubstitution([
+                    FindPackageShare('carma_carla_agent'),
+                    LaunchConfiguration('agent'),
+                    'bridge.launch.py'
+                ])
+            ]),
+            launch_arguments={
+                'role_name': LaunchConfiguration('role_name'),
+                'wheelbase': LaunchConfiguration('vehicle_wheelbase'),
+                'init_speed': LaunchConfiguration('init_speed'),
+                'init_acceleration': LaunchConfiguration('init_acceleration'),
+                'init_steering_angle': LaunchConfiguration('init_steering_angle'),
+                'init_jerk': LaunchConfiguration('init_jerk'),
+                'max_steering_degree': LaunchConfiguration('max_steering_degree'),
+                'lidar_enabled': LaunchConfiguration('lidar_enabled'),
+                'controller_enabled': LaunchConfiguration('controller_enabled'),
+                'camera_enabled': LaunchConfiguration('camera_enabled'),
+                'gnss_enabled': LaunchConfiguration('gnss_enabled'),
+                'driver_status_pub_rate': LaunchConfiguration('driver_status_pub_rate'),
+                'robot_status_pub_rate': LaunchConfiguration('robot_status_pub_rate'),
+                'selected_route': LaunchConfiguration('selected_route'),
+                'selected_plugins': LaunchConfiguration('selected_plugins'),
+                'start_delay_in_seconds': LaunchConfiguration('start_delay_in_seconds'),
+                'host': LaunchConfiguration('host'),
+                'port': LaunchConfiguration('port'),
+                'enable_sensor_objects': LaunchConfiguration('enable_sensor_objects'),
+                'sensor_object_pub_rate': LaunchConfiguration('sensor_object_pub_rate'),
+                'sensor_id': LaunchConfiguration('sensor_id'),
+                'detection_cycle_delay_seconds': LaunchConfiguration('detection_cycle_delay_seconds'),
+            }.items()
+        )
+
     ])
