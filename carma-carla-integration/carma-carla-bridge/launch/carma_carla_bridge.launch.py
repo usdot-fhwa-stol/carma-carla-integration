@@ -2,7 +2,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
-from launch_ros.actions import Node
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 def generate_launch_description():
     return LaunchDescription([
@@ -82,7 +82,35 @@ def generate_launch_description():
             description='Path to the hero vehicle JSON config'
         ),
 
-
-        
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(PathJoinSubstitution([
+                FindPackageShare('carla_ros2_bridge'),
+                'launch',
+                'carla_ros2_bridge.launch.py'
+            ])),
+            launch_arguments={
+                'host': LaunchConfiguration('host'),
+                'port': LaunchConfiguration('port'),
+                'timeout': LaunchConfiguration('timeout'),
+                'passive': LaunchConfiguration('passive'),
+                'synchronous_mode': LaunchConfiguration('synchronous_mode'),
+                'synchronous_mode_wait_for_vehicle_control_command': LaunchConfiguration('synchronous_mode_wait_for_vehicle_control_command'),
+                'fixed_delta_seconds': LaunchConfiguration('fixed_delta_seconds'),
+                'town': LaunchConfiguration('town'),
+                'role_name': LaunchConfiguration('role_name'),
+                'vehicle_filter': LaunchConfiguration('vehicle_filter'),
+                'spawn_point': LaunchConfiguration('spawn_point'),
+                'launch_spawn_vehicle': LaunchConfiguration('launch_spawn_vehicle'),
+                'launch_ackermann_control': LaunchConfiguration('launch_ackermann_control'),
+                'hero_config_path': LaunchConfiguration('hero_config_path'),
+            }.items() | {
+                'speed_Kp': LaunchConfiguration('speed_Kp'),
+                'speed_Ki': LaunchConfiguration('speed_Ki'),
+                'speed_Kd': LaunchConfiguration('speed_Kd'),
+                'accel_Kp': LaunchConfiguration('accel_Kp'),
+                'accel_Ki': LaunchConfiguration('accel_Ki'),
+                'accel_Kd': LaunchConfiguration('accel_Kd'),
+            }.items()
+        )
 
     ])
