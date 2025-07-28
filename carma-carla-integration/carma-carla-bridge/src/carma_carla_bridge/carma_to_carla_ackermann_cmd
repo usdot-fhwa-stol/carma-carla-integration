@@ -45,7 +45,7 @@ from rclpy.node import Node
 # Import message types
 from ackermann_msgs.msg import AckermannDrive
 from autoware_msgs.msg import VehicleCmd
-from cav_msgs.msg import GuidanceState
+from carma_planning_msgs.msg import GuidanceState
 from std_msgs.msg import Float32
 
 class CarmaToCarlaAckermannCmd(Node):
