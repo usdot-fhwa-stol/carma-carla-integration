@@ -35,7 +35,7 @@ import traceback
 
 from derived_object_msgs.msg import ObjectArray as DerivedObjectArray
 from derived_object_msgs.msg import Object as DerivedObject
-from cav_msgs.msg import ExternalObjectList, ExternalObject
+from carma_perception_msgs.msg import ExternalObjectList, ExternalObject
 
 class CarlaToCarmaObjectsNode(Node):
     """Node to convert CARLA detected objects to CARMA ExternalObjectList messages."""
