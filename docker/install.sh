@@ -14,59 +14,54 @@
 #  License for the specific language governing permissions and limitations under
 #  the License.
 
+#!/bin/bash
+set -e
+
+# Add Python 3.10+ support if needed
 sudo add-apt-repository ppa:deadsnakes/ppa -y
+sudo apt-get update
 
-sudo apt-get update && sudo apt-get install -y --no-install-recommends \
-                            libgps-dev \
-                            ros-noetic-ackermann-msgs \
-                            ros-noetic-derived-object-msgs \
-                            ros-noetic-jsk-recognition-msgs \
-                            ros-noetic-rqt \
-                            ros-noetic-rviz \
-                            wget
+# Install ROS 2 and CARLA dependencies
+sudo apt-get install -y --no-install-recommends \
+    libgps-dev \
+    python3-distutils \
+    python3-pip \
+    ros-humble-ackermann-msgs \
+    ros-humble-derived-object-msgs \
+    ros-humble-rqt \
+    ros-humble-rviz2 \
+    wget \
+    git
 
-sudo apt-get install python3-distutils
-sudo python3 -m pip install simple-pid==1.0.1 wheel numpy
+# Python dependencies
+python3 -m pip install --upgrade pip
+python3 -m pip install simple-pid==1.0.1 wheel numpy
+
+# Ensure python points to python3
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
 
-# Clone CARLA ROS bridge
-git clone --depth 1 -b '0.9.10.1' --recurse-submodules https://github.com/carla-simulator/ros-bridge.git
-
-# Clone ROS message
+# Clone ROS 2 message packages
 mkdir -p ~/msgs
-if [ "${CARMA_VERSION}" = "develop" ]; then
-  cd ~/msgs && git clone --depth 1 --single-branch -b carma-develop https://github.com/usdot-fhwa-stol/autoware.ai.git
+if [ "${CARMA_VERSION}" = "develop-ros2" ]; then
+  cd ~/msgs && git clone --depth 1 --branch develop https://github.com/usdot-fhwa-stol/carma-msgs.git
 else
-  cd ~/msgs && git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/autoware.ai.git
+  cd ~/msgs && git clone --depth 1 --branch ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-msgs.git
 fi
-cd ~/msgs && git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-msgs.git
 
-# CARMA Utils package
-mkdir -p ~/utils
-cd ~/utils && git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-utils.git
-# CARLA Sensor Lib 
+# Clone CARMA utils (ROS 2)
+mkdir -p ~/utils && cd ~/utils
+git clone --depth 1 --branch ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-utils.git
+
+# Clone CARLA Sensor Lib
 cd ~
-git clone --depth 1 --single-branch -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carla-sensor-lib
+git clone --depth 1 --branch ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carla-sensor-lib.git
 
-# GPS Common
-mkdir -p ~/gps && cd ~/gps 
-git clone https://github.com/swri-robotics/gps_umd.git
+# Link msgs and utils into carma-carla-integration src
+ln -s ~/msgs/carma-msgs ~/carma-carla-integration/src/
+ln -s ~/utils/carma-utils ~/carma-carla-integration/src/
 
-mkdir -p ~/carma_carla_ws/src/msgs && cd ~/carma_carla_ws/src/msgs
-
-ln -s ~/msgs/carma-msgs/j3224_v2x_msgs
-ln -s ~/msgs/carma-msgs/j2735_v2x_msgs
-ln -s ~/msgs/carma-msgs/cav_msgs
-ln -s ~/msgs/carma-msgs/can_msgs
-ln -s ~/msgs/carma-msgs/cav_srvs
-ln -s ~/msgs/carma-msgs/carma_cmake_common
-ln -s ~/msgs/autoware.ai/messages/autoware_msgs
-
-mkdir -p ~/carma_carla_ws/src/utils && cd ~/carma_carla_ws/src/utils 
-ln -s ~/utils/carma-utils/carma_utils
-
-cd ~/carma_carla_ws/src && 
-ln -s ~/ros-bridge
-ln -s ~/carma-carla-integration
-
-cd ~/carma_carla_ws && /bin/bash -c '. /opt/ros/noetic/setup.bash; catkin_make'
+# Build using colcon
+cd ~/carma-carla-integration
+source /opt/ros/humble/setup.bash
+colcon build --symlink-install
+source install/setup.bash
