@@ -15,38 +15,18 @@
 #!/bin/bash
 set -e
 
-echo "### Starting CARMA-CARLA Integration ROS 2 install ###"
+echo "### Starting CARMA-CARLA Integration ROS 2 Workspace Setup ###"
 
-# Add Python 3.10+ support if needed
-sudo add-apt-repository ppa:deadsnakes/ppa -y
-sudo apt-get update
-
-# Install ROS 2 and CARLA dependencies
-sudo apt-get install -y --no-install-recommends \
-    libgps-dev \
-    python3-distutils \
-    python3-pip \
-    ros-humble-ackermann-msgs \
-    ros-humble-derived-object-msgs \
-    ros-humble-rqt \
-    ros-humble-rviz2 \
-    wget \
-    git
-
-# Python dependencies
-python3 -m pip install --upgrade pip
-python3 -m pip install simple-pid==1.0.1 wheel numpy
-
-# Ensure python points to python3
-sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
+# Source ROS 2 environment
+source /opt/ros/humble/setup.bash
 
 # Clone ROS 2 message packages
 mkdir -p ~/msgs
 if [ "${CARMA_VERSION}" = "develop-ros2" ]; then
-  echo "Cloning carma-msgs develop branch (ROS 2 compatible)..."
+  echo "Cloning carma-msgs (develop branch, ROS 2 compatible)..."
   cd ~/msgs && git clone --depth 1 --branch develop https://github.com/usdot-fhwa-stol/carma-msgs.git
 else
-  echo "Cloning carma-msgs ${CARMA_VERSION} branch..."
+  echo "Cloning carma-msgs (${CARMA_VERSION} branch)..."
   cd ~/msgs && git clone --depth 1 --branch ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-msgs.git
 fi
 
@@ -66,27 +46,28 @@ else
   git clone --depth 1 --branch ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carla-sensor-lib.git
 fi
 
-# Link msgs and utils into carma-carla-integration src
+# Prepare workspace
+echo "Setting up carma-carla-integration workspace..."
 mkdir -p ~/carma-carla-integration/src
+
+# Symlink message and utility packages into workspace
 ln -sf ~/msgs/carma-msgs ~/carma-carla-integration/src/
 ln -sf ~/utils/carma-utils ~/carma-carla-integration/src/
 
 # Remove ROS 1-only packages if they exist
-echo "Removing ROS 1-only packages..."
+echo "Removing ROS 1-only packages (if present)..."
 rm -rf ~/carma-carla-integration/src/cav_msgs || true
 rm -rf ~/carma-carla-integration/src/cav_srvs || true
 rm -rf ~/carma-carla-integration/src/carma_debug_msgs || true
 rm -rf ~/carma-carla-integration/src/carla-sensor-lib/carla_sensors_integration || true
 
-# Build using colcon
+# Build the workspace with colcon
 cd ~/carma-carla-integration
-echo "Sourcing ROS 2 Humble..."
-source /opt/ros/humble/setup.bash
-
-echo "Starting colcon build..."
+echo "Building workspace with colcon..."
 colcon build --symlink-install --packages-skip cav_msgs cav_srvs carma_debug_msgs carla_sensors_integration || true
 
-echo "Sourcing workspace..."
+# Source the workspace
+echo "Sourcing the built workspace..."
 source install/setup.bash
 
-echo "### CARMA-CARLA Integration ROS 2 install completed successfully! ###"
+echo "### CARMA-CARLA Integration ROS 2 Workspace Setup Completed Successfully! ###"
