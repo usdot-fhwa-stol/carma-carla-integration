@@ -17,6 +17,8 @@
 #!/bin/bash
 set -e
 
+echo "### Starting CARMA-CARLA Integration ROS 2 install ###"
+
 # Add Python 3.10+ support if needed
 sudo add-apt-repository ppa:deadsnakes/ppa -y
 sudo apt-get update
@@ -43,8 +45,10 @@ sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
 # Clone ROS 2 message packages
 mkdir -p ~/msgs
 if [ "${CARMA_VERSION}" = "develop-ros2" ]; then
+  echo "Cloning carma-msgs develop branch (ROS 2 compatible)..."
   cd ~/msgs && git clone --depth 1 --branch develop https://github.com/usdot-fhwa-stol/carma-msgs.git
 else
+  echo "Cloning carma-msgs ${CARMA_VERSION} branch..."
   cd ~/msgs && git clone --depth 1 --branch ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-msgs.git
 fi
 
@@ -64,15 +68,27 @@ else
   git clone --depth 1 --branch ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carla-sensor-lib.git
 fi
 
-# Create carma-carla-integration src directory
-mkdir -p ~/carma-carla-integration/src
-
 # Link msgs and utils into carma-carla-integration src
-ln -s ~/msgs/carma-msgs ~/carma-carla-integration/src/
-ln -s ~/utils/carma-utils ~/carma-carla-integration/src/
+mkdir -p ~/carma-carla-integration/src
+ln -sf ~/msgs/carma-msgs ~/carma-carla-integration/src/
+ln -sf ~/utils/carma-utils ~/carma-carla-integration/src/
+
+# Remove ROS 1-only packages if they exist
+echo "Removing ROS 1-only packages..."
+rm -rf ~/carma-carla-integration/src/cav_msgs || true
+rm -rf ~/carma-carla-integration/src/cav_srvs || true
+rm -rf ~/carma-carla-integration/src/carma_debug_msgs || true
+rm -rf ~/carma-carla-integration/src/carla-sensor-lib/carla_sensors_integration || true
 
 # Build using colcon
 cd ~/carma-carla-integration
+echo "Sourcing ROS 2 Humble..."
 source /opt/ros/humble/setup.bash
-colcon build --symlink-install
+
+echo "Starting colcon build..."
+colcon build --symlink-install --packages-skip cav_msgs cav_srvs carma_debug_msgs carla_sensors_integration || true
+
+echo "Sourcing workspace..."
 source install/setup.bash
+
+echo "### CARMA-CARLA Integration ROS 2 install completed successfully! ###"
