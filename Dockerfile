@@ -69,8 +69,8 @@ WORKDIR /home/carma
 
 # Copy Docker scripts, CARLA Python API, and integration packages
 COPY --chown=carma:carma docker ./docker
-COPY PythonAPI ./PythonAPI
-COPY carma-carla-integration ./carma-carla-integration
+COPY --chown=carma:carma PythonAPI ./PythonAPI
+COPY --chown=carma:carma carma-carla-integration ./carma-carla-integration
 
 # Install all dependencies and build ROS 2 workspace
 RUN /home/carma/docker/install.sh
