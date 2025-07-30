@@ -28,9 +28,9 @@ from rclpy.node import Node
 import ast
 import traceback
 
-from cav_msgs.msg import RouteEvent
-from cav_msgs.msg import Plugin
-from cav_srvs.srv import SetGuidanceActive, PluginList
+from carma_planning_msgs.msg import RouteEvent
+from carma_planning_msgs.msg import Plugin
+from carma_planning_msgs.srv import SetGuidanceActive, PluginList
 from std_msgs.msg import Bool
 
 class CarmaCarlaGuidance(Node):

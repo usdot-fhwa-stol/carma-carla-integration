@@ -27,7 +27,7 @@ from src.CarlaCDASimAPI import CarlaCDASimAPI
 from src.util.SimulatedSensorUtils import SimulatedSensorUtils
 import carla
 
-from cav_msgs.msg import ExternalObjectList, ExternalObject
+from carma_perception_msgs.msg import ExternalObjectList, ExternalObject
 import numpy as np
 import time
 import rclpy

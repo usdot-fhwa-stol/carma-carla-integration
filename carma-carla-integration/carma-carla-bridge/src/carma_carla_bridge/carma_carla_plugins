@@ -35,7 +35,7 @@ from rclpy.node import Node
 import time
 import ast
 import traceback
-from cav_srvs.srv import PluginList, PluginActivation
+from carma_planning_msgs.srv import PluginList, PluginActivation
 
 class CarmaCarlaPlugins(Node):
     def __init__(self):
