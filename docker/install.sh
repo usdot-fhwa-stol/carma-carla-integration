@@ -50,11 +50,19 @@ fi
 
 # Clone CARMA utils (ROS 2)
 mkdir -p ~/utils && cd ~/utils
-git clone --depth 1 --branch ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-utils.git
+if [ "${CARMA_VERSION}" = "develop-ros2" ]; then
+  git clone --depth 1 --branch develop https://github.com/usdot-fhwa-stol/carma-utils.git
+else
+  git clone --depth 1 --branch ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-utils.git
+fi
 
 # Clone CARLA Sensor Lib
 cd ~
-git clone --depth 1 --branch ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carla-sensor-lib.git
+if [ "${CARMA_VERSION}" = "develop-ros2" ]; then
+  git clone --depth 1 --branch develop https://github.com/usdot-fhwa-stol/carla-sensor-lib.git
+else
+  git clone --depth 1 --branch ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carla-sensor-lib.git
+fi
 
 # Link msgs and utils into carma-carla-integration src
 ln -s ~/msgs/carma-msgs ~/carma-carla-integration/src/
