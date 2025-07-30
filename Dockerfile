@@ -73,4 +73,23 @@ RUN wget -q https://tiny.carla.org/carla-0-10-0-linux-tar -O CARLA_0.10.0.tar.gz
 
 # Set CARLA Python API paths (UE5 uses .tar.gz, no .egg file)
 ENV CARLA_VERSION=0.10.0
-ENV CARLA_PYTH_
+ENV CARLA_PYTHONAPI=/home/carma/carla/PythonAPI
+ENV CARLA_DIST=$CARLA_PYTHONAPI/carla/dist
+ENV PYTHONPATH=$CARLA_DIST:$CARLA_PYTHONAPI:$PYTHONPATH
+
+# ================================
+# Workspace Setup
+# ================================
+COPY --chown=carma:carma docker ./docker
+COPY --chown=carma:carma PythonAPI ./PythonAPI
+COPY --chown=carma:carma carma-carla-integration ./carma-carla-integration
+
+# Install ROS 2 dependencies and build
+RUN /home/carma/docker/install.sh
+
+# ================================
+# Final Settings
+# ================================
+ENV ROS_DISTRO=humble
+SHELL ["/bin/bash", "-c"]
+CMD ["bash"]
