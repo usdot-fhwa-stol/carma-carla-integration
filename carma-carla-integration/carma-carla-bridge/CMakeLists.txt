@@ -21,15 +21,15 @@ ament_python_install_package(${PROJECT_NAME})
 
 # Install Python executables
 install(PROGRAMS
-  src/carma_carla_bridge/carma_carla_driver_status
-  src/carma_carla_bridge/carma_carla_robot_status
-  src/carma_carla_bridge/carla_to_carma_vehicle_status
-  src/carma_carla_bridge/carla_to_carma_localization
-  src/carma_carla_bridge/carma_to_carla_ackermann_cmd
-  src/carma_carla_bridge/carla_to_carma_external_objects
-  src/carma_carla_bridge/carma_carla_route
-  src/carma_carla_bridge/carma_carla_plugins
-  src/carma_carla_bridge/carma_carla_guidance
+  src/carma_carla_bridge/carma_carla_driver_status.py
+  src/carma_carla_bridge/carma_carla_robot_status.py
+  src/carma_carla_bridge/carla_to_carma_vehicle_status.py
+  src/carma_carla_bridge/carla_to_carma_localization.py
+  src/carma_carla_bridge/carma_to_carla_ackermann_cmd.py
+  src/carma_carla_bridge/carla_to_carma_external_objects.py
+  src/carma_carla_bridge/carma_carla_route.py
+  src/carma_carla_bridge/carma_carla_plugins.py
+  src/carma_carla_bridge/carma_carla_guidance.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
