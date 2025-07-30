@@ -40,41 +40,13 @@ LABEL org.label-schema.vcs-ref=${VCS_REF}
 LABEL org.label-schema.build-date=${BUILD_DATE}
 
 # ================================
-# User Setup & System Dependencies
-# ================================
-USER root
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3-pip \
-    python3-distutils \
-    libgps-dev \
-    libvulkan1 \
-    libsdl2-2.0-0 \
-    ros-humble-ackermann-msgs \
-    ros-humble-derived-object-msgs \
-    ros-humble-rqt \
-    ros-humble-rviz2 \
-    wget git && \
-    rm -rf /var/lib/apt/lists/*
-
-RUN python3 -m pip install --upgrade pip && \
-    python3 -m pip install simple-pid==1.0.1 wheel numpy
-
-# ================================
-# Copy CARLA PythonAPI (Local)
+# Copy CARLA PythonAPI
 # ================================
 USER carma
 WORKDIR /home/carma
 
 # Copy the PythonAPI folder from repo
 COPY --chown=carma:carma PythonAPI ./PythonAPI
-
-# Install CARLA Python API from its .whl
-RUN CARLA_WHL=$(find PythonAPI/carla/dist -name "*.whl") && \
-    if [ -z "$CARLA_WHL" ]; then \
-        echo "ERROR: No CARLA .whl file found in PythonAPI/carla/dist"; \
-        exit 1; \
-    fi && \
-    python3 -m pip install $CARLA_WHL
 
 # Set CARLA Python API environment variables
 ENV CARLA_VERSION=0.10.0

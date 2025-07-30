@@ -17,7 +17,39 @@ set -e
 
 echo "### Starting CARMA-CARLA Integration ROS 2 Workspace Setup ###"
 
-# Source ROS 2 environment
+# Install System Dependencies
+echo "Installing system dependencies..."
+sudo apt-get update && sudo apt-get install -y --no-install-recommends \
+    python3-pip \
+    python3-distutils \
+    libgps-dev \
+    libvulkan1 \
+    libsdl2-2.0-0 \
+    ros-humble-ackermann-msgs \
+    ros-humble-derived-object-msgs \
+    ros-humble-rqt \
+    ros-humble-rviz2 \
+    wget git && \
+    sudo rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip and install Python dependencies
+python3 -m pip install --upgrade pip
+python3 -m pip install simple-pid==1.0.1 wheel numpy
+
+# Ensure python points to python3
+sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
+
+# Install CARLA PythonAPI
+echo "Installing CARLA Python API (UE5 0.10.0)..."
+CARLA_WHL=$(find ~/PythonAPI/carla/dist -name "*.whl")
+if [ -z "$CARLA_WHL" ]; then
+    echo "ERROR: CARLA .whl file not found in ~/PythonAPI/carla/dist"
+    exit 1
+fi
+python3 -m pip install "$CARLA_WHL"
+
+# Source ROS 2 Environment
+echo "Sourcing ROS 2 environment..."
 source /opt/ros/humble/setup.bash
 
 # Clone ROS 2 message packages
