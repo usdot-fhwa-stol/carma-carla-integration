@@ -100,6 +100,6 @@ colcon build --symlink-install --packages-skip cav_msgs cav_srvs carma_debug_msg
 
 # Source the workspace
 echo "Sourcing the built workspace..."
-source install/setup.bash
+source carma-carla-integration/install/setup.bash
 
 echo "### CARMA-CARLA Integration ROS 2 Workspace Setup Completed Successfully! ###"
