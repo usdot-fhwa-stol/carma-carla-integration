@@ -62,6 +62,10 @@ COPY --chown=carma:carma carma-carla-integration ./carma-carla-integration
 # Install ROS 2 dependencies and build
 RUN /home/carma/docker/install.sh
 
+# Automatically source ROS 2 and workspace
+RUN echo "source /opt/ros/humble/setup.bash" >> /home/carma/.bashrc && \
+    echo "source /home/carma/carma-carla-integration/install/setup.bash" >> /home/carma/.bashrc
+
 # ================================
 # Final Settings
 # ================================

@@ -17,6 +17,9 @@ set -e
 
 echo "### Starting CARMA-CARLA Integration ROS 2 Workspace Setup ###"
 
+echo "Cleaning workspace..."
+rm -rf ~/carma-carla-integration/build ~/carma-carla-integration/install ~/carma-carla-integration/log
+
 # Install System Dependencies
 echo "Installing system dependencies..."
 sudo apt-get update && sudo apt-get install -y --no-install-recommends \
@@ -82,6 +85,10 @@ fi
 echo "Setting up carma-carla-integration workspace..."
 mkdir -p ~/carma-carla-integration/src
 
+# Clean up old symlinks if they exist
+rm -rf ~/carma-carla-integration/src/carma-msgs || true
+rm -rf ~/carma-carla-integration/src/carma-utils || true
+
 # Symlink message and utility packages into workspace
 ln -sf ~/msgs/carma-msgs ~/carma-carla-integration/src/
 ln -sf ~/utils/carma-utils ~/carma-carla-integration/src/
@@ -97,9 +104,7 @@ rm -rf ~/carma-carla-integration/src/carla-sensor-lib/carla_sensors_integration 
 cd ~/carma-carla-integration
 echo "Building workspace with colcon..."
 colcon build --symlink-install --packages-skip cav_msgs cav_srvs carma_debug_msgs carla_sensors_integration || true
+colcon list | grep -E "carma_carla_bridge|carla_ros2_bridge" || echo "Warning: One or more expected packages not found!"
 
-# Source the workspace
-echo "Sourcing the built workspace..."
-source carma-carla-integration/install/setup.bash
 
 echo "### CARMA-CARLA Integration ROS 2 Workspace Setup Completed Successfully! ###"
