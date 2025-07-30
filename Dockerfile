@@ -60,26 +60,38 @@ RUN python3 -m pip install --upgrade pip && \
     python3 -m pip install simple-pid==1.0.1 wheel numpy
 
 # ================================
-# Install CARLA Python API (UE5 0.10.0)
+# Copy CARLA PythonAPI via ARG (validated)
 # ================================
-USER carma
-WORKDIR /home/carma
+ARG CARLA_PYTHONAPI_PATH
 
-# Download CARLA Python API .whl only
-RUN wget -q https://tiny.carla.org/carla-0-10-0-linux-tar -O CARLA_0.10.0.tar.gz && \
-    mkdir -p carla_tmp && tar -xzf CARLA_0.10.0.tar.gz -C carla_tmp && \
-    CARLA_WHL=$(find carla_tmp/PythonAPI/carla/dist -name "*.whl") && \
-    python3 -m pip install $CARLA_WHL && \
-    rm -rf CARLA_0.10.0.tar.gz carla_tmp
+# Validate that the PythonAPI path exists
+RUN if [ ! -d "${CARLA_PYTHONAPI_PATH}" ]; then \
+      echo "ERROR: CARLA_PYTHONAPI_PATH '${CARLA_PYTHONAPI_PATH}' does not exist!"; \
+      exit 1; \
+    fi
+
+# Copy the PythonAPI into the image
+COPY --chown=carma:carma ${CARLA_PYTHONAPI_PATH} ./PythonAPI
+
+# Install CARLA Python API from .whl
+RUN CARLA_WHL=$(find PythonAPI/carla/dist -name "*.whl") && \
+    if [ -z "$CARLA_WHL" ]; then \
+        echo "ERROR: No CARLA .whl file found in ${CARLA_PYTHONAPI_PATH}/carla/dist"; \
+        exit 1; \
+    fi && \
+    python3 -m pip install $CARLA_WHL
 
 # Set CARLA Python API paths (UE5 uses .tar.gz, no .egg file)
 ENV CARLA_VERSION=0.10.0
+ENV CARLA_PYTHONAPI=/home/carma/PythonAPI
+ENV PYTHONPATH=$CARLA_PYTHONAPI/carla/dist:$CARLA_PYTHONAPI:$PYTHONPATH
 
 # ================================
 # Workspace Setup
 # ================================
 COPY --chown=carma:carma docker ./docker
 COPY --chown=carma:carma carma-carla-integration ./carma-carla-integration
+COPY --chown=carma:carma ${CARLA_PYTHONAPI_PATH} /home/carma/PythonAPI
 
 # Install ROS 2 dependencies and build
 RUN /home/carma/docker/install.sh
