@@ -64,6 +64,9 @@ else
   git clone --depth 1 --branch ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carla-sensor-lib.git
 fi
 
+# Create carma-carla-integration src directory
+mkdir -p ~/carma-carla-integration/src
+
 # Link msgs and utils into carma-carla-integration src
 ln -s ~/msgs/carma-msgs ~/carma-carla-integration/src/
 ln -s ~/utils/carma-utils ~/carma-carla-integration/src/
