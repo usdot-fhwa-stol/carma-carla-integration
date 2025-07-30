@@ -60,28 +60,25 @@ RUN python3 -m pip install --upgrade pip && \
     python3 -m pip install simple-pid==1.0.1 wheel numpy
 
 # ================================
-# CARLA UE5 Installation
+# Install CARLA Python API (UE5 0.10.0)
 # ================================
 USER carma
 WORKDIR /home/carma
 
-# Download and extract CARLA 0.10.0
+# Download CARLA Python API .whl only
 RUN wget -q https://tiny.carla.org/carla-0-10-0-linux-tar -O CARLA_0.10.0.tar.gz && \
-    mkdir -p /home/carma/carla && \
-    tar -xzf CARLA_0.10.0.tar.gz -C /home/carma/carla --strip-components=1 && \
-    rm CARLA_0.10.0.tar.gz
+    mkdir -p carla_tmp && tar -xzf CARLA_0.10.0.tar.gz -C carla_tmp && \
+    CARLA_WHL=$(find carla_tmp/PythonAPI/carla/dist -name "*.whl") && \
+    python3 -m pip install $CARLA_WHL && \
+    rm -rf CARLA_0.10.0.tar.gz carla_tmp
 
 # Set CARLA Python API paths (UE5 uses .tar.gz, no .egg file)
 ENV CARLA_VERSION=0.10.0
-ENV CARLA_PYTHONAPI=/home/carma/carla/PythonAPI
-ENV CARLA_DIST=$CARLA_PYTHONAPI/carla/dist
-ENV PYTHONPATH=$CARLA_DIST:$CARLA_PYTHONAPI:$PYTHONPATH
 
 # ================================
 # Workspace Setup
 # ================================
 COPY --chown=carma:carma docker ./docker
-COPY --chown=carma:carma PythonAPI ./PythonAPI
 COPY --chown=carma:carma carma-carla-integration ./carma-carla-integration
 
 # Install ROS 2 dependencies and build

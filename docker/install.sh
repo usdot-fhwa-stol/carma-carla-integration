@@ -1,5 +1,3 @@
-#!/bin/bash
-
 #  Copyright (C) 2018-2020 LEIDOS.
 # 
 #  Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -41,26 +39,6 @@ python3 -m pip install simple-pid==1.0.1 wheel numpy
 
 # Ensure python points to python3
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
-
-# Install CARLA 0.10.0 (UE5) for Ubuntu 22
-CARLA_VERSION=0.10.0
-CARLA_TAR_URL="https://tiny.carla.org/carla-0-10-0-linux-tar"
-
-echo "Downloading CARLA ${CARLA_VERSION} for Ubuntu 22..."
-wget -q ${CARLA_TAR_URL} -O CARLA_${CARLA_VERSION}.tar.gz
-mkdir -p ~/carla
-tar -xzf CARLA_${CARLA_VERSION}.tar.gz -C ~/carla --strip-components=1
-rm CARLA_${CARLA_VERSION}.tar.gz
-
-# Verify PythonAPI directory exists
-if [ ! -d "~/carla/PythonAPI" ]; then
-  echo "ERROR: CARLA PythonAPI folder not found after extraction!"
-  exit 1
-fi
-
-# Add CARLA PythonAPI to PYTHONPATH for UE5 0.10.0
-echo "export PYTHONPATH=\$PYTHONPATH:~/carla/PythonAPI/carla/dist" >> ~/.bashrc
-echo "export PYTHONPATH=\$PYTHONPATH:~/carla/PythonAPI" >> ~/.bashrc
 
 # Clone ROS 2 message packages
 mkdir -p ~/msgs
