@@ -5,6 +5,7 @@
   <description>The carma_carla_bridge package</description>
 
   <maintainer email="carma@dot.gov">carma</maintainer>
+  <license>Apache 2.0 Licence</license>
 
   <!-- Build tool -->
   <buildtool_depend>ament_python</buildtool_depend>
