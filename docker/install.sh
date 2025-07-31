@@ -37,8 +37,8 @@ sudo apt-get update && sudo apt-get install -y --no-install-recommends \
     sudo rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip and install Python dependencies
-python3 -m pip install --upgrade pip
-python3 -m pip install simple-pid==1.0.1 wheel numpy
+# python3 -m pip install --upgrade pip
+# python3 -m pip install simple-pid==1.0.1 wheel numpy
 
 # Ensure python points to python3
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
@@ -123,5 +123,8 @@ colcon build --symlink-install --packages-up-to carma_carla_bridge
 
 echo "Finalizing build..."
 colcon build --symlink-install --packages-select carma_carla_bridge
+
+echo "Installing Python dependencies from requirements.txt..."
+python3 -m pip install --no-cache-dir --break-system-packages -r ~/carma-carla-integration/carla-ros2-bridge/requirements.txt
 
 echo "### CARMA-CARLA Integration ROS 2 Workspace Setup Completed Successfully! ###"
