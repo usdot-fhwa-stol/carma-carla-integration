@@ -20,7 +20,7 @@ Publish to CARMA :cav_msgs::DriverStatus
 """
 import rclpy
 from rclpy.node import Node
-from cav_msgs.msg import DriverStatus
+from carma_driver_msgs.msg import DriverStatus
 from std_msgs.msg import Header
 
 import traceback

@@ -24,7 +24,8 @@ Topic: /guidance/state
 """
 import rclpy
 from rclpy.node import Node
-from cav_msgs.msg import RobotEnabled, GuidanceState
+from carma_driver_msgs.msg import RobotEnabled
+from carma_planning_msgs.msg import GuidanceState
 
 class RobotStatusNode(Node):
     """

@@ -27,7 +27,7 @@ from rclpy.node import Node
 import traceback
 
 from geometry_msgs.msg import PoseStamped
-from cav_srvs.srv import GetAvailableRoutes, SetActiveRoute
+from carma_planning_msgs.srv import GetAvailableRoutes, SetActiveRoute
 from std_msgs.msg import Bool
 
 
