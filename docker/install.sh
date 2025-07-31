@@ -93,18 +93,31 @@ rm -rf ~/carma-carla-integration/src/carma-utils || true
 ln -sf ~/msgs/carma-msgs ~/carma-carla-integration/src/
 ln -sf ~/utils/carma-utils ~/carma-carla-integration/src/
 
-# Remove ROS 1-only packages if they exist
+# Remove ROS 1-only packages
 echo "Removing ROS 1-only packages (if present)..."
 rm -rf ~/carma-carla-integration/src/cav_msgs || true
 rm -rf ~/carma-carla-integration/src/cav_srvs || true
 rm -rf ~/carma-carla-integration/src/carma_debug_msgs || true
-rm -rf ~/carma-carla-integration/src/carla-sensor-lib/carla_sensors_integration || true
+rm -rf ~/carla-sensor-lib/carla_sensors_integration || true
 
-# Build the workspace with colcon
+# Colcon Build (Dependency Order)
 cd ~/carma-carla-integration
-echo "Building workspace with colcon..."
-colcon build --symlink-install --packages-skip cav_msgs cav_srvs carma_debug_msgs carla_sensors_integration || true
-colcon list | grep -E "carma_carla_bridge|carla_ros2_bridge" || echo "Warning: One or more expected packages not found!"
 
+echo "Building core message packages..."
+colcon build --symlink-install --packages-select \
+    carma_cmake_common \
+    carma_msgs \
+    carma_perception_msgs \
+    j2735_v2x_msgs \
+    j3224_v2x_msgs \
+    carma_driver_msgs \
+    carma_v2x_msgs \
+    carma_planning_msgs
+
+echo "Building remaining dependencies..."
+colcon build --symlink-install --packages-up-to carma_carla_bridge
+
+echo "Finalizing build..."
+colcon build --symlink-install --packages-select carma_carla_bridge
 
 echo "### CARMA-CARLA Integration ROS 2 Workspace Setup Completed Successfully! ###"
