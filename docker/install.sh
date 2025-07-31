@@ -105,6 +105,7 @@ rm -rf ~/carla-sensor-lib/carla_sensors_integration || true
 cd ~/carma-carla-integration
 
 echo "Building core message packages..."
+colcon list
 colcon build --symlink-install --packages-select \
     carma_cmake_common \
     carma_msgs \
@@ -113,7 +114,8 @@ colcon build --symlink-install --packages-select \
     j3224_v2x_msgs \
     carma_driver_msgs \
     carma_v2x_msgs \
-    carma_planning_msgs
+    carma_planning_msgs \
+    carla_msgs
 
 echo "Building CARLA ROS 2 Bridge..."
 colcon build --symlink-install --packages-select carla_ros2_bridge
