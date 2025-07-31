@@ -125,6 +125,6 @@ echo "Finalizing build..."
 colcon build --symlink-install --packages-select carma_carla_bridge
 
 echo "Installing Python dependencies from requirements.txt..."
-python3 -m pip install --no-cache-dir --break-system-packages -r ~/carma-carla-integration/carla-ros2-bridge/requirements.txt
+python3 -m pip install -r ~/carma-carla-integration/carla-ros2-bridge/requirements.txt
 
 echo "### CARMA-CARLA Integration ROS 2 Workspace Setup Completed Successfully! ###"
