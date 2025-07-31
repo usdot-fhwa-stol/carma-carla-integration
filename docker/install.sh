@@ -114,6 +114,9 @@ colcon build --symlink-install --packages-select \
     carma_v2x_msgs \
     carma_planning_msgs
 
+echo "Building CARLA ROS 2 Bridge..."
+colcon build --symlink-install --packages-select carla_ros2_bridge
+
 echo "Building remaining dependencies..."
 colcon build --symlink-install --packages-up-to carma_carla_bridge
 
