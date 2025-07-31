@@ -32,13 +32,13 @@ sudo apt-get update && sudo apt-get install -y --no-install-recommends \
     ros-humble-derived-object-msgs \
     ros-humble-rqt \
     ros-humble-rviz2 \
+    ros-humble-tf-transformations \
     wget git && \
     sudo rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip and install Python dependencies
 python3 -m pip install --upgrade pip
 python3 -m pip install simple-pid==1.0.1 wheel numpy
-python3 -m pip install transforms3d
 
 # Ensure python points to python3
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
