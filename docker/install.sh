@@ -86,7 +86,6 @@ fi
 echo "Cloning autoware_msgs from CARMA develop branch..."
 mkdir -p ~/autoware_msgs && cd ~/autoware_msgs
 git clone --depth 1 --branch carma-develop https://github.com/usdot-fhwa-stol/autoware.ai.git
-ln -sf ~/autoware_msgs/autoware.ai/messages/autoware_msgs ~/carma-carla-integration/src/
 
 # Prepare workspace
 echo "Setting up carma-carla-integration workspace..."
@@ -99,6 +98,7 @@ rm -rf ~/carma-carla-integration/src/carma-utils || true
 # Symlink message and utility packages into workspace
 ln -sf ~/msgs/carma-msgs ~/carma-carla-integration/src/
 ln -sf ~/utils/carma-utils ~/carma-carla-integration/src/
+ln -sf ~/autoware_msgs/autoware.ai/messages/autoware_msgs ~/carma-carla-integration/src/
 
 # Remove ROS 1-only packages
 echo "Removing ROS 1-only packages (if present)..."
