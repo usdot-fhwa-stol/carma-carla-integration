@@ -87,6 +87,10 @@ echo "Cloning autoware_msgs from CARMA develop branch..."
 mkdir -p ~/autoware_msgs && cd ~/autoware_msgs
 git clone --depth 1 --branch carma-develop https://github.com/usdot-fhwa-stol/autoware.ai.git
 
+# Patch autoware_msgs ros1 dependency
+echo "Patching autoware_msgs CMakeLists.txt to remove ROS 1 dependencies..."
+sed -i '/find_package(jsk_recognition_msgs/d' ~/autoware_msgs/autoware.ai/messages/autoware_msgs/CMakeLists.txt
+
 # Prepare workspace
 echo "Setting up carma-carla-integration workspace..."
 mkdir -p ~/carma-carla-integration/src
