@@ -82,6 +82,12 @@ else
   git clone --depth 1 --branch ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carla-sensor-lib.git
 fi
 
+# Clone autoware_msgs
+echo "Cloning autoware_msgs from CARMA develop branch..."
+mkdir -p ~/autoware_msgs && cd ~/autoware_msgs
+git clone --depth 1 --branch carma-develop https://github.com/usdot-fhwa-stol/autoware.ai.git
+ln -sf ~/autoware_msgs/autoware.ai/messages/autoware_msgs ~/carma-carla-integration/src/
+
 # Prepare workspace
 echo "Setting up carma-carla-integration workspace..."
 mkdir -p ~/carma-carla-integration/src
@@ -115,7 +121,8 @@ colcon build --symlink-install --packages-select \
     carma_driver_msgs \
     carma_v2x_msgs \
     carma_planning_msgs \
-    carla_msgs
+    carla_msgs \
+    autoware_msgs
 
 echo "Building CARLA ROS 2 Bridge..."
 colcon build --symlink-install --packages-select carla_ros2_bridge
