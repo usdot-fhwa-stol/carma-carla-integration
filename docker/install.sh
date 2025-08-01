@@ -82,17 +82,9 @@ else
   git clone --depth 1 --branch ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carla-sensor-lib.git
 fi
 
-# Clone autoware_msgs
-echo "Cloning autoware_msgs from CARMA develop branch..."
-mkdir -p ~/autoware_msgs && cd ~/autoware_msgs
-git clone --depth 1 --branch carma-develop https://github.com/usdot-fhwa-stol/autoware.ai.git
-
-# Patch autoware_msgs ros1 dependency
-AUTOWARE_MSGS_DIR=~/autoware_msgs/autoware.ai/messages/autoware_msgs
-echo "Patching autoware_msgs CMakeLists.txt to remove ROS 1 dependencies..."
-sed -i '/find_package(jsk_recognition_msgs/d' $AUTOWARE_MSGS_DIR/CMakeLists.txt
-# Remove jsk_recognition_msgs from rosidl_generate_interfaces
-sed -i 's/jsk_recognition_msgs//g' $AUTOWARE_MSGS_DIR/CMakeLists.txt
+# Run script to create minimal autoware_vehicle_cmd_msgs package
+echo "Creating and building autoware_vehicle_cmd_msgs..."
+/home/carma/docker/create_autoware_vehicle_cmd_msgs.sh
 
 echo "Removing unused Autoware messages that depend on jsk_recognition_msgs..."
 find $AUTOWARE_MSGS_DIR -type f ! -name "VehicleCmd.msg" \
