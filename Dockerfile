@@ -58,8 +58,6 @@ ENV PYTHONPATH=$CARLA_PYTHONAPI/carla/dist:$CARLA_PYTHONAPI:$PYTHONPATH
 # ================================
 COPY --chown=carma:carma docker ./docker
 COPY --chown=carma:carma carma-carla-integration ./carma-carla-integration
-COPY --chown=carma:carma docker/create_autoware_vehicle_cmd_msgs.sh /home/carma/docker/
-RUN chmod +x /home/carma/docker/create_autoware_vehicle_cmd_msgs.sh
 # COPY carla-ros2-bridge/requirements.txt /opt/carla-ros2-bridge
 
 # Install ROS 2 dependencies and build
