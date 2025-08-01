@@ -94,6 +94,15 @@ sed -i '/find_package(jsk_recognition_msgs/d' $AUTOWARE_MSGS_DIR/CMakeLists.txt
 # Remove jsk_recognition_msgs from rosidl_generate_interfaces
 sed -i 's/jsk_recognition_msgs//g' $AUTOWARE_MSGS_DIR/CMakeLists.txt
 
+echo "Removing unused Autoware messages that depend on jsk_recognition_msgs..."
+find $AUTOWARE_MSGS_DIR -type f ! -name "VehicleCmd.msg" \
+    ! -name "SteerCmd.msg" \
+    ! -name "AccelCmd.msg" \
+    ! -name "BrakeCmd.msg" \
+    ! -name "LampCmd.msg" \
+    ! -name "ControlCommand.msg" \
+    -delete
+
 # Prepare workspace
 echo "Setting up carma-carla-integration workspace..."
 mkdir -p ~/carma-carla-integration/src
