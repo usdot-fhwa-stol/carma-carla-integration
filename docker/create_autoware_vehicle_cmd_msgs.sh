@@ -59,12 +59,22 @@ EOL
 # Update package.xml
 PKG_XML=$PKG_NAME/package.xml
 echo "Updating package.xml..."
-sed -i '/<\/package>/i \
-  <buildtool_depend>ament_cmake</buildtool_depend>\n\
-  <depend>rosidl_default_generators</depend>\n\
-  <depend>builtin_interfaces</depend>\n\
-  <depend>geometry_msgs</depend>\n\
-  <member_of_group>rosidl_interface_packages</member_of_group>' $PKG_XML
+cat <<EOL > $PKG_XML
+<?xml version="1.0"?>
+<package format="3">
+  <name>${PKG_NAME}</name>
+  <version>0.0.1</version>
+  <description>Minimal ROS 2 package for VehicleCmd and dependencies.</description>
+  <maintainer email="black@email.com">BlankName</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>rosidl_default_generators</depend>
+  <depend>builtin_interfaces</depend>
+  <depend>geometry_msgs</depend>
+  <member_of_group>rosidl_interface_packages</member_of_group>
+</package>
+EOL
 
 # Build package
 echo "Building $PKG_NAME..."
@@ -74,5 +84,5 @@ colcon build --symlink-install --packages-select $PKG_NAME
 echo "Sourcing workspace..."
 source $WS_DIR/install/setup.bash
 
-echo "### Done! VehicleCmd is now available in ROS 2 as autoware_vehicle_cmd_msgs ###"
+echo "### Custom autoware_msgs built successfully! ###"
 ros2 interface show autoware_vehicle_cmd_msgs/msg/VehicleCmd
