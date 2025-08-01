@@ -105,7 +105,7 @@ ln -sf ~/msgs/carma-msgs ~/carma-carla-integration/src/
 ln -sf ~/utils/carma-utils ~/carma-carla-integration/src/
 ln -sf ~/autoware_msgs/autoware.ai/messages/autoware_msgs ~/carma-carla-integration/src/
 ln -sf ~/autoware_msgs/autoware.ai/jsk_recognition/jsk_recognition_msgs ~/carma-carla-integration/src/
-ln -sf ~/carla_ackermann_msgs/carla_ackermann_msgs ~/carma-carla-integration/src/
+ln -sf ~/carla_ackermann_msgs/ros-bridge/carla_ackermann_msgs ~/carma-carla-integration/src/
 
 # Remove ROS 1-only packages
 echo "Removing ROS 1-only packages (if present)..."
