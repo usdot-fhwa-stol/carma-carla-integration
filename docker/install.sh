@@ -88,8 +88,11 @@ mkdir -p ~/autoware_msgs && cd ~/autoware_msgs
 git clone --depth 1 --branch carma-develop https://github.com/usdot-fhwa-stol/autoware.ai.git
 
 # Patch autoware_msgs ros1 dependency
+AUTOWARE_MSGS_DIR=~/autoware_msgs/autoware.ai/messages/autoware_msgs
 echo "Patching autoware_msgs CMakeLists.txt to remove ROS 1 dependencies..."
-sed -i '/find_package(jsk_recognition_msgs/d' ~/autoware_msgs/autoware.ai/messages/autoware_msgs/CMakeLists.txt
+sed -i '/find_package(jsk_recognition_msgs/d' $AUTOWARE_MSGS_DIR/CMakeLists.txt
+# Remove jsk_recognition_msgs from rosidl_generate_interfaces
+sed -i 's/jsk_recognition_msgs//g' $AUTOWARE_MSGS_DIR/CMakeLists.txt
 
 # Prepare workspace
 echo "Setting up carma-carla-integration workspace..."
