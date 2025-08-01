@@ -87,6 +87,11 @@ echo "Cloning autoware_msgs from CARMA develop branch..."
 mkdir -p ~/autoware_msgs && cd ~/autoware_msgs
 git clone --depth 1 --branch carma-develop https://github.com/usdot-fhwa-stol/autoware.ai.git
 
+# Clone carla_ackermann_msgs
+echo "Cloning carla_ackermann_msgs..."
+mkdir -p ~/carla_ackermann_msgs && cd ~/carla_ackermann_msgs
+git clone --depth 1 --branch master https://github.com/carla-simulator/ros-bridge.git
+
 # Prepare workspace
 echo "Setting up carma-carla-integration workspace..."
 mkdir -p ~/carma-carla-integration/src
@@ -100,6 +105,7 @@ ln -sf ~/msgs/carma-msgs ~/carma-carla-integration/src/
 ln -sf ~/utils/carma-utils ~/carma-carla-integration/src/
 ln -sf ~/autoware_msgs/autoware.ai/messages/autoware_msgs ~/carma-carla-integration/src/
 ln -sf ~/autoware_msgs/autoware.ai/jsk_recognition/jsk_recognition_msgs ~/carma-carla-integration/src/
+ln -sf ~/carla_ackermann_msgs/carla_ackermann_msgs ~/carma-carla-integration/src/
 
 # Remove ROS 1-only packages
 echo "Removing ROS 1-only packages (if present)..."
@@ -124,7 +130,8 @@ colcon build --symlink-install --packages-select \
     carma_v2x_msgs \
     carma_planning_msgs \
     carla_msgs \
-    autoware_msgs
+    autoware_msgs \
+    carla_ackermann_msgs
 
 echo "Building CARLA ROS 2 Bridge..."
 colcon build --symlink-install --packages-select carla_ros2_bridge
