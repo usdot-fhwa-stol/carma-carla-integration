@@ -82,18 +82,10 @@ else
   git clone --depth 1 --branch ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carla-sensor-lib.git
 fi
 
-# Run script to create minimal autoware_vehicle_cmd_msgs package
-echo "Creating and building autoware_vehicle_cmd_msgs..."
-/home/carma/docker/create_autoware_vehicle_cmd_msgs.sh
-
-echo "Removing unused Autoware messages that depend on jsk_recognition_msgs..."
-find $AUTOWARE_MSGS_DIR -type f ! -name "VehicleCmd.msg" \
-    ! -name "SteerCmd.msg" \
-    ! -name "AccelCmd.msg" \
-    ! -name "BrakeCmd.msg" \
-    ! -name "LampCmd.msg" \
-    ! -name "ControlCommand.msg" \
-    -delete
+# Clone autoware_msgs package (includes jsk_recognition_msgs)
+echo "Cloning autoware_msgs from CARMA develop branch..."
+mkdir -p ~/autoware_msgs && cd ~/autoware_msgs
+git clone --depth 1 --branch carma-develop https://github.com/usdot-fhwa-stol/autoware.ai.git
 
 # Prepare workspace
 echo "Setting up carma-carla-integration workspace..."
@@ -107,6 +99,7 @@ rm -rf ~/carma-carla-integration/src/carma-utils || true
 ln -sf ~/msgs/carma-msgs ~/carma-carla-integration/src/
 ln -sf ~/utils/carma-utils ~/carma-carla-integration/src/
 ln -sf ~/autoware_msgs/autoware.ai/messages/autoware_msgs ~/carma-carla-integration/src/
+ln -sf ~/autoware_msgs/autoware.ai/jsk_recognition/jsk_recognition_msgs ~/carma-carla-integration/src/
 
 # Remove ROS 1-only packages
 echo "Removing ROS 1-only packages (if present)..."
@@ -126,6 +119,7 @@ colcon build --symlink-install --packages-select \
     carma_perception_msgs \
     j2735_v2x_msgs \
     j3224_v2x_msgs \
+    jsk_recognition_msgs \
     carma_driver_msgs \
     carma_v2x_msgs \
     carma_planning_msgs \
