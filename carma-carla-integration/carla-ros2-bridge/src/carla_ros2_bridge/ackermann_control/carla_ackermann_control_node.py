@@ -535,6 +535,7 @@ class CarlaAckermannControl(Node):
 
 def main(args=None):
     rclpy.init(args=args)
+    print('carla_ackermann_control_node')
     try:
         controller = CarlaAckermannControl()
         controller.run()
