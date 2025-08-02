@@ -66,6 +66,11 @@ else
   cd ~/msgs && git clone --depth 1 --branch ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-msgs.git
 fi
 
+# Clone carla-msgs
+echo "Cloning carla-msgs from ros-carla-msgs master branch"
+mkdir -p ~/carla-msgs && cd ~/carla-msgs
+git clone --depth 1 --branch master https://github.com/carla-simulator/ros-carla-msgs.git
+
 # Clone CARMA utils (ROS 2)
 mkdir -p ~/utils && cd ~/utils
 if [ "${CARMA_VERSION}" = "develop-ros2" ]; then
@@ -111,6 +116,7 @@ rm -rf ~/carma-carla-integration/src/carma-utils || true
 # Symlink message and utility packages into workspace
 ln -sf ~/msgs/carma-msgs ~/carma-carla-integration/src/
 ln -sf ~/utils/carma-utils ~/carma-carla-integration/src/
+ln -sf ~/carla-msgs ~/carma-carla-integration/src/
 ln -sf ~/autoware_msgs/autoware.ai/messages/autoware_msgs ~/carma-carla-integration/src/
 ln -sf ~/autoware_msgs/autoware.ai/jsk_recognition/jsk_recognition_msgs ~/carma-carla-integration/src/
 ln -sf ~/carla_ackermann_msgs/ros-bridge/carla_ackermann_msgs ~/carma-carla-integration/src/
