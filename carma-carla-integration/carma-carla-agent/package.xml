@@ -1,10 +1,23 @@
 <?xml version="1.0"?>
-<package format="2">
+<package format="3">
   <name>carma_carla_agent</name>
   <version>0.0.1</version>
   <description>The carma_carla_agent package</description>
   <maintainer email="carma@dot.gov">carma</maintainer>
-  <license>Apache 2.0 License</license>
-  <buildtool_depend>catkin</buildtool_depend>
-  <exec_depend>carma_carla_bridge</exec_depend>
+  <license>Apache 2.0</license>
+
+  <!-- Build tool for ROS 2 -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- Dependencies -->
+  <depend>carma_carla_bridge</depend> <!-- Ensure this is a ROS 2 package -->
+  <!-- Add other ROS 2 dependencies as needed, e.g., for C++ -->
+  <depend>rclcpp</depend>
+  <!-- Add message or interface dependencies if applicable -->
+  <!-- Example: <depend>std_msgs</depend> -->
+
+  <!-- Export for ament -->
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
 </package>
