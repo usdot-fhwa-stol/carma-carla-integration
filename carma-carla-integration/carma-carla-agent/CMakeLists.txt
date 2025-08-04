@@ -1,20 +1,19 @@
 # Copyright (c) 2021 Intel Corporation
 # This work is licensed under the terms of the MIT license.
 # For a copy, see <https://opensource.org/licenses/MIT>.
-
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.8)
 project(carma_carla_agent)
 
-find_package(catkin REQUIRED COMPONENTS
-  roslaunch
-)
+# Find dependencies
+find_package(ament_cmake REQUIRED)
 
-catkin_package()
-
+# Install directories
 install(DIRECTORY agent/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/agent
+  DESTINATION share/${PROJECT_NAME}/agent
+)
+install(DIRECTORY launch/
+  DESTINATION share/${PROJECT_NAME}/launch
 )
 
-install(DIRECTORY launch/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
-)
+# Export package information
+ament_package()
