@@ -1,22 +1,33 @@
 <?xml version="1.0"?>
-<package format="2">
+<package format="3">
   <name>carma_carla_bridge</name>
   <version>0.0.0</version>
   <description>The carma_carla_bridge package</description>
 
   <maintainer email="carma@dot.gov">carma</maintainer>
-  <license>Apache 2.0 License</license>
-  <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>rospy</build_depend>
-  <build_depend>autoware_msgs</build_depend>
-  <build_depend>carla_msgs</build_depend>
+  <license>Apache 2.0 Licence</license>
+
+  <!-- Build tool -->
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <!-- Build dependencies -->
+  <build_depend>rclpy</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>carma_driver_msgs</build_depend>
+  <build_depend>carma_perception_msgs</build_depend>
+  <build_depend>carma_planning_msgs</build_depend>
+
+  <!-- Execution/runtime dependencies -->
+  <exec_depend>rclpy</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>nav_msgs</exec_depend>
-  <exec_depend>rospy</exec_depend>
-  <exec_depend>autoware_msgs</exec_depend>
-  <exec_depend>carla_msgs</exec_depend>
-  <exec_depend>cav_msgs</exec_depend>
-  <exec_depend>cav_srvs</exec_depend>
+  <exec_depend>carma_driver_msgs</exec_depend>
+  <exec_depend>carma_perception_msgs</exec_depend>
+  <exec_depend>carma_planning_msgs</exec_depend>
+
   <export>
+    <!-- Ensure Python entry points are exported properly -->
+    <build_type>ament_python</build_type>
   </export>
 </package>
