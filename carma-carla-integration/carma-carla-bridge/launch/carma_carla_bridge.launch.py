@@ -160,37 +160,37 @@ def generate_launch_description():
         ## TF remapping ##
         ##################
         Node(
-            package='tf',
+            package='tf2_ros',
             executable='static_transform_publisher',
             name='world_to_map',
             arguments=['0', '0', '0', '0', '0', '0', 'world', 'map', '10']
         ),
         Node(
-            package='tf',
+            package='tf2_ros',
             executable='static_transform_publisher',
             name='map_to_mobility',
             arguments=['0', '0', '0', '0', '0', '0', 'map', 'mobility', '10']
         ),
         Node(
-            package='tf',
+            package='tf2_ros',
             executable='static_transform_publisher',
             name=[role_name, '_to_baselink'],
             arguments=['0', '0', '0', '0', '0', '0', [role_name], 'base_link', '10']
         ),
         Node(
-            package='tf',
+            package='tf2_ros',
             executable='static_transform_publisher',
             name=[role_name, 'gnss_to_gps'],
             arguments=['0', '0', '0', '0', '0', '0', [role_name, '/gnss/gnss1'], 'gps', '10']
         ),
         Node(
-            package='tf',
+            package='tf2_ros',
             executable='static_transform_publisher',
             name=[role_name, 'lidar_to_velodyne'],
             arguments=['0', '0', '0', '0', '0', '0', [role_name, '/lidar/lidar'], 'velodyne', '10']
         ),
         Node(
-            package='tf',
+            package='tf2_ros',
             executable='static_transform_publisher',
             name=[role_name, 'camerafront_to_camera'],
             arguments=['0', '0', '0', '0', '0', '0', [role_name, '/camera/rgb/front'], 'camera', '10']
