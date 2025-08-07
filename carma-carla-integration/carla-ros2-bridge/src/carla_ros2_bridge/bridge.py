@@ -104,7 +104,7 @@ class CarlaRosBridge(Node):
                         vehicle_control_applied_callback=lambda id: None
                     )
                     self.actors[actor.id] = self.ego_vehicle
-                    self.get_logger().info(f"[Bridge] Found ego vehicle with role_name 'f{self.ego_vehicle.name}'")
+                    self.get_logger().info(f"[Bridge] Found ego vehicle with role_name '{self.ego_vehicle.name}'")
                     break
             if self.ego_vehicle:
                 break
