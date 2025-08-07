@@ -53,7 +53,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             name='role_name',
-            default_value='hero',
+            default_value='carma_1',
             description='Role name to identify ego vehicle, should match role_name in config at hero_config_path'
         ),
         DeclareLaunchArgument(
@@ -102,11 +102,11 @@ def generate_launch_description():
         DeclareLaunchArgument('start_delay_in_seconds', default_value='0'),
 
         # ackermann control params
-        DeclareLaunchArgument('init_speed', default_value='5'),
-        DeclareLaunchArgument('init_acceleration', default_value='1'),
-        DeclareLaunchArgument('init_steering_angle', default_value='0'),
-        DeclareLaunchArgument('init_jerk', default_value='0'),
-        DeclareLaunchArgument('max_steering_degree', default_value='70'),
+        DeclareLaunchArgument('init_speed', default_value='5.0'),
+        DeclareLaunchArgument('init_acceleration', default_value='1.0'),
+        DeclareLaunchArgument('init_steering_angle', default_value='0.0'),
+        DeclareLaunchArgument('init_jerk', default_value='0.0'),
+        DeclareLaunchArgument('max_steering_degree', default_value='70.0'),
 
         # enable sensor external
         DeclareLaunchArgument('enable_sensor_objects', default_value='false'),
