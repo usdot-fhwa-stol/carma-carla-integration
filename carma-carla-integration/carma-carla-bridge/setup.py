@@ -32,6 +32,7 @@ setup(
             'carma_carla_robot_status = carma_carla_bridge.carma_carla_robot_status:main',
             'carla_to_carma_vehicle_status = carma_carla_bridge.carla_to_carma_vehicle_status:main',
             'carla_to_carma_localization = carma_carla_bridge.carla_to_carma_localization:main',
+            'carma_to_carla_sensor_external_objects = carma_carla_bridge.carma_to_carla_sensor_external_objects:main',
             'carma_to_carla_ackermann_cmd = carma_carla_bridge.carma_to_carla_ackermann_cmd:main',
             'carla_to_carma_external_objects = carma_carla_bridge.carla_to_carma_external_objects:main',
             'carma_carla_route = carma_carla_bridge.carma_carla_route:main',
