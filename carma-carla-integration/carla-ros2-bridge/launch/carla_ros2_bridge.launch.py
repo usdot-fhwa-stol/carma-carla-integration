@@ -70,7 +70,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             name='role_name',
-            default_value='hero',
+            default_value='carma_1',
             description='Role name to identify ego vehicle, should match role_name in config at hero_config_path'
         ),
         DeclareLaunchArgument(
