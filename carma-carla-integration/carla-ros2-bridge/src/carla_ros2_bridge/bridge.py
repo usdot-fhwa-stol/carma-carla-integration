@@ -96,16 +96,20 @@ class CarlaRosBridge(Node):
 
         while rclpy.ok() and waited < timeout_seconds:
             actors = self.carla_world.get_actors()
+            self.get_logger().info(f"[Bridge] Found {len(actors)} actors in world")
             for actor in actors:
-                if actor.attributes.get('role_name') == self.params['ego_vehicle_role_name']:
-                    self.ego_vehicle = EgoVehicle(
-                        uid=actor.id, name=actor.attributes.get('role_name', 'ego'),
-                        parent=None, node=self, carla_actor=actor,
-                        vehicle_control_applied_callback=lambda id: None
-                    )
-                    self.actors[actor.id] = self.ego_vehicle
-                    self.get_logger().info(f"[Bridge] Found ego vehicle with role_name '{self.ego_vehicle.name}'")
-                    break
+                if hasattr(actor, 'attributes'):
+                    role_name = actor.attributes.get('role_name', 'None')
+                    self.get_logger().info(f"[Bridge] Actor ID {actor.id}: type={actor.type_id}, role_name='{role_name}'")
+                    if role_name == self.params['ego_vehicle_role_name']:
+                        self.ego_vehicle = EgoVehicle(
+                            uid=actor.id, name=actor.attributes.get('role_name', 'ego'),
+                            parent=None, node=self, carla_actor=actor,
+                            vehicle_control_applied_callback=lambda id: None
+                        )
+                        self.actors[actor.id] = self.ego_vehicle
+                        self.get_logger().info(f"[Bridge] Found ego vehicle with role_name '{self.ego_vehicle.name}', topic prefix will be '{self.ego_vehicle.get_topic_prefix()}'")
+                        break
             if self.ego_vehicle:
                 break
             time.sleep(poll_interval)
