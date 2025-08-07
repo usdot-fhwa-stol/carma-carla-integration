@@ -98,7 +98,7 @@ def generate_launch_description():
             default_value=PathJoinSubstitution([
                 FindPackageShare('carla_ros2_bridge'),
                 'configs',
-                'stack.json'
+                'stack.json'  # vehicle role_name is hardcoded in this file, it should match the role_name argument
             ]),
             description='Path to the hero vehicle JSON config'
         ),
