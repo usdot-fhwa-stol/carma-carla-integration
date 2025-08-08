@@ -99,7 +99,7 @@ def generate_launch_description():
         # route and plugins params
         DeclareLaunchArgument('selected_route', default_value=''),
         DeclareLaunchArgument('selected_plugins', default_value=''),
-        DeclareLaunchArgument('start_delay_in_seconds', default_value='0'),
+        DeclareLaunchArgument('start_delay_in_seconds', default_value='10.0'),
 
         # ackermann control params
         DeclareLaunchArgument('init_speed', default_value='5.0'),
