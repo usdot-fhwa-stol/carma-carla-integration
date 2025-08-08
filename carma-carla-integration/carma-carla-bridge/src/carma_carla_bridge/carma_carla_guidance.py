@@ -40,9 +40,19 @@ class CarmaCarlaGuidance(Node):
         # Get Parameters
         self.declare_parameter("selected_plugins", "[]")
         self.declare_parameter("start_delay_in_seconds", 15.0)
+        
+        # Get and log the raw parameter value
         plugin_list_str = self.get_parameter("selected_plugins").get_parameter_value().string_value
-        # Convert comma-separated string to list
-        self.selected_plugin_list = [p.strip() for p in plugin_list_str.split(',') if p.strip()]
+        self.get_logger().info(f"Raw plugin list parameter value: '{plugin_list_str}'")
+        
+        # Convert comma-separated string to list if we got a non-empty string
+        if plugin_list_str and plugin_list_str.strip() != "[]":
+            self.selected_plugin_list = [p.strip() for p in plugin_list_str.split(',') if p.strip()]
+            self.get_logger().info(f"Parsed plugin list: {self.selected_plugin_list}")
+        else:
+            self.selected_plugin_list = []
+            self.get_logger().warn("Empty plugin list parameter received")
+        
         self.start_delay = self.get_parameter("start_delay_in_seconds").get_parameter_value().double_value
 
         if len(self.selected_plugin_list) == 0 or not self.selected_plugin_list:
