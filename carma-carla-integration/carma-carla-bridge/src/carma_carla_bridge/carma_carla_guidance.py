@@ -41,7 +41,8 @@ class CarmaCarlaGuidance(Node):
         self.declare_parameter("selected_plugins", "[]")
         self.declare_parameter("start_delay_in_seconds", 15.0)
         plugin_list_str = self.get_parameter("selected_plugins").get_parameter_value().string_value
-        self.selected_plugin_list = ast.literal_eval(plugin_list_str)
+        # Convert comma-separated string to list
+        self.selected_plugin_list = [p.strip() for p in plugin_list_str.split(',') if p.strip()]
         self.start_delay = self.get_parameter("start_delay_in_seconds").get_parameter_value().double_value
 
         if len(self.selected_plugin_list) == 0 or not self.selected_plugin_list:
