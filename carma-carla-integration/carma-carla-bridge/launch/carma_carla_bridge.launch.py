@@ -98,7 +98,7 @@ def generate_launch_description():
 
         # route and plugins params
         DeclareLaunchArgument('selected_route', default_value=''),
-        DeclareLaunchArgument('selected_plugins', default_value=''),
+        DeclareLaunchArgument('selected_plugins', default_value='/guidance/plugins/route_following_plugin,/guidance/plugins/inlanecruising_plugin,/guidance/plugins/stop_and_wait_plugin,/guidance/plugins/pure_pursuit_wrapper'),
         DeclareLaunchArgument('start_delay_in_seconds', default_value='10.0'),
 
         # ackermann control params
