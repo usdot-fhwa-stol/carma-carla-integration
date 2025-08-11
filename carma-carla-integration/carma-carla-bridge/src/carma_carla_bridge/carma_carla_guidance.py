@@ -25,7 +25,6 @@ Call Services from CARMA:
 import rclpy
 from rclpy.node import Node
 
-import ast
 import traceback
 
 from carma_planning_msgs.msg import RouteEvent
