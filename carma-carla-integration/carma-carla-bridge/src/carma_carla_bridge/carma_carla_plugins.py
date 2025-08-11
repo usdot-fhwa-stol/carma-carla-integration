@@ -46,10 +46,10 @@ class CarmaCarlaPlugins(Node):
         
         # Convert comma-separated string to list if we got a non-empty string
         if plugin_list_str and plugin_list_str.strip() != "[]":
-            self.selected_plugin_list = [p.strip() for p in plugin_list_str.split(',') if p.strip()]
-            self.get_logger().info(f"Parsed plugin list: {self.selected_plugin_list}")
+            self.plugin_list = [p.strip() for p in plugin_list_str.split(',') if p.strip()]
+            self.get_logger().info(f"Parsed plugin list: {self.plugin_list}")
         else:
-            self.selected_plugin_list = []
+            self.plugin_list = []
             self.get_logger().warn("Empty plugin list parameter received")
 
         if not self.plugin_list or len(self.plugin_list) == 0:
