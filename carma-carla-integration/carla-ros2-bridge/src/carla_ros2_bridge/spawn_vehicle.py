@@ -47,7 +47,7 @@ class VehicleSpawner(Node):
         self.declare_parameter('config_file', '')
         self.declare_parameter('host', 'localhost')
         self.declare_parameter('port', 2000)
-        self.declare_parameter('autopilot', True)
+        self.declare_parameter('autopilot', False)
 
         self.config_file = self.get_parameter('config_file').get_parameter_value().string_value
         self.host = self.get_parameter('host').get_parameter_value().string_value

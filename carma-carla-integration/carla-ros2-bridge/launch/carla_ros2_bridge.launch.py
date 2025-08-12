@@ -89,6 +89,11 @@ def generate_launch_description():
             description='Determines if spawn_hero_vehicle script is launched alongside carla-ros2-bridge node'
         ),
         DeclareLaunchArgument(
+            name='autopilot',
+            default_value='false',
+            description='Determines if the spawned vehicle should use CARLA autopilot'
+        ),
+        DeclareLaunchArgument(
             name='launch_ackermann_control',
             default_value='false',
             description='Determines if ackermann control node is launched alongside carla-ros2-bridge node'
@@ -136,7 +141,7 @@ def generate_launch_description():
                         {'host': LaunchConfiguration('host')},
                         {'port': LaunchConfiguration('port')},
                         {'config_file': LaunchConfiguration('hero_config_path')},
-                        {'autopilot': True},
+                        {'autopilot': LaunchConfiguration('autopilot')},
                     ],
                     condition=IfCondition(LaunchConfiguration('launch_spawn_vehicle')),
                 ),
