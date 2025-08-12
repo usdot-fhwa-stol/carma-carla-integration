@@ -216,15 +216,6 @@ def generate_launch_description():
         GroupAction([
             Node(
                 package='carma_carla_bridge',
-                executable='carla_to_carma_external_objects',
-                name='carla_to_carma_external_objects',
-                output='screen',
-                parameters=[{'role_name': role_name}]
-            )
-        ], condition=IfCondition(LaunchConfiguration('enable_sensor_objects'))),
-        GroupAction([
-            Node(
-                package='carma_carla_bridge',
                 executable='carla_to_carma_sensor_external_objects',
                 name='carla_to_carma_sensor_external_objects',
                 output='screen',
@@ -237,22 +228,16 @@ def generate_launch_description():
                     {'detection_cycle_delay_seconds': LaunchConfiguration('detection_cycle_delay_seconds')}
                 ]
             )
+        ], condition=IfCondition(LaunchConfiguration('enable_sensor_objects'))),
+        GroupAction([
+            Node(
+                package='carma_carla_bridge',
+                executable='carla_to_carma_external_objects',
+                name='carla_to_carma_external_objects',
+                output='screen',
+                parameters=[{'role_name': role_name}]
+            )
         ], condition=UnlessCondition(LaunchConfiguration('enable_sensor_objects'))),
-
-        # convert vehicle command to carla ackermann drive
-        Node(
-            package='carma_carla_bridge',
-            executable='carma_to_carla_ackermann_cmd',
-            name='carma_to_carla_ackermann_cmd',
-            output='screen',
-            parameters=[
-                {'role_name': role_name},
-                {'init_speed': LaunchConfiguration('init_speed')},
-                {'init_acceleration': LaunchConfiguration('init_acceleration')},
-                {'init_steering_angle': LaunchConfiguration('init_steering_angle')},
-                {'init_jerk': LaunchConfiguration('init_jerk')}
-            ]
-        ),
 
         # convert the vehicle status from carla to carma
         Node(
