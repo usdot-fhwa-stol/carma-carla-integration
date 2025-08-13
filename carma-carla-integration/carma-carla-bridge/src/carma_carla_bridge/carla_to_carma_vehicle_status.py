@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # Copyright (C) 2021 LEIDOS.
-# Migrated to ROS2 by xAI, 2025
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -14,6 +13,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 #
+#
 # This file is loosely based on the reference architecture developed by Intel Corporation for Leidos located here
 # https://github.com/41623134/carla-autoware/blob/master/catkin_ws/src/carla_autoware_bridge/src/carla_autoware_bridge/carla_to_autoware_vehicle_status
 #
@@ -24,6 +24,7 @@
 # This work is licensed under the terms of the MIT license.
 # For a copy, see <https://opensource.org/licenses/MIT>.
 #
+
 """
 Subscribe from CARLA :carla_msgs::CarlaEgoVehicleStatus
     Topic: /carla/{}/vehicle_status
