@@ -96,10 +96,10 @@ def generate_launch_description():
         DeclareLaunchArgument('controller_enabled', default_value='true'),
         DeclareLaunchArgument('camera_enabled', default_value='true'),
         DeclareLaunchArgument('gnss_enabled', default_value='true'),
-        DeclareLaunchArgument('driver_status_pub_rate', default_value='10'),
+        DeclareLaunchArgument('driver_status_pub_rate', default_value='30'),
 
         # robot status params
-        DeclareLaunchArgument('robot_status_pub_rate', default_value='10'),
+        DeclareLaunchArgument('robot_status_pub_rate', default_value='30'),
 
         # route and plugins params
         DeclareLaunchArgument('selected_route', default_value=''),
