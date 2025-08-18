@@ -162,46 +162,54 @@ def generate_launch_description():
         ),
 
 
-         ##################
+        ##################
         ## TF remapping ##
         ##################
+
+        # TF remapping
         Node(
             package='tf2_ros',
             executable='static_transform_publisher',
             name='world_to_map',
-            arguments=['0', '0', '0', '0', '0', '0', 'world', 'map', '10']
+            arguments=['--x', '0', '--y', '0', '--z', '0', '--qx', '0', '--qy', '0', '--qz', '0', '--qw', '1', '--frame-id', 'world', '--child-frame-id', 'map']
         ),
         Node(
             package='tf2_ros',
             executable='static_transform_publisher',
             name='map_to_mobility',
-            arguments=['0', '0', '0', '0', '0', '0', 'map', 'mobility', '10']
+            arguments=['--x', '0', '--y', '0', '--z', '0', '--qx', '0', '--qy', '0', '--qz', '0', '--qw', '1', '--frame-id', 'map', '--child-frame-id', 'mobility']
+        ),
+        Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name=['map_to_', role_name],
+            arguments=['--x', '0', '--y', '0', '--z', '0', '--qx', '0', '--qy', '0', '--qz', '0', '--qw', '1', '--frame-id', 'map', '--child-frame-id', role_name]
         ),
         Node(
             package='tf2_ros',
             executable='static_transform_publisher',
             name=[role_name, '_to_baselink'],
-            arguments=['0', '0', '0', '0', '0', '0', [role_name], 'base_link', '10']
+            arguments=['--x', '0', '--y', '0', '--z', '0', '--qx', '0', '--qy', '0', '--qz', '0', '--qw', '1', '--frame-id', role_name, '--child-frame-id', 'base_link']
         ),
         Node(
             package='tf2_ros',
             executable='static_transform_publisher',
-            name=[role_name, 'gnss_to_gps'],
-            arguments=['0', '0', '0', '0', '0', '0', [role_name, '/gnss/gnss1'], 'gps', '10']
+            name=[role_name, '_gnss_to_gps'],
+            arguments=['--x', '0', '--y', '0', '--z', '0', '--qx', '0', '--qy', '0', '--qz', '0', '--qw', '1', '--frame-id', [role_name, '/gnss/gnss1'], '--child-frame-id', 'gps']
         ),
         Node(
             package='tf2_ros',
             executable='static_transform_publisher',
-            name=[role_name, 'lidar_to_velodyne'],
-            arguments=['0', '0', '0', '0', '0', '0', [role_name, '/lidar/lidar'], 'velodyne', '10']
+            name=[role_name, '_lidar_to_velodyne'],
+            arguments=['--x', '0', '--y', '0', '--z', '0', '--qx', '0', '--qy', '0', '--qz', '0', '--qw', '1', '--frame-id', [role_name, '/lidar/lidar'], '--child-frame-id', 'velodyne']
         ),
         Node(
             package='tf2_ros',
             executable='static_transform_publisher',
-            name=[role_name, 'camerafront_to_camera'],
-            arguments=['0', '0', '0', '0', '0', '0', [role_name, '/camera/rgb/front'], 'camera', '10']
+            name=[role_name, '_camerafront_to_camera'],
+            arguments=['--x', '0', '--y', '0', '--z', '0', '--qx', '0', '--qy', '0', '--qz', '0', '--qw', '1', '--frame-id', [role_name, '/camera/rgb/front'], '--child-frame-id', 'camera']
         ),
-
+        
         
         #############################################
         ## topic remapping + data type conversions ##
