@@ -182,12 +182,6 @@ def generate_launch_description():
         Node(
             package='tf2_ros',
             executable='static_transform_publisher',
-            name=['map_to_', role_name],
-            arguments=['--x', '0', '--y', '0', '--z', '0', '--qx', '0', '--qy', '0', '--qz', '0', '--qw', '1', '--frame-id', 'map', '--child-frame-id', role_name]
-        ),
-        Node(
-            package='tf2_ros',
-            executable='static_transform_publisher',
             name=[role_name, '_to_baselink'],
             arguments=['--x', '0', '--y', '0', '--z', '0', '--qx', '0', '--qy', '0', '--qz', '0', '--qw', '1', '--frame-id', role_name, '--child-frame-id', 'base_link']
         ),
