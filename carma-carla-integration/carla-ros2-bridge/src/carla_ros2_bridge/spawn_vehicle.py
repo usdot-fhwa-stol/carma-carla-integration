@@ -107,8 +107,8 @@ class VehicleSpawner(Node):
                 if len(spawn_point_vals) == 6:
                     self.get_logger().info(f"[Spawner] Using custom spawn_point: {self.spawn_point}")
                     transform = carla.Transform(
-                        location=carla.Location(x=spawn_point_vals[0], y=spawn_point_vals[1], z=spawn_point_vals[2]),
-                        rotation=carla.Rotation(roll=spawn_point_vals[3], pitch=spawn_point_vals[4], yaw=spawn_point_vals[5])
+                        location=carla.Location(x=spawn_point_vals[0], y=-spawn_point_vals[1], z=spawn_point_vals[2]),
+                        rotation=carla.Rotation(roll=spawn_point_vals[3], pitch=-spawn_point_vals[4], yaw=-spawn_point_vals[5])
                     )
                 else:
                     self.get_logger().warn(f"[Spawner] Invalid spawn_point format: '{self.spawn_point}' (expected 6 comma-separated values). Using default spawn point.")
