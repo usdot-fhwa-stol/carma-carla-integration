@@ -97,17 +97,28 @@ class VehicleSpawner(Node):
         bp.set_attribute("ros_name", config.get("id"))
 
         # Extract spawn point values
-        spawn_point_vals = [float(num) for num in self.spawn_point.split(',')]
-        # Create CARLA Transform from spawn_point struct
-        if len(spawn_point_vals) == 6:
-            self.get_logger().info(f"[Spawner] Using custom spawn_point: {self.spawn_point}")
-            transform = carla.Transform(
-                location=carla.Location(x=spawn_point_vals[0], y=spawn_point_vals[1], z=spawn_point_vals[2]),
-                rotation=carla.Rotation(roll=spawn_point_vals[3], pitch=spawn_point_vals[4], yaw=spawn_point_vals[5])
-            )
+        self.get_logger().info(f"[Spawner] Received spawn_point parameter: '{self.spawn_point}'")
+        
+        # Check if spawn_point is provided and not empty/None
+        if self.spawn_point and self.spawn_point.strip() and self.spawn_point != 'None':
+            try:
+                spawn_point_vals = [float(num) for num in self.spawn_point.split(',')]
+                # Create CARLA Transform from spawn_point string
+                if len(spawn_point_vals) == 6:
+                    self.get_logger().info(f"[Spawner] Using custom spawn_point: {self.spawn_point}")
+                    transform = carla.Transform(
+                        location=carla.Location(x=spawn_point_vals[0], y=spawn_point_vals[1], z=spawn_point_vals[2]),
+                        rotation=carla.Rotation(roll=spawn_point_vals[3], pitch=spawn_point_vals[4], yaw=spawn_point_vals[5])
+                    )
+                else:
+                    self.get_logger().warn(f"[Spawner] Invalid spawn_point format: '{self.spawn_point}' (expected 6 comma-separated values). Using default spawn point.")
+                    transform = self.world.get_map().get_spawn_points()[0]
+            except (ValueError, IndexError) as e:
+                self.get_logger().error(f"[Spawner] Error parsing spawn_point '{self.spawn_point}': {e}. Using default spawn point.")
+                transform = self.world.get_map().get_spawn_points()[0]
         else:
             # Fallback to default spawn point if no spawn_point provided
-            self.get_logger().warn(f"[Spawner] Invalid spawn_point format: '{self.spawn_point}'. Using default spawn point.")
+            self.get_logger().info("[Spawner] No custom spawn_point provided, using default map spawn point")
             transform = self.world.get_map().get_spawn_points()[0]
             
         vehicle = self.world.spawn_actor(bp, transform)

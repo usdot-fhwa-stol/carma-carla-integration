@@ -142,6 +142,7 @@ def generate_launch_description():
                         {'port': LaunchConfiguration('port')},
                         {'config_file': LaunchConfiguration('hero_config_path')},
                         {'autopilot': LaunchConfiguration('autopilot')},
+                        {'spawn_point': LaunchConfiguration('spawn_point')},
                     ],
                     condition=IfCondition(LaunchConfiguration('launch_spawn_vehicle')),
                 ),
@@ -157,7 +158,6 @@ def generate_launch_description():
             emulate_tty=True,
             parameters=[
                 {'role_name': LaunchConfiguration('role_name')},
-                {'spawn_point': LaunchConfiguration('spawn_point')},
                 {'speed_Kp': '0.05'},
                 {'speed_Ki': '0.0'},
                 {'speed_Kd': '0.5'},
