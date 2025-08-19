@@ -100,12 +100,14 @@ class VehicleSpawner(Node):
         spawn_point_vals = [float(num) for num in self.spawn_point.split(',')]
         # Create CARLA Transform from spawn_point struct
         if len(spawn_point_vals) == 6:
+            self.get_logger().info(f"[Spawner] Using custom spawn_point: {self.spawn_point}")
             transform = carla.Transform(
                 location=carla.Location(x=spawn_point_vals[0], y=spawn_point_vals[1], z=spawn_point_vals[2]),
                 rotation=carla.Rotation(roll=spawn_point_vals[3], pitch=spawn_point_vals[4], yaw=spawn_point_vals[5])
             )
         else:
             # Fallback to default spawn point if no spawn_point provided
+            self.get_logger().warn(f"[Spawner] Invalid spawn_point format: '{self.spawn_point}'. Using default spawn point.")
             transform = self.world.get_map().get_spawn_points()[0]
             
         vehicle = self.world.spawn_actor(bp, transform)

@@ -157,6 +157,7 @@ def generate_launch_description():
             emulate_tty=True,
             parameters=[
                 {'role_name': LaunchConfiguration('role_name')},
+                {'spawn_point': LaunchConfiguration('spawn_point')},
                 {'speed_Kp': '0.05'},
                 {'speed_Ki': '0.0'},
                 {'speed_Kd': '0.5'},
