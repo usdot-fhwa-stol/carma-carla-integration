@@ -48,13 +48,13 @@ class VehicleSpawner(Node):
         self.declare_parameter('host', 'localhost')
         self.declare_parameter('port', 2000)
         self.declare_parameter('autopilot', False)
-        self.declare_parameter('spawn_point', None)
+        self.declare_parameter('spawn_point', '')
 
         self.config_file = self.get_parameter('config_file').get_parameter_value().string_value
         self.host = self.get_parameter('host').get_parameter_value().string_value
         self.port = self.get_parameter('port').get_parameter_value().integer_value
         self.use_autopilot = self.get_parameter('autopilot').get_parameter_value().bool_value
-        self.spawn_point = self.get_parameter('spawn_point').get_parameter_value().struct_value
+        self.spawn_point = self.get_parameter('spawn_point').get_parameter_value().string_value
 
         self.vehicle = None
         self.sensors = []
@@ -96,11 +96,13 @@ class VehicleSpawner(Node):
         bp.set_attribute("role_name", config.get("id"))
         bp.set_attribute("ros_name", config.get("id"))
 
+        # Extract spawn point values
+        spawn_point_vals = [float(num) for num in self.spawn_point.split(',')]
         # Create CARLA Transform from spawn_point struct
-        if self.spawn_point:
+        if len(spawn_point_vals) == 6:
             transform = carla.Transform(
-                location=carla.Location(x=self.spawn_point["x"], y=-self.spawn_point["y"], z=self.spawn_point["z"]),
-                rotation=carla.Rotation(roll=self.spawn_point["roll"], pitch=-self.spawn_point["pitch"], yaw=-self.spawn_point["yaw"])
+                location=carla.Location(x=spawn_point_vals[0], y=spawn_point_vals[1], z=spawn_point_vals[2]),
+                rotation=carla.Rotation(roll=spawn_point_vals[3], pitch=spawn_point_vals[4], yaw=spawn_point_vals[5])
             )
         else:
             # Fallback to default spawn point if no spawn_point provided
