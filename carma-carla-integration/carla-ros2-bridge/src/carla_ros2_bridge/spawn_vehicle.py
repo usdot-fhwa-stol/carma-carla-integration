@@ -48,11 +48,13 @@ class VehicleSpawner(Node):
         self.declare_parameter('host', 'localhost')
         self.declare_parameter('port', 2000)
         self.declare_parameter('autopilot', False)
+        self.declare_parameter('spawn_point', None)
 
         self.config_file = self.get_parameter('config_file').get_parameter_value().string_value
         self.host = self.get_parameter('host').get_parameter_value().string_value
         self.port = self.get_parameter('port').get_parameter_value().integer_value
         self.use_autopilot = self.get_parameter('autopilot').get_parameter_value().bool_value
+        self.spawn_point = self.get_parameter('spawn_point').get_parameter_value().struct_value
 
         self.vehicle = None
         self.sensors = []
@@ -94,7 +96,16 @@ class VehicleSpawner(Node):
         bp.set_attribute("role_name", config.get("id"))
         bp.set_attribute("ros_name", config.get("id"))
 
-        transform = self.world.get_map().get_spawn_points()[0]
+        # Create CARLA Transform from spawn_point struct
+        if self.spawn_point:
+            transform = carla.Transform(
+                location=carla.Location(x=self.spawn_point["x"], y=-self.spawn_point["y"], z=self.spawn_point["z"]),
+                rotation=carla.Rotation(roll=self.spawn_point["roll"], pitch=-self.spawn_point["pitch"], yaw=-self.spawn_point["yaw"])
+            )
+        else:
+            # Fallback to default spawn point if no spawn_point provided
+            transform = self.world.get_map().get_spawn_points()[0]
+            
         vehicle = self.world.spawn_actor(bp, transform)
         self.get_logger().info(f"[Spawner] Spawned vehicle '{config.get('id')}'")
         return vehicle
