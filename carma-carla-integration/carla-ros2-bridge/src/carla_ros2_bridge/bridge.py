@@ -23,9 +23,12 @@ import rclpy
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from threading import Thread, Lock, Event
+from math import sin, cos, radians
 import time
 
 from rosgraph_msgs.msg import Clock
+import tf2_ros
+from geometry_msgs.msg import TransformStamped
 
 # Import all of our ported classes
 from .actor import Actor
@@ -48,6 +51,7 @@ class CarlaRosBridge(Node):
         self.carla_world = None
         self.actors = {}  # Dictionary to hold all our actor handlers {id -> Actor}
         self.ego_vehicle = None # Special handle for the ego vehicle
+        self.tf_broadcaster = tf2_ros.TransformBroadcaster(self)
 
         # Main loop thread
         self.shutdown = Event()
@@ -153,6 +157,43 @@ class CarlaRosBridge(Node):
             # Get the timestamp from the world snapshot
             world_snapshot = self.carla_world.get_snapshot()
             timestamp = self.get_clock().now().to_msg() # Use ROS time for consistency
+
+            # TF broadcast for ego vehicle
+            if self.ego_vehicle:
+                # Get the vehicle's transform from CARLA
+                carla_transform = self.ego_vehicle.carla_actor.get_transform()
+                loc = carla_transform.location
+                rot = carla_transform.rotation
+                # Create a TransformStamped message for TF
+                t = TransformStamped()
+                t.header.stamp = timestamp
+                t.header.frame_id = 'map'
+                t.child_frame_id = self.params['ego_vehicle_role_name']
+
+                # Apply ROS coordinate system conversion for translation
+                t.transform.translation.x = loc.x
+                t.transform.translation.y = -loc.y # Invert Y
+                t.transform.translation.z = loc.z
+
+                # Apply ROS coordinate system conversion for rotation and convert to Quaternion
+                roll = radians(rot.roll)
+                pitch = -radians(rot.pitch) # Invert Pitch
+                yaw = -radians(rot.yaw)     # Invert Yaw
+                
+                cy = cos(yaw * 0.5)
+                sy = sin(yaw * 0.5)
+                cp = cos(pitch * 0.5)
+                sp = sin(pitch * 0.5)
+                cr = cos(roll * 0.5)
+                sr = sin(roll * 0.5)
+
+                t.transform.rotation.w = cr * cp * cy + sr * sp * sy
+                t.transform.rotation.x = sr * cp * cy - cr * sp * sy
+                t.transform.rotation.y = cr * sp * cy + sr * cp * sy
+                t.transform.rotation.z = cr * cp * sy - sr * sp * cy
+
+                # Broadcast the corrected transform
+                self.tf_broadcaster.sendTransform(t)
 
             # Update all actor states
             for actor_handler in self.actors.values():
