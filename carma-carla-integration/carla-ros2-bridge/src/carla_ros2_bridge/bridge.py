@@ -139,6 +139,39 @@ class CarlaRosBridge(Node):
         self.get_logger().info("Initialization complete. Starting update loop.")
         self.update_thread.start()
 
+        # --- Publish static transforms for attached sensors ---
+        static_tf_broadcaster = tf2_ros.StaticTransformBroadcaster(self)
+        transforms_to_publish = []
+        for actor in self.carla_world.get_actors():
+            if actor.parent and actor.parent.id == self.ego_vehicle.uid:
+                # This actor is a sensor attached to our ego vehicle
+                sensor_transform = actor.get_transform()
+                loc = sensor_transform.location
+                rot = sensor_transform.rotation
+                t = TransformStamped()
+                t.header.stamp = self.get_clock().now().to_msg()
+                t.header.frame_id = self.params['ego_vehicle_role_name'] # Parent is the vehicle
+                # Use the sensor's role_name or a unique name for the child frame
+                child_frame_id = actor.attributes.get('role_name', f"sensor_{actor.id}")
+                t.child_frame_id = child_frame_id
+                # Apply ROS coordinate system conversion for translation
+                t.transform.translation.x = loc.x
+                t.transform.translation.y = -loc.y # Invert Y
+                t.transform.translation.z = loc.z
+                # Apply ROS coordinate system conversion for rotation and convert to Quaternion
+                roll = radians(rot.roll)
+                pitch = -radians(rot.pitch) # Invert Pitch
+                yaw = -radians(rot.yaw)     # Invert Yaw
+                cy = cos(yaw * 0.5); sy = sin(yaw * 0.5);
+                cp = cos(pitch * 0.5); sp = sin(pitch * 0.5);
+                cr = cos(roll * 0.5); sr = sin(roll * 0.5);
+                t.transform.rotation.w = cr * cp * cy + sr * sp * sy
+                t.transform.rotation.x = sr * cp * cy - cr * sp * sy
+                t.transform.rotation.y = cr * sp * cy + sr * cp * sy
+                t.transform.rotation.z = cr * cp * sy - sr * sp * cy
+                transforms_to_publish.append(t)
+                self.get_logger().info(f"Prepared static TF for sensor: {child_frame_id}")
+        static_tf_broadcaster.sendTransform(transforms_to_publish)
 
     def _update_loop(self):
         if not self.params['synchronous_mode']:
