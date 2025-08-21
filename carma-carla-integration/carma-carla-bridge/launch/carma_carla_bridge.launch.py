@@ -28,12 +28,12 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             name='passive',
-            default_value='False',
+            default_value='false',
             description='When enabled, the ROS bridge will take a backseat and another client must tick the world (only in synchronous mode)'
         ),
         DeclareLaunchArgument(
             name='synchronous_mode',
-            default_value='True',
+            default_value='true',
             description='Enable/disable synchronous mode. If enabled, the ROS bridge waits until the expected data is received for all sensors'
         ),
         DeclareLaunchArgument(
@@ -48,7 +48,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             name='town',
-            default_value='Town01',
+            default_value='Town10',
             description='Either use an available CARLA town (eg. "Town01") or an OpenDRIVE file (ending in .xodr)'
         ),
         DeclareLaunchArgument(
