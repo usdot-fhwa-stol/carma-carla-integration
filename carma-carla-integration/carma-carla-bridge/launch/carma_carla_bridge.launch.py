@@ -313,4 +313,19 @@ def generate_launch_description():
             ]
         ),
 
+        # ackermann control #
+        # Convert CARMA vehicle commands to CARLA Ackermann commands.
+        Node(
+            package='carma_carla_bridge',
+            executable='carma_to_carla_ackermann_cmd',
+            name='carma_to_carla_ackermann_cmd',
+            output='screen',
+            parameters=[
+                {'role_name': role_name},
+                {'init_speed': LaunchConfiguration('init_speed')},
+                {'init_acceleration': LaunchConfiguration('init_acceleration')},
+                {'init_steering_angle': LaunchConfiguration('init_steering_angle')},
+                {'init_jerk': LaunchConfiguration('init_jerk')}
+            ]
+        ),
     ])
