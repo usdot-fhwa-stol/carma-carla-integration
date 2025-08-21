@@ -78,7 +78,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             name='launch_ackermann_control',
-            default_value='false',
+            default_value='true',
             description='Determines if ackermann control node is launched alongside carla-ros2-bridge node'
         ),
         DeclareLaunchArgument(

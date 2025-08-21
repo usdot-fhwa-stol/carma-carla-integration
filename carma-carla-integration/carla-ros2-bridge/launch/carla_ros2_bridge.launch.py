@@ -45,12 +45,12 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             name='passive',
-            default_value='False',
+            default_value='false',
             description='When enabled, the ROS bridge will take a backseat and another client must tick the world (only in synchronous mode)'
         ),
         DeclareLaunchArgument(
             name='synchronous_mode',
-            default_value='True',
+            default_value='true',
             description='Enable/disable synchronous mode. If enabled, the ROS bridge waits until the expected data is received for all sensors'
         ),
         DeclareLaunchArgument(
@@ -95,7 +95,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             name='launch_ackermann_control',
-            default_value='false',
+            default_value='true',
             description='Determines if ackermann control node is launched alongside carla-ros2-bridge node'
         ),
         DeclareLaunchArgument(
