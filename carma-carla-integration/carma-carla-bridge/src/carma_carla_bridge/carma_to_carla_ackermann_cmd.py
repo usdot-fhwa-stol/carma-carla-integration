@@ -191,7 +191,7 @@ class CarmaToCarlaAckermannCmd(Node):
                               f"Accel: {vehicle_cmd.ctrl_cmd.linear_acceleration}, "
                               f"Steer: {vehicle_cmd.ctrl_cmd.steering_angle}")
         
-        if self.guidance_state != GuidanceState.ENGAGED:
+        if self.guidance_state != GuidanceState.ENGAGED and self.guidance_state != GuidanceState.ACTIVE:
             self.get_logger().info(f"[DEBUG] Ignoring vehicle command - guidance not engaged. "
                                   f"Current state: {self.guidance_state}")
             return
