@@ -122,12 +122,12 @@ def generate_launch_description():
         DeclareLaunchArgument('detection_cycle_delay_seconds', default_value='0.1'),
 
         # ackermann speed/accel params
-        DeclareLaunchArgument('speed_Kp', default_value='0.05'),
-        DeclareLaunchArgument('speed_Ki', default_value='0.0'),
-        DeclareLaunchArgument('speed_Kd', default_value='0.5'),
-        DeclareLaunchArgument('accel_Kp', default_value='0.05'),
-        DeclareLaunchArgument('accel_Ki', default_value='0.0'),
-        DeclareLaunchArgument('accel_Kd', default_value='0.5'),
+        DeclareLaunchArgument('speed_Kp', default_value=0.05),
+        DeclareLaunchArgument('speed_Ki', default_value=0.0),
+        DeclareLaunchArgument('speed_Kd', default_value=0.5),
+        DeclareLaunchArgument('accel_Kp', default_value=0.05),
+        DeclareLaunchArgument('accel_Ki', default_value=0.0),
+        DeclareLaunchArgument('accel_Kd', default_value=0.5),
 
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(PathJoinSubstitution([
