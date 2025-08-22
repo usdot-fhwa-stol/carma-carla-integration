@@ -310,11 +310,12 @@ class CarlaAckermannControl(Node):
             if is_recent_enough:
                 self.info.output.header = self.get_msg_header()
 
-            # Optional: Log the exact command we are about to publish
-                #throttle = self.info.output.throttle
-                #brake = self.info.output.brake
-                #steer = self.info.output.steer
-                #self.get_logger().info(f"==> PUBLISHING to CARLA: throttle={throttle}, brake={brake}, steer={steer}")
+                # --- ADD THIS DEBUG BLOCK ---
+                throttle = self.info.output.throttle
+                brake = self.info.output.brake
+                steer = self.info.output.steer
+                self.get_logger().info(f"==> PUBLISHING to CARLA: throttle={throttle}, brake={brake}, steer={steer}")
+                # --- END OF DEBUG BLOCK ---
 
                 self.carla_control_publisher.publish(self.info.output)
         #else:
