@@ -159,7 +159,7 @@ def generate_launch_description():
             parameters=[
                 {'role_name': LaunchConfiguration('role_name')},
                 {'speed_Kp': 0.05},
-                {'speed_Ki': 0.0},
+                {'speed_Ki': 0.05},
                 {'speed_Kd': 0.5},
                 {'accel_Kp': 0.05},
                 {'accel_Ki': 0.0},

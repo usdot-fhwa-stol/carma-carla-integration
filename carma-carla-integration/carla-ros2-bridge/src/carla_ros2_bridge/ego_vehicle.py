@@ -73,6 +73,30 @@ class EgoVehicle(Vehicle):
             CarlaEgoVehicleInfo,
             self.get_topic_prefix() + "/vehicle_info",
             qos_profile=QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+        
+        # Create a subscriber for vehicle control commands
+        # This subscriber will listen for CarlaEgoVehicleControl messages
+        self.control_subscriber = self.node.create_subscription(
+            CarlaEgoVehicleControl,
+            self.get_topic_prefix() + "/vehicle_control_cmd",
+            self.control_command_override,
+            10)
+    # Add this entire new method to the EgoVehicle class
+
+    def control_command_override(self, msg):
+        """
+        Callback to execute a vehicle control command.
+        """
+        cmd = VehicleControl()
+        cmd.throttle = msg.throttle
+        cmd.steer = msg.steer
+        cmd.brake = msg.brake
+        cmd.hand_brake = msg.hand_brake
+        cmd.reverse = msg.reverse
+        cmd.gear = msg.gear
+        cmd.manual_gear_shift = msg.manual_gear_shift
+        self.carla_actor.apply_control(cmd)
+
 
     def get_marker_color(self):
         """
@@ -190,6 +214,7 @@ class EgoVehicle(Vehicle):
         # Destroy the publishers created in __init__
         self.node.destroy_publisher(self.vehicle_status_publisher)
         self.node.destroy_publisher(self.vehicle_info_publisher)
+        self.node.destroy_subscription(self.control_subscriber)
         
         # Forward call
         Vehicle.destroy(self)

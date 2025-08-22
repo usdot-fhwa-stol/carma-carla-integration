@@ -48,7 +48,7 @@ class CarlaAckermannControl(Node):
         # --- Simplified and Final PID Controller Setup ---
         # Declare and get all PID parameters
         speed_kp = self.declare_parameter("speed_Kp", 5.0).get_parameter_value().double_value
-        speed_ki = self.declare_parameter("speed_Ki", 0.0).get_parameter_value().double_value
+        speed_ki = self.declare_parameter("speed_Ki", 0.05).get_parameter_value().double_value
         speed_kd = self.declare_parameter("speed_Kd", 0.5).get_parameter_value().double_value
         accel_kp = self.declare_parameter("accel_Kp", 0.05).get_parameter_value().double_value
         accel_ki = self.declare_parameter("accel_Ki", 0.0).get_parameter_value().double_value
@@ -248,9 +248,9 @@ class CarlaAckermannControl(Node):
 
     def set_target_steering_angle(self, target_steering_angle):
         """
-        set target sterring angle
+        set target steering angle
         """
-        self.info.target.steering_angle = -target_steering_angle
+        self.info.target.steering_angle = target_steering_angle
         if abs(self.info.target.steering_angle) > self.info.restrictions.max_steering_angle:
             self.get_logger().error("Max steering angle reached, clipping value")
             self.info.target.steering_angle = numpy.clip(
