@@ -326,7 +326,8 @@ class CarlaAckermannControl(Node):
         """
         Basic steering control
         """
-        self.info.output.steer = self.info.target.steering_angle
+        self.steering_gain = 1.5
+        self.info.output.steer = self.info.target.steering_angle * self.steering_gain
 
     def control_stop_and_reverse(self):
         """
