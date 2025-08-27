@@ -19,7 +19,7 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from rclpy.time import Time
 
-from ackermann_msgs.msg import AckermannDriveStamped
+from ackermann_msgs.msg import AckermannDrive
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Quaternion
 
@@ -72,13 +72,13 @@ class CarmaCarlaControlLogger(Node):
         )
 
         # Subscriptions
-        self.sub_carma  = self.create_subscription(AckermannDriveStamped, carma_ackermann_topic, self.on_carma_ackermann, qos)
+        self.sub_carma  = self.create_subscription(AckermannDrive, carma_ackermann_topic, self.on_carma_ackermann, qos)
         self.sub_carla  = self.create_subscription(CarlaEgoVehicleControl, carla_control_topic, self.on_carla_control, qos)
         self.sub_status = self.create_subscription(CarlaEgoVehicleStatus, self.carla_status_topic, self.on_carla_status, qos)
         self.sub_odom   = self.create_subscription(Odometry, self.odom_topic, self.on_odom, qos)
 
         # Last-seen data
-        self.last_carma: Optional[AckermannDriveStamped] = None
+        self.last_carma: Optional[AckermannDrive] = None
         self.last_carla: Optional[CarlaEgoVehicleControl] = None
         self.last_status: Optional[CarlaEgoVehicleStatus] = None
         self.last_odom: Optional[Odometry] = None
@@ -123,7 +123,7 @@ class CarmaCarlaControlLogger(Node):
         return val if val else default
 
     # --- Sub callbacks ---
-    def on_carma_ackermann(self, msg: AckermannDriveStamped):
+    def on_carma_ackermann(self, msg: AckermannDrive):
         self.last_carma = msg
         self._maybe_write_row('carma')
 
@@ -155,23 +155,22 @@ class CarmaCarlaControlLogger(Node):
 
         self._maybe_write_row('odom')
 
-    # --- Row writer ---
     def _maybe_write_row(self, _trigger: str):
+        # Only log once we have some "actuals" context
         if self.last_status is None and self.last_odom is None:
             return
-
+    
         sim_sec = self.get_clock().now().nanoseconds / 1e9
-
-        # CARMA Ackermann
+    
+        # --- CARMA Ackermann (AckermannDrive, unstamped) ---
         carma_speed = carma_steer = carma_accel = carma_jerk = None
         if self.last_carma:
-            d = self.last_carma.drive
-            carma_speed = d.speed
-            carma_steer = d.steering_angle
-            carma_accel = d.acceleration
-            carma_jerk  = d.jerk
-
-        # CARLA control cmd
+            carma_speed = self.last_carma.speed
+            carma_steer = self.last_carma.steering_angle
+            carma_accel = self.last_carma.acceleration
+            carma_jerk  = self.last_carma.jerk
+    
+        # --- CARLA control command (CarlaEgoVehicleControl) ---
         carla_throttle = carla_steer = carla_brake = None
         carla_reverse = carla_hand_brake = carla_manual_gear_shift = None
         carla_gear = None
@@ -184,25 +183,46 @@ class CarmaCarlaControlLogger(Node):
             carla_hand_brake = bool(c.hand_brake)
             carla_manual_gear_shift = bool(c.manual_gear_shift)
             carla_gear = c.gear
-
-        # Actuals (prefer CARLA status)
+    
+        # --- Actuals (prefer CARLA status; fall back to odom) ---
         actual_speed = actual_accel = actual_gear = None
         if self.last_status:
             s = self.last_status
-            # velocity is m/s
-            actual_speed = float(getattr(s, 'velocity', None))
-            # some bridge builds expose 'accel'; if absent, we’ll use odom-derived
-            actual_accel = float(getattr(s, 'accel', None)) if hasattr(s, 'accel') else None
-            actual_gear  = int(getattr(s, 'gear', 0))
-
+            # Speed (m/s)
+            try:
+                actual_speed = float(s.velocity)
+            except Exception:
+                actual_speed = None
+    
+            # Acceleration magnitude from geometry_msgs/Accel
+            try:
+                ax = float(s.acceleration.linear.x)
+                ay = float(s.acceleration.linear.y)
+                az = float(s.acceleration.linear.z)
+                actual_accel = (ax * ax + ay * ay + az * az) ** 0.5
+            except Exception:
+                actual_accel = None
+    
+            # Gear (depending on bridge variant)
+            try:
+                if hasattr(s, 'control') and hasattr(s.control, 'gear'):
+                    actual_gear = int(s.control.gear)
+                elif hasattr(s, 'gear'):
+                    actual_gear = int(s.gear)
+            except Exception:
+                actual_gear = None
+    
+        # Fallbacks from odom
         if actual_speed is None and self.odom_speed is not None:
             actual_speed = self.odom_speed
         if actual_accel is None and self.odom_accel is not None:
             actual_accel = self.odom_accel
-
+    
+        # Pose/yaw (from odom, since status lacks pose)
         x, y, z = self.pose_xyz
         yaw = self.pose_yaw
-
+    
+        # --- Write CSV row ---
         self.csv_writer.writerow([
             f"{sim_sec:.6f}",
             fmt(carma_speed), fmt(carma_steer), fmt(carma_accel), fmt(carma_jerk),
@@ -214,12 +234,13 @@ class CarmaCarlaControlLogger(Node):
             fmt(actual_speed), fmt(actual_accel), actual_gear if actual_gear is not None else "",
             fmt(x), fmt(y), fmt(z), fmt(yaw),
         ])
-
+    
         self.rows_since_flush += 1
         if self.rows_since_flush >= self.flush_every:
             self.csv_file.flush()
             os.fsync(self.csv_file.fileno())
             self.rows_since_flush = 0
+
 
     # --- Shutdown ---
     def _signal_handler(self, *_):
