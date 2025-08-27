@@ -199,7 +199,12 @@ class CarmaCarlaControlLogger(Node):
                 ax = float(s.acceleration.linear.x)
                 ay = float(s.acceleration.linear.y)
                 az = float(s.acceleration.linear.z)
-                actual_accel = (ax * ax + ay * ay + az * az) ** 0.5
+                # Signed longitudinal accel: project onto vehicle forward
+                # Use yaw from odom (vehicle heading in world/ENU)
+                yaw = self.pose_yaw
+                if yaw is not None:
+                    fx, fy = math.cos(yaw), math.sin(yaw)   # forward unit vector
+                actual_accel = ax*fx + ay*fy       # signed (m/s^2)
             except Exception:
                 actual_accel = None
     
