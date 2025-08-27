@@ -48,7 +48,6 @@ class CarmaCarlaControlLogger(Node):
         self.declare_parameter('odom_topic', '')
         self.declare_parameter('csv_path', '/tmp/carma_carla_controls_log.csv')
         self.declare_parameter('flush_every', 10)
-        self.declare_parameter('use_sim_time', True)  # honored by rclpy clock
 
         role = self.get_parameter('role_name').get_parameter_value().string_value
 
