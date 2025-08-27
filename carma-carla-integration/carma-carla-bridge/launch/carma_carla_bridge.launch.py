@@ -328,4 +328,13 @@ def generate_launch_description():
                 {'init_jerk': LaunchConfiguration('init_jerk')}
             ]
         ),
+
+        # ackermann logger #
+        Node(
+            package='carma_carla_bridge',
+            executable='carma_carla_ackermann_logger',
+            name='carma_carla_ackermann_logger',
+            output='screen',
+            parameters=[{'role_name': role_name}]
+        )
     ])
