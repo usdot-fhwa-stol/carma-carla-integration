@@ -100,10 +100,18 @@ class CarlaToCarmaVehicleStatus(Node):
         status.speed = vehicle_status_msg.velocity
         
         # Set gear based on reverse control
-        if vehicle_status_msg.control.reverse:
-            status.current_gear.gear = Gear.REVERSE
-        else:
-            status.current_gear.gear = Gear.DRIVE
+        # Corrected code
+        carla_gear = vehicle_status_msg.control.gear
+
+        if carla_gear > 0:
+            # Any positive number from CARLA is Drive
+            status.current_gear.gear = 4 # DRIVE for VehicleStatus message
+        elif carla_gear == 0:
+            # Zero is Neutral
+            status.current_gear.gear = 2 # NEUTRAL for VehicleStatus message
+        else: # carla_gear < 0
+            # Any negative number from CARLA is Reverse
+            status.current_gear.gear = 1 # REVERSE for VehicleStatus message
         
         # Set drive mode based on manual gear shift
         if vehicle_status_msg.control.manual_gear_shift:
