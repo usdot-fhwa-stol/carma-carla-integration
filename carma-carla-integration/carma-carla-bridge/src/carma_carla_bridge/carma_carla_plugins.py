@@ -33,7 +33,6 @@ Call Services from CARMA:
 import rclpy
 from rclpy.node import Node
 import time
-import ast
 import traceback
 from carma_planning_msgs.srv import PluginList, PluginActivation
 
@@ -43,8 +42,15 @@ class CarmaCarlaPlugins(Node):
 
         # Declare parameter and retrieve it
         self.declare_parameter('selected_plugins', '[]')
-        plugin_list_str = self.get_parameter('selected_plugins').value
-        self.plugin_list = ast.literal_eval(plugin_list_str)
+        plugin_list_str = self.get_parameter("selected_plugins").get_parameter_value().string_value
+        
+        # Convert comma-separated string to list if we got a non-empty string
+        if plugin_list_str and plugin_list_str.strip() != "[]":
+            self.plugin_list = [p.strip() for p in plugin_list_str.split(',') if p.strip()]
+            self.get_logger().info(f"Parsed plugin list: {self.plugin_list}")
+        else:
+            self.plugin_list = []
+            self.get_logger().warn("Empty plugin list parameter received")
 
         if not self.plugin_list or len(self.plugin_list) == 0:
             self.get_logger().error(

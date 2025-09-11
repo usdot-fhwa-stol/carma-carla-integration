@@ -22,7 +22,7 @@ from rclpy.node import Node
 from . import carla_control_physics as phys
 from rclpy.qos import QoSProfile, DurabilityPolicy
 
-from autoware_control_msgs.msg import Control
+from ackermann_msgs.msg import AckermannDrive
 
 from std_msgs.msg import Header # pylint: disable=wrong-import-order
 from carla_msgs.msg import CarlaEgoVehicleStatus  # pylint: disable=no-name-in-module,import-error
@@ -48,7 +48,7 @@ class CarlaAckermannControl(Node):
         # --- Simplified and Final PID Controller Setup ---
         # Declare and get all PID parameters
         speed_kp = self.declare_parameter("speed_Kp", 5.0).get_parameter_value().double_value
-        speed_ki = self.declare_parameter("speed_Ki", 0.0).get_parameter_value().double_value
+        speed_ki = self.declare_parameter("speed_Ki", 0.05).get_parameter_value().double_value
         speed_kd = self.declare_parameter("speed_Kd", 0.5).get_parameter_value().double_value
         accel_kp = self.declare_parameter("accel_Kp", 0.05).get_parameter_value().double_value
         accel_ki = self.declare_parameter("accel_Ki", 0.0).get_parameter_value().double_value
@@ -106,9 +106,9 @@ class CarlaAckermannControl(Node):
 
         # ackermann drive commands subscriber
         self.control_subscriber = self.create_subscription(
-            Control,
-            "/hardware_interface/vehicle_cmd",  # This is the topic from the CARMA Platform
-            self.control_command_updated, # Renamed callback
+            AckermannDrive, 
+            "/carla/" + self.role_name + "/ackermann_cmd",
+            self.control_command_updated,
             10
         )
 
@@ -232,7 +232,7 @@ class CarlaAckermannControl(Node):
         self.info.restrictions.max_pedal = min(
             self.info.restrictions.max_accel, self.info.restrictions.max_decel)
 
-    def control_command_updated(self, msg: Control): # Testing correct ros2 message type
+    def control_command_updated(self, msg: AckermannDrive): # Testing correct ros2 message type
         """
         Callback for new control commands from the CARMA Platform.
         """
@@ -241,14 +241,14 @@ class CarlaAckermannControl(Node):
         self.last_ackermann_msg_received_sec = self.get_clock().now().nanoseconds / 1e9
 
         # Read from the fields of the Autoware Control message
-        self.set_target_steering_angle(msg.lateral.steering_tire_angle)
-        self.set_target_speed(msg.longitudinal.velocity)
-        self.set_target_accel(msg.longitudinal.acceleration)
-        self.set_target_jerk(msg.longitudinal.jerk)
+        self.set_target_steering_angle(msg.steering_angle)
+        self.set_target_speed(msg.speed)
+        self.set_target_accel(msg.acceleration)
+        self.set_target_jerk(msg.jerk)
 
     def set_target_steering_angle(self, target_steering_angle):
         """
-        set target sterring angle
+        set target steering angle
         """
         self.info.target.steering_angle = -target_steering_angle
         if abs(self.info.target.steering_angle) > self.info.restrictions.max_steering_angle:
@@ -310,11 +310,12 @@ class CarlaAckermannControl(Node):
             if is_recent_enough:
                 self.info.output.header = self.get_msg_header()
 
-            # Optional: Log the exact command we are about to publish
-                #throttle = self.info.output.throttle
-                #brake = self.info.output.brake
-                #steer = self.info.output.steer
-                #self.get_logger().info(f"==> PUBLISHING to CARLA: throttle={throttle}, brake={brake}, steer={steer}")
+                # --- ADD THIS DEBUG BLOCK ---
+                throttle = self.info.output.throttle
+                brake = self.info.output.brake
+                steer = self.info.output.steer
+                self.get_logger().info(f"==> PUBLISHING to CARLA: throttle={throttle}, brake={brake}, steer={steer}")
+                # --- END OF DEBUG BLOCK ---
 
                 self.carla_control_publisher.publish(self.info.output)
         #else:
@@ -325,8 +326,8 @@ class CarlaAckermannControl(Node):
         """
         Basic steering control
         """
-        self.info.output.steer = self.info.target.steering_angle / \
-            self.info.restrictions.max_steering_angle
+        self.steering_gain = 1.5
+        self.info.output.steer = self.info.target.steering_angle * self.steering_gain
 
     def control_stop_and_reverse(self):
         """

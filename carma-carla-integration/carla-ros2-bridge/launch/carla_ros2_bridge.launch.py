@@ -45,12 +45,12 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             name='passive',
-            default_value='False',
+            default_value='false',
             description='When enabled, the ROS bridge will take a backseat and another client must tick the world (only in synchronous mode)'
         ),
         DeclareLaunchArgument(
             name='synchronous_mode',
-            default_value='True',
+            default_value='true',
             description='Enable/disable synchronous mode. If enabled, the ROS bridge waits until the expected data is received for all sensors'
         ),
         DeclareLaunchArgument(
@@ -70,7 +70,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             name='role_name',
-            default_value='hero',
+            default_value='carma_1',
             description='Role name to identify ego vehicle, should match role_name in config at hero_config_path'
         ),
         DeclareLaunchArgument(
@@ -89,8 +89,13 @@ def generate_launch_description():
             description='Determines if spawn_hero_vehicle script is launched alongside carla-ros2-bridge node'
         ),
         DeclareLaunchArgument(
-            name='launch_ackermann_control',
+            name='autopilot',
             default_value='false',
+            description='Determines if the spawned vehicle should use CARLA autopilot'
+        ),
+        DeclareLaunchArgument(
+            name='launch_ackermann_control',
+            default_value='true',
             description='Determines if ackermann control node is launched alongside carla-ros2-bridge node'
         ),
         DeclareLaunchArgument(
@@ -98,7 +103,7 @@ def generate_launch_description():
             default_value=PathJoinSubstitution([
                 FindPackageShare('carla_ros2_bridge'),
                 'configs',
-                'stack.json'
+                'stack.json'  # vehicle role_name is hardcoded in this file, it should match the role_name argument
             ]),
             description='Path to the hero vehicle JSON config'
         ),
@@ -136,7 +141,8 @@ def generate_launch_description():
                         {'host': LaunchConfiguration('host')},
                         {'port': LaunchConfiguration('port')},
                         {'config_file': LaunchConfiguration('hero_config_path')},
-                        {'autopilot': True},
+                        {'autopilot': LaunchConfiguration('autopilot')},
+                        {'spawn_point': LaunchConfiguration('spawn_point')},
                     ],
                     condition=IfCondition(LaunchConfiguration('launch_spawn_vehicle')),
                 ),
@@ -152,9 +158,9 @@ def generate_launch_description():
             emulate_tty=True,
             parameters=[
                 {'role_name': LaunchConfiguration('role_name')},
-                {'speed_Kp': 0.05},
-                {'speed_Ki': 0.0},
-                {'speed_Kd': 0.5},
+                {'speed_Kp': 0.4},
+                {'speed_Ki': 0.03},
+                {'speed_Kd': 0.0},
                 {'accel_Kp': 0.05},
                 {'accel_Ki': 0.0},
                 {'accel_Kd': 0.05},

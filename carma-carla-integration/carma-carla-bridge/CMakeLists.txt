@@ -28,6 +28,7 @@ install(PROGRAMS
   src/carma_carla_bridge/carma_carla_route.py
   src/carma_carla_bridge/carma_carla_plugins.py
   src/carma_carla_bridge/carma_carla_guidance.py
+  src/carma_carla_bridge/debug/carma_carla_ackermann_logger.py 
   DESTINATION lib/${PROJECT_NAME}
 )
 

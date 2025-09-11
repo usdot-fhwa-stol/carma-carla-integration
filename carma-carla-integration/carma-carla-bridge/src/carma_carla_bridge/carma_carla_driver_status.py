@@ -87,12 +87,6 @@ class DriverStatusNode(Node):
     # uint8  OFF=0, uint8  OPERATIONAL=1, uint8  DEGRADED=2, uint8  FAULT=3
     def create_driver_status_msg(self, name: str, status: int, **categories) -> DriverStatus:
         msg = DriverStatus()
-
-        # Set msg header
-        msg.header = Header()
-        msg.header.stamp = self.clock.now().to_msg()
-        msg.header.frame_id = ''
-
         msg.name = name
         msg.status = status
 

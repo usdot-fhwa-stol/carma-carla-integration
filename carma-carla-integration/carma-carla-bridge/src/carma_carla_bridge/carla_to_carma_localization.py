@@ -27,59 +27,71 @@
 """
 ROS2 migration of carla_to_carma_localization
 Original path: carma-carla-integration/carma-carla-bridge/src/carma_carla_bridge/carla_to_carma_localization.py
-Subscribe CARLA ROS2 Odometry to publish CARMA PoseStamped & TwistStamped for localization.
+Subscribe CARLA ROS2 Odometry to publish CARMA PoseStamped & TwistStamped for localization at 30 Hz.
 """
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseStamped, TwistStamped
 
-
 class CarlaToCarmaLocalization(Node):
-   def __init__(self):
-       super().__init__('carla_to_carma_localization')
-       # Declare parameter for vehicle role name
-       self.declare_parameter('role_name', 'hero')
-       role = self.get_parameter('role_name').get_parameter_value().string_value
+    def __init__(self):
+        super().__init__('carla_to_carma_localization')
+        # Declare parameter for vehicle role name
+        self.declare_parameter('role_name', 'hero')
+        role = self.get_parameter('role_name').get_parameter_value().string_value
+        # Publishers
+        self.gnss_pub = self.create_publisher(PoseStamped, '/localization/gnss_pose', 10)
+        self.pose_pub = self.create_publisher(PoseStamped, '/localization/current_pose', 10)
+        self.twist_pub = self.create_publisher(TwistStamped, '/hardware_interface/vehicle/twist', 10)
+        # Subscription to CARLA ROS2 odometry topic
+        odom_topic = f'/carla/{role}/odometry'
+        self.create_subscription(
+            Odometry,
+            odom_topic,
+            self.odometry_callback,
+            10
+        )
+        # Store latest odometry message
+        self.latest_odom = None
+        # Create timer for 30 Hz publishing (1/30 seconds = 0.0333 seconds)
+        self.timer = self.create_timer(0.0333, self.timer_callback)
+        self.get_logger().info(f'Subscribed to {odom_topic} and publishing at 30 Hz')
 
-       # Publishers
-       self.gnss_pub  = self.create_publisher(PoseStamped,  '/localization/gnss_pose',          10)
-       self.pose_pub  = self.create_publisher(PoseStamped,  '/localization/current_pose',       10)
-       self.twist_pub = self.create_publisher(TwistStamped, '/hardware_interface/vehicle/twist', 10)
+    def odometry_callback(self, msg: Odometry):
+        # Store the latest odometry message
+        self.latest_odom = msg
 
-       # Subscription to CARLA ROS2 odometry topic
-       odom_topic = f'/carla/{role}/odometry'
-       self.create_subscription(
-           Odometry,
-           odom_topic,
-           self.odometry_callback,
-           10
-       )
-       self.get_logger().info(f'Subscribed to {odom_topic}')
+    def timer_callback(self):
+        # Publish only if we have a valid odometry message
+        if self.latest_odom is None:
+            self.get_logger().warn('No odometry data received yet')
+            return
 
-   def odometry_callback(self, msg: Odometry):
-       # Convert Odometry to PoseStamped for current and GNSS
-       pose_msg = PoseStamped()
-       pose_msg.header = msg.header
-       pose_msg.pose   = msg.pose.pose
-       self.pose_pub.publish(pose_msg)
-       self.gnss_pub.publish(pose_msg)
+        # Convert Odometry to PoseStamped for current and GNSS
+        pose_msg = PoseStamped()
+        pose_msg.header = self.latest_odom.header
+        pose_msg.header.stamp = self.get_clock().now().to_msg()  # Update timestamp
+        pose_msg.pose = self.latest_odom.pose.pose
+        self.pose_pub.publish(pose_msg)
+        self.gnss_pub.publish(pose_msg)
 
-       # Convert Odometry to TwistStamped
-       twist_msg = TwistStamped()
-       twist_msg.header = msg.header
-       twist_msg.twist  = msg.twist.twist
-       self.twist_pub.publish(twist_msg)
+        # Convert Odometry to TwistStamped
+        twist_msg = TwistStamped()
+        twist_msg.header = self.latest_odom.header
+        twist_msg.header.stamp = self.get_clock().now().to_msg()  # Update timestamp
+        twist_msg.twist = self.latest_odom.twist.twist
+        self.twist_pub.publish(twist_msg)
 
 def main(args=None):
-   rclpy.init(args=args)
-   node = CarlaToCarmaLocalization()
-   try:
-       rclpy.spin(node)
-   except KeyboardInterrupt:
-       pass
-   node.destroy_node()
-   rclpy.shutdown()
+    rclpy.init(args=args)
+    node = CarlaToCarmaLocalization()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    node.destroy_node()
+    rclpy.shutdown()
 
 if __name__ == '__main__':
-   main()
+    main()

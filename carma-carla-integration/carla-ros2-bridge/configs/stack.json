@@ -1,6 +1,6 @@
 {
-  "type": "vehicle.lincoln.mkz",
-  "id": "hero",
+  "type": "vehicle.mini.cooper",
+  "id": "carma_1",
   "sensors": [
     {
       "type": "sensor.camera.rgb",
