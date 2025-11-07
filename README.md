@@ -5,7 +5,7 @@ This user guide provides step-by-step user instructions on how to build CARMA-CA
 -  Docker (19.03+)
 -  [Nvidia Docker](https://github.com/NVIDIA/nvidia-docker)
 -  [CARMA Platform](https://usdot-carma.atlassian.net/wiki/spaces/CRMPLT/pages/486178827/Development+Environment+Setup) (4.2.0)
--  [CARLA Simulation](https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.10.1.tar.gz) (0.9.10.1)
+-  [CARLA Simulation](https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.15.tar.gz) (0.9.15)
 
 ## Setup
 ### CARMA-CARLA Integration Setup
@@ -65,7 +65,7 @@ docker run -it --net=host <carma-carla-integration-image-id> /bin/bash
 ```
 3.2 Set the catkin source and CARLA python path
 ```
-export PYTHONPATH=$PYTHONPATH:~/PythonAPI/carla/dist/carla-0.9.10-py3.7-linux-x86_64.egg && source ~/carma_carla_ws/devel/setup.bash
+export PYTHONPATH=$PYTHONPATH:~/PythonAPI/carla/dist/carla-0.9.15-py3.7-linux-x86_64.egg && source ~/carma_carla_ws/devel/setup.bash
 ```
 3.3 Launch CARMA-CARLA integration tool
 ```

@@ -20,13 +20,11 @@
 -->
 
 <launch>
-  <param name="use_sim_time" value="true"/>
+  <arg name='spawn_point_ego_vehicle' default=''/>
   <arg name='host' default='localhost'/>
   <arg name='port' default='2000'/>
-  <arg name='vehicle_filter' default='vehicle.toyota.prius'/>
+  <arg name='town' default='Town04'/>
   <arg name='role_name' default='ego_vehicle'/>
-  <arg name='spawn_point' default=''/>
-
   <arg name='speed_Kp' default='0.05'/>
   <arg name='speed_Ki' default='0.0'/>
   <arg name='speed_Kd' default='0.5'/>
@@ -43,19 +41,15 @@
   <include file='$(find carla_ros_bridge)/launch/carla_ros_bridge.launch'>
     <arg name='host' value='$(arg host)'/>
     <arg name='port' value='$(arg port)'/>
+    <arg name='town' value='$(arg town)'/>
     <arg name='synchronous_mode' value='$(arg synchronous_mode)'/>
     <arg name='synchronous_mode_wait_for_vehicle_control_command' value='$(arg synchronous_mode_wait_for_vehicle_control_command)'/>
     <arg name='fixed_delta_seconds' value='$(arg fixed_delta_seconds)'/>
   </include>
 
   <!-- carla ego vehicle -->
-  <include file='$(find carla_ego_vehicle)/launch/carla_ego_vehicle.launch' >
-    <arg name='host' value='$(arg host)'/>
-    <arg name='port' value='$(arg port)'/>
-    <arg name='vehicle_filter' value='$(arg vehicle_filter)'/>
-    <arg name='role_name' value='$(arg role_name)'/>
-    <arg name='spawn_point' value='$(arg spawn_point)'/>
-    <arg name='sensor_definition_file' value='$(find carma_carla_agent)/agent/config/sensors.json'/>
+  <include file='$(find carla_spawn_objects)/launch/carla_spawn_objects.launch' >
+    <arg name='spawn_point_ego_vehicle' value='$(arg spawn_point_ego_vehicle)'/>
   </include>
 
   <!-- carla ackermann control -->

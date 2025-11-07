@@ -31,6 +31,7 @@ LABEL org.label-schema.vcs-ref=${VCS_REF}
 LABEL org.label-schema.build-date=${BUILD_DATE}
 
 USER root
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | apt-key add -
 RUN apt-get update && apt-get install -y sudo
 
 USER carma
@@ -41,7 +42,9 @@ COPY /carma-carla-integration ./carma-carla-integration
 
 # Run the install script as root
 RUN /home/carma/docker/install.sh
-COPY /patch/settings.yaml ./ros-bridge/carla_ros_bridge/config
+COPY /patch/settings.yaml ./ros-bridge/carla_ros_bridge/test
+COPY /patch/CARLA_VERSION ./ros-bridge/carla_ros_bridge/src/carla_ros_bridge
+COPY /patch/objects.json ./ros-bridge/carla_spawn_objects/config
 RUN rm -R -rf /home/carma/docker
 
 CMD ["/bin/bash"]

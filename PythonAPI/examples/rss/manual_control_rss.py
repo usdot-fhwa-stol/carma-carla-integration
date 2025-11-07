@@ -28,6 +28,10 @@ Use ARROWS or WASD keys for control.
     R            : toggle recording images to disk
 
     F2           : toggle RSS visualization mode
+    F3           : increase log level
+    F4           : decrease log level
+    F5           : increase map log level
+    F6           : decrease map log level
     B            : toggle RSS Road Boundaries Mode
     G            : RSS check drop current route
     T            : toggle RSS
@@ -52,7 +56,7 @@ import sys
 import signal
 
 try:
-    sys.path.append(glob.glob('../../carla/dist/carla-*%d.%d-%s.egg' % (
+    sys.path.append(glob.glob(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) + '/carla/dist/carla-*%d.%d-%s.egg' % (
         sys.version_info.major,
         sys.version_info.minor,
         'win-amd64' if os.name == 'nt' else 'linux-x86_64'))[0])
@@ -87,6 +91,10 @@ try:
     from pygame.locals import K_ESCAPE
     from pygame.locals import K_F1
     from pygame.locals import K_F2
+    from pygame.locals import K_F3
+    from pygame.locals import K_F4
+    from pygame.locals import K_F5
+    from pygame.locals import K_F6
     from pygame.locals import K_LEFT
     from pygame.locals import K_RIGHT
     from pygame.locals import K_SLASH
@@ -283,7 +291,7 @@ class Camera(object):
         bp.set_attribute('image_size_x', str(display_dimensions[0]))
         bp.set_attribute('image_size_y', str(display_dimensions[1]))
         self.sensor = self._parent.get_world().spawn_actor(bp, carla.Transform(carla.Location(
-            x=-5.5, z=2.5), carla.Rotation(pitch=8.0)), attach_to=self._parent, attachment_type=carla.AttachmentType.SpringArm)
+            x=-5.5, z=2.5), carla.Rotation(pitch=8.0)), attach_to=self._parent, attachment_type=carla.AttachmentType.SpringArmGhost)
 
         # We need to pass the lambda a weak reference to self to avoid
         # circular reference.
@@ -408,6 +416,20 @@ class VehicleControl(object):
                 elif event.key == K_F2:
                     if self._world and self._world.rss_sensor:
                         self._world.rss_sensor.toggle_debug_visualization_mode()
+                elif event.key == K_F3:
+                    if self._world and self._world.rss_sensor:
+                        self._world.rss_sensor.decrease_log_level()
+                        self._restrictor.set_log_level(self._world.rss_sensor.log_level)
+                elif event.key == K_F4:
+                    if self._world and self._world.rss_sensor:
+                        self._world.rss_sensor.increase_log_level()
+                        self._restrictor.set_log_level(self._world.rss_sensor.log_level)
+                elif event.key == K_F5:
+                    if self._world and self._world.rss_sensor:
+                        self._world.rss_sensor.decrease_map_log_level()
+                elif event.key == K_F6:
+                    if self._world and self._world.rss_sensor:
+                        self._world.rss_sensor.increase_map_log_level()
                 elif event.key == K_b:
                     if self._world and self._world.rss_sensor:
                         if self._world.rss_sensor.sensor.road_boundaries_mode == carla.RssRoadBoundariesMode.Off:
