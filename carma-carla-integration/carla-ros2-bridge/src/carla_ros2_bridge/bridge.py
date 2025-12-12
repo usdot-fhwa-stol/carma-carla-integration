@@ -29,6 +29,7 @@ import time
 from rosgraph_msgs.msg import Clock
 import tf2_ros
 from geometry_msgs.msg import TransformStamped
+from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 
 # Import all of our ported classes
 from .actor import Actor
@@ -56,6 +57,13 @@ class CarlaRosBridge(Node):
         # Main loop thread
         self.shutdown = Event()
         self.update_thread = Thread(target=self._update_loop)
+
+        qos = QoSProfile(
+            history=QoSHistoryPolicy.KEEP_LAST,
+            depth=10,
+            reliability=QoSReliabilityPolicy.BEST_EFFORT
+        )
+        self.clock_pub = self.create_publisher(Clock, "/clock", qos)
 
     def _get_ros_parameters(self):
         """
@@ -185,11 +193,33 @@ class CarlaRosBridge(Node):
             return
 
         while rclpy.ok() and not self.shutdown.is_set():
-            # Tick the CARLA world
-            frame_id = self.carla_world.tick()
-            # Get the timestamp from the world snapshot
-            world_snapshot = self.carla_world.get_snapshot()
+            # Wait for tick the CARLA world
+            try:
+                snapshot = self.carla_world.wait_for_tick(timeout_seconds=1.0)
+            except RuntimeError as e:
+                self.get_logger().warn(f"wait_for_tick timeout/no tick: {e}")
+                continue
+
+            if snapshot is None:
+                self.get_logger().warn("wait_for_tick returned None (no tick received)")
+                continue
+
+            self.get_logger().debug(
+                f"tick frame={snapshot.frame} sim={snapshot.timestamp.elapsed_seconds:.3f}"
+            )
+            frame_id = snapshot.frame
             timestamp = self.get_clock().now().to_msg() # Use ROS time for consistency
+
+            sim_time = snapshot.timestamp.elapsed_seconds
+            sec = int(sim_time)
+            nanosec = int((sim_time - sec) * 1_000_000_000)
+
+            clock_msg = Clock()
+            clock_msg.clock.sec = sec
+            clock_msg.clock.nanosec = nanosec
+            self.clock_pub.publish(clock_msg)
+
+            timestamp = clock_msg.clock
 
             # TF broadcast for ego vehicle
             if self.ego_vehicle:
