@@ -29,7 +29,6 @@ import time
 from rosgraph_msgs.msg import Clock
 import tf2_ros
 from geometry_msgs.msg import TransformStamped
-from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 
 # Import all of our ported classes
 from .actor import Actor
@@ -57,13 +56,6 @@ class CarlaRosBridge(Node):
         # Main loop thread
         self.shutdown = Event()
         self.update_thread = Thread(target=self._update_loop)
-
-        qos = QoSProfile(
-            history=QoSHistoryPolicy.KEEP_LAST,
-            depth=10,
-            reliability=QoSReliabilityPolicy.BEST_EFFORT
-        )
-        self.clock_pub = self.create_publisher(Clock, "/clock", qos)
 
     def _get_ros_parameters(self):
         """
@@ -209,17 +201,6 @@ class CarlaRosBridge(Node):
             )
             frame_id = snapshot.frame
             timestamp = self.get_clock().now().to_msg() # Use ROS time for consistency
-
-            sim_time = snapshot.timestamp.elapsed_seconds
-            sec = int(sim_time)
-            nanosec = int((sim_time - sec) * 1_000_000_000)
-
-            clock_msg = Clock()
-            clock_msg.clock.sec = sec
-            clock_msg.clock.nanosec = nanosec
-            self.clock_pub.publish(clock_msg)
-
-            timestamp = clock_msg.clock
 
             # TF broadcast for ego vehicle
             if self.ego_vehicle:
