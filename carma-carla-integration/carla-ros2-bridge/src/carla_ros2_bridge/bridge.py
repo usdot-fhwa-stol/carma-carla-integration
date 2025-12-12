@@ -195,7 +195,7 @@ class CarlaRosBridge(Node):
         while rclpy.ok() and not self.shutdown.is_set():
             # Wait for tick the CARLA world
             try:
-                snapshot = self.carla_world.wait_for_tick(timeout_seconds=1.0)
+                snapshot = self.carla_world.wait_for_tick(1.0)
             except RuntimeError as e:
                 self.get_logger().warn(f"wait_for_tick timeout/no tick: {e}")
                 continue
