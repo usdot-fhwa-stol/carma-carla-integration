@@ -124,6 +124,7 @@ def generate_launch_description():
                 {'synchronous_mode_wait_for_vehicle_control_command': LaunchConfiguration('synchronous_mode_wait_for_vehicle_control_command')},
                 {'fixed_delta_seconds': LaunchConfiguration('fixed_delta_seconds')},
                 {'ego_vehicle_role_name': LaunchConfiguration('role_name')},
+                {'passive': LaunchConfiguration('passive')},
             ]
         ),
 

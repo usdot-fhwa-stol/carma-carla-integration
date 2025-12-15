@@ -22,6 +22,7 @@ import carla
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
+from rclpy.time import Time
 from threading import Thread, Lock, Event
 from math import sin, cos, radians
 import time
@@ -52,10 +53,15 @@ class CarlaRosBridge(Node):
         self.actors = {}  # Dictionary to hold all our actor handlers {id -> Actor}
         self.ego_vehicle = None # Special handle for the ego vehicle
         self.tf_broadcaster = tf2_ros.TransformBroadcaster(self)
+        self.timestamp_last_run = 0.0
 
-        # Main loop thread
+        # Clock publisher to keep ROS time synced with CARLA time (critical for odometry)
+        self.clock_publisher = self.create_publisher(Clock, 'clock', 10)
+
+        # Main loop thread (only used if we are the simulation MASTER)
         self.shutdown = Event()
-        self.update_thread = Thread(target=self._update_loop)
+        self.update_thread = None
+        self.on_tick_id = None
 
     def _get_ros_parameters(self):
         """
@@ -67,6 +73,8 @@ class CarlaRosBridge(Node):
         params['timeout'] = self.declare_parameter('timeout', 2.0).get_parameter_value().double_value
         params['synchronous_mode'] = self.declare_parameter('synchronous_mode', True).get_parameter_value().bool_value
         params['fixed_delta_seconds'] = self.declare_parameter('fixed_delta_seconds', 0.05).get_parameter_value().double_value
+        # Added passive parameter
+        params['passive'] = self.declare_parameter('passive', False).get_parameter_value().bool_value
 
         # Get the role_name for the ego vehicle
         params['ego_vehicle_role_name'] = self.declare_parameter(
@@ -79,19 +87,63 @@ class CarlaRosBridge(Node):
         Connects to the CARLA world and waits for the ego vehicle before initializing actors.
         """
         self.carla_world = carla_client.get_world()
-
-        # Set synchronous mode settings
         settings = self.carla_world.get_settings()
-        settings.synchronous_mode = self.params['synchronous_mode']
-        settings.fixed_delta_seconds = self.params['fixed_delta_seconds']
-        self.carla_world.apply_settings(settings)
-        self.get_logger().info("[Bridge] Applied synchronous settings to CARLA world")
 
+        # --- Synchronization / Passive Mode Logic ---
+        if not self.params['passive']:
+            # MASTER MODE: We control the simulation settings.
+            # If we are NOT passive, we force the settings we want.
+            if settings.synchronous_mode:
+                # Workaround: disable sync mode briefly before applying new settings
+                settings.synchronous_mode = False
+                self.carla_world.apply_settings(settings)
+            
+            settings.synchronous_mode = self.params['synchronous_mode']
+            settings.fixed_delta_seconds = self.params['fixed_delta_seconds']
+            self.carla_world.apply_settings(settings)
+            self.get_logger().info(f"[Bridge] Master Mode: Applied synchronous_mode={settings.synchronous_mode}, delta={settings.fixed_delta_seconds}")
+        else:
+            # PASSIVE MODE: We do NOT touch settings. We assume CDASim/XML-RPC handled it.
+            self.get_logger().info("[Bridge] Passive Mode Enabled: Skipping setting application. Waiting for external tick.")
+
+        # Traffic Manager config
         traffic_manager = carla_client.get_trafficmanager()
         traffic_manager.set_synchronous_mode(self.params['synchronous_mode'])
-        self.get_logger().info("[Bridge] Configured traffic manager for synchronous mode")
+        self.get_logger().info("[Bridge] Configured traffic manager")
 
-        # Wait for ego vehicle to appear
+        # --- Ego Vehicle Discovery ---
+        self._wait_for_ego_vehicle()
+
+        if not self.ego_vehicle:
+            return # Error logged in helper
+
+        # Populate remaining actors
+        self._populate_actors()
+
+        # Attach sensors
+        self.odometry_sensor = OdometrySensor(parent_actor=self.ego_vehicle, node=self)
+        self.object_sensor = ObjectSensor(parent_actor=self.ego_vehicle, node=self, actor_list=self.actors)
+        
+        # Publish static TF for sensors
+        self._publish_static_transforms()
+
+        # --- Start Execution Loop ---
+        # Logic derived from legacy bridge:
+        # If Synchronous AND Passive: Use on_tick callback (Listen)
+        # If Synchronous AND NOT Passive: Use Thread loop (Drive)
+        
+        if self.params['synchronous_mode'] and not self.params['passive']:
+            self.get_logger().info("[Bridge] Starting Active Update Thread (Driving Simulation)")
+            self.update_thread = Thread(target=self._active_update_loop)
+            self.update_thread.start()
+        elif self.params['synchronous_mode'] and self.params['passive']:
+            self.get_logger().info("[Bridge] Registering on_tick callback (Passive Listener)")
+            self.on_tick_id = self.carla_world.on_tick(self._on_passive_tick)
+        else:
+            self.get_logger().warn("[Bridge] Asynchronous mode is not fully supported in this port yet.")
+
+    def _wait_for_ego_vehicle(self):
+        """Helper to block until ego vehicle is found"""
         timeout_seconds = 30
         poll_interval = 1.0
         waited = 0
@@ -100,11 +152,9 @@ class CarlaRosBridge(Node):
 
         while rclpy.ok() and waited < timeout_seconds:
             actors = self.carla_world.get_actors()
-            self.get_logger().info(f"[Bridge] Found {len(actors)} actors in world")
             for actor in actors:
                 if hasattr(actor, 'attributes'):
                     role_name = actor.attributes.get('role_name', 'None')
-                    self.get_logger().info(f"[Bridge] Actor ID {actor.id}: type={actor.type_id}, role_name='{role_name}'")
                     if role_name == self.params['ego_vehicle_role_name']:
                         self.ego_vehicle = EgoVehicle(
                             uid=actor.id, name=actor.attributes.get('role_name', 'ego'),
@@ -112,18 +162,15 @@ class CarlaRosBridge(Node):
                             vehicle_control_applied_callback=lambda id: None
                         )
                         self.actors[actor.id] = self.ego_vehicle
-                        self.get_logger().info(f"[Bridge] Found ego vehicle with role_name '{self.ego_vehicle.name}', topic prefix will be '{self.ego_vehicle.get_topic_prefix()}'")
-                        break
-            if self.ego_vehicle:
-                break
+                        self.get_logger().info(f"[Bridge] Found ego vehicle with role_name '{self.ego_vehicle.name}'")
+                        return
             time.sleep(poll_interval)
             waited += poll_interval
 
-        if not self.ego_vehicle:
-            self.get_logger().error(f"[Bridge] Ego vehicle with role name '{self.params['ego_vehicle_role_name']}' not found after {timeout_seconds} seconds!")
-            return
+        self.get_logger().error(f"[Bridge] Ego vehicle with role name '{self.params['ego_vehicle_role_name']}' not found!")
 
-        # Populate remaining actors
+    def _populate_actors(self):
+        """Helper to convert CARLA actors to bridge actors"""
         for actor in self.carla_world.get_actors():
             if actor.id == self.ego_vehicle.uid:
                 continue
@@ -138,36 +185,123 @@ class CarlaRosBridge(Node):
                     parent=None, node=self, carla_actor=actor
                 )
 
-        # Attach sensors
-        self.odometry_sensor = OdometrySensor(parent_actor=self.ego_vehicle, node=self)
-        self.object_sensor = ObjectSensor(parent_actor=self.ego_vehicle, node=self, actor_list=self.actors)
+    def _active_update_loop(self):
+        """
+        MASTER MODE LOOP: We are responsible for ticking the world.
+        """
+        while rclpy.ok() and not self.shutdown.is_set():
+            # 1. Drive the simulation
+            frame_id = self.carla_world.tick()
+            
+            # 2. Get the resulting state
+            snapshot = self.carla_world.get_snapshot()
+            if snapshot:
+                self._process_snapshot(snapshot)
 
-        self.get_logger().info("Initialization complete. Starting update loop.")
-        self.update_thread.start()
+    def _on_passive_tick(self, snapshot):
+        """
+        PASSIVE MODE CALLBACK: CDASim (or XML-RPC) ticked the world. We just react.
+        """
+        if not self.shutdown.is_set():
+            # Ensure we process frames in order and don't duplicate
+            if self.timestamp_last_run < snapshot.timestamp.elapsed_seconds:
+                self.timestamp_last_run = snapshot.timestamp.elapsed_seconds
+                self._process_snapshot(snapshot)
 
-                # --- Publish static transforms for attached sensors ---
+    def _process_snapshot(self, snapshot):
+        """
+        Common logic to process a frame (update clock, TFs, actors, sensors)
+        """
+        frame_id = snapshot.frame
+        carla_timestamp = snapshot.timestamp
+        
+        # 1. Update ROS Clock (Critical for Odometry/TF synchronization)
+        self.update_clock(carla_timestamp)
+        
+        # ROS timestamp for headers
+        ros_timestamp = self.get_clock().now().to_msg() 
+
+        self.get_logger().debug(
+            f"Processing frame={frame_id} sim_time={carla_timestamp.elapsed_seconds:.3f}"
+        )
+
+        # 2. Broadcast Ego Vehicle Transform
+        if self.ego_vehicle:
+            self._broadcast_ego_transform(ros_timestamp)
+
+        # 3. Update all actors
+        for actor_handler in self.actors.values():
+            actor_handler.update(ros_timestamp)
+
+        # 4. Update sensors
+        self.odometry_sensor.update()
+        self.object_sensor.update()
+
+    def update_clock(self, carla_timestamp):
+        """
+        Manually publish the /clock topic to sync ROS with CARLA simulation time.
+        """
+        msg = Clock()
+        # Convert seconds to ROS Time (sec, nanosec)
+        seconds = int(carla_timestamp.elapsed_seconds)
+        nanoseconds = int((carla_timestamp.elapsed_seconds - seconds) * 1e9)
+        msg.clock.sec = seconds
+        msg.clock.nanosec = nanoseconds
+        self.clock_publisher.publish(msg)
+
+    def _broadcast_ego_transform(self, ros_timestamp):
+        """Helper to broadcast ego TF"""
+        carla_transform = self.ego_vehicle.carla_actor.get_transform()
+        loc = carla_transform.location
+        rot = carla_transform.rotation
+        
+        t = TransformStamped()
+        t.header.stamp = ros_timestamp
+        t.header.frame_id = 'map'
+        t.child_frame_id = self.params['ego_vehicle_role_name']
+
+        # Coordinate conversion (Left-handed CARLA -> Right-handed ROS)
+        t.transform.translation.x = loc.x
+        t.transform.translation.y = -loc.y 
+        t.transform.translation.z = loc.z
+
+        roll = radians(rot.roll)
+        pitch = -radians(rot.pitch) 
+        yaw = -radians(rot.yaw)     
+
+        cy = cos(yaw * 0.5); sy = sin(yaw * 0.5)
+        cp = cos(pitch * 0.5); sp = sin(pitch * 0.5)
+        cr = cos(roll * 0.5); sr = sin(roll * 0.5)
+
+        t.transform.rotation.w = cr * cp * cy + sr * sp * sy
+        t.transform.rotation.x = sr * cp * cy - cr * sp * sy
+        t.transform.rotation.y = cr * sp * cy + sr * cp * sy
+        t.transform.rotation.z = cr * cp * sy - sr * sp * cy
+
+        self.tf_broadcaster.sendTransform(t)
+
+    def _publish_static_transforms(self):
+        """Publishes static TFs for attached sensors once at startup"""
         static_tf_broadcaster = tf2_ros.StaticTransformBroadcaster(self)
         transforms_to_publish = []
         for actor in self.carla_world.get_actors():
             if actor.parent and actor.parent.id == self.ego_vehicle.uid:
-                # This actor is a sensor attached to our ego vehicle
                 sensor_transform = actor.get_transform()
                 loc = sensor_transform.location
                 rot = sensor_transform.rotation
                 t = TransformStamped()
                 t.header.stamp = self.get_clock().now().to_msg()
-                t.header.frame_id = self.params['ego_vehicle_role_name'] # Parent is the vehicle
-                # Use the sensor's role_name or a unique name for the child frame
+                t.header.frame_id = self.params['ego_vehicle_role_name']
                 child_frame_id = actor.attributes.get('role_name', f"sensor_{actor.id}")
                 t.child_frame_id = child_frame_id
-                # Apply ROS coordinate system conversion for translation
+                
                 t.transform.translation.x = loc.x
-                t.transform.translation.y = -loc.y # Invert Y
+                t.transform.translation.y = -loc.y
                 t.transform.translation.z = loc.z
-                # Apply ROS coordinate system conversion for rotation and convert to Quaternion
+                
                 roll = radians(rot.roll)
-                pitch = -radians(rot.pitch) # Invert Pitch
-                yaw = -radians(rot.yaw)     # Invert Yaw
+                pitch = -radians(rot.pitch)
+                yaw = -radians(rot.yaw)
                 cy = cos(yaw * 0.5); sy = sin(yaw * 0.5);
                 cp = cos(pitch * 0.5); sp = sin(pitch * 0.5);
                 cr = cos(roll * 0.5); sr = sin(roll * 0.5);
@@ -179,89 +313,28 @@ class CarlaRosBridge(Node):
                 self.get_logger().info(f"Prepared static TF for sensor: {child_frame_id}")
         static_tf_broadcaster.sendTransform(transforms_to_publish)
 
-    def _update_loop(self):
-        if not self.params['synchronous_mode']:
-            self.get_logger().error("This ported bridge currently only supports synchronous mode.")
-            return
-
-        while rclpy.ok() and not self.shutdown.is_set():
-            # Wait for tick the CARLA world
-            try:
-                snapshot = self.carla_world.wait_for_tick(1.0)
-            except RuntimeError as e:
-                self.get_logger().warn(f"wait_for_tick timeout/no tick: {e}")
-                continue
-
-            if snapshot is None:
-                self.get_logger().warn("wait_for_tick returned None (no tick received)")
-                continue
-
-            self.get_logger().debug(
-                f"tick frame={snapshot.frame} sim={snapshot.timestamp.elapsed_seconds:.3f}"
-            )
-            frame_id = snapshot.frame
-            timestamp = self.get_clock().now().to_msg() # Use ROS time for consistency
-
-            # TF broadcast for ego vehicle
-            if self.ego_vehicle:
-                # Get the vehicle's transform from CARLA
-                carla_transform = self.ego_vehicle.carla_actor.get_transform()
-                loc = carla_transform.location
-                rot = carla_transform.rotation
-                # Create a TransformStamped message for TF
-                t = TransformStamped()
-                t.header.stamp = timestamp
-                t.header.frame_id = 'map'
-                t.child_frame_id = self.params['ego_vehicle_role_name']
-
-                # Apply ROS coordinate system conversion for translation
-                t.transform.translation.x = loc.x
-                t.transform.translation.y = -loc.y # Invert Y
-                t.transform.translation.z = loc.z
-
-                # Apply ROS coordinate system conversion for rotation and convert to Quaternion
-                roll = radians(rot.roll)
-                pitch = -radians(rot.pitch) # Invert Pitch
-                yaw = -radians(rot.yaw)     # Invert Yaw
-                
-                cy = cos(yaw * 0.5)
-                sy = sin(yaw * 0.5)
-                cp = cos(pitch * 0.5)
-                sp = sin(pitch * 0.5)
-                cr = cos(roll * 0.5)
-                sr = sin(roll * 0.5)
-
-                t.transform.rotation.w = cr * cp * cy + sr * sp * sy
-                t.transform.rotation.x = sr * cp * cy - cr * sp * sy
-                t.transform.rotation.y = cr * sp * cy + sr * cp * sy
-                t.transform.rotation.z = cr * cp * sy - sr * sp * cy
-
-                # Broadcast the corrected transform
-                self.tf_broadcaster.sendTransform(t)
-
-            # Update all actor states
-            for actor_handler in self.actors.values():
-                actor_handler.update(timestamp)
-
-            # Update our "pseudo-sensors"
-            self.odometry_sensor.update()
-            self.object_sensor.update()
-
     def destroy(self):
         """
         Cleanly shutdown the bridge
         """
         self.get_logger().info("Shutting down CARLA ROS 2 Bridge...")
         self.shutdown.set()
-        if self.update_thread.is_alive():
+        if self.update_thread and self.update_thread.is_alive():
             self.update_thread.join()
+        
+        # Cleanup Passive Callback
+        if self.on_tick_id:
+            try:
+                self.carla_world.remove_on_tick(self.on_tick_id)
+            except:
+                pass
 
         for actor in self.actors.values():
             actor.destroy()
 
-        if self.odometry_sensor:
+        if hasattr(self, 'odometry_sensor') and self.odometry_sensor:
             self.odometry_sensor.destroy()
-        if self.object_sensor:
+        if hasattr(self, 'object_sensor') and self.object_sensor:
             self.object_sensor.destroy()
 
         super().destroy_node()
