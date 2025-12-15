@@ -47,13 +47,14 @@ class ObjectSensor(object):
         self.actor_list = None
         self.node.destroy_publisher(self.object_publisher)
 
-    def update(self):
+    def update(self, timestamp=None):
         """
         Function to update this object.
         On update, it iterates through all actors, creates an ObjectArray, and publishes it.
         """
         # Gets timestamp from the node's clock now
-        timestamp = self.node.get_clock().now().to_msg()
+        if timestamp is None:            
+            timestamp = self.node.get_clock().now().to_msg()
 
         ros_objects = ObjectArray()
         # The header is created using the parent's (ego vehicle's) methods
