@@ -41,7 +41,7 @@ class OdometrySensor(object):
     def destroy(self):
         self.node.destroy_publisher(self.odometry_publisher)
 
-    def update(self):
+    def update(self, timestamp=None):
         """
         Function (override) to update this object.
         This will be called periodically by the main bridge node.
@@ -49,7 +49,9 @@ class OdometrySensor(object):
         # Get current timestamp from the node's clock
         # Assuming the 'use_sim_time' parameter is set to True in the launch file, so the node's
         # clock is driven by the /clock topic published by the CARLA simulator.
-        timestamp = self.node.get_clock().now().to_msg()
+        
+        if timestamp is None:
+            timestamp = self.node.get_clock().now().to_msg()
 
         odometry = Odometry(header=self.parent.get_msg_header("map", timestamp=timestamp))
         odometry.child_frame_id = self.parent.name #Bypassing parent getter, can't find for some reason

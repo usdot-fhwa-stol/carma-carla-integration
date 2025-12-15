@@ -209,33 +209,40 @@ class CarlaRosBridge(Node):
                 self._process_snapshot(snapshot)
 
     def _process_snapshot(self, snapshot):
-        """
-        Common logic to process a frame (update clock, TFs, actors, sensors)
-        """
         frame_id = snapshot.frame
         carla_timestamp = snapshot.timestamp
         
-        # 1. Update ROS Clock (Critical for Odometry/TF synchronization)
-        self.update_clock(carla_timestamp)
+        # 1. Construct the ROS Time object manually from the snapshot
+        # This creates a "Source of Truth" that eliminates the race condition
+        seconds = int(carla_timestamp.elapsed_seconds)
+        nanoseconds = int((carla_timestamp.elapsed_seconds - seconds) * 1e9)
+        current_ros_time = Time(seconds=seconds, nanoseconds=nanoseconds)
         
-        # ROS timestamp for headers
-        ros_timestamp = self.get_clock().now().to_msg() 
+        # 2. Publish this time to /clock
+        clock_msg = Clock()
+        clock_msg.clock = current_ros_time.to_msg()
+        self.clock_publisher.publish(clock_msg)
+
+        # 3. Use the EXACT same time for headers
+        # Do NOT use self.get_clock().now() here!
+        ros_timestamp_msg = current_ros_time.to_msg() 
 
         self.get_logger().debug(
             f"Processing frame={frame_id} sim_time={carla_timestamp.elapsed_seconds:.3f}"
         )
 
-        # 2. Broadcast Ego Vehicle Transform
+        # 4. Broadcast Transforms
         if self.ego_vehicle:
-            self._broadcast_ego_transform(ros_timestamp)
+            self._broadcast_ego_transform(ros_timestamp_msg)
 
-        # 3. Update all actors
+        # 5. Update Actors
         for actor_handler in self.actors.values():
-            actor_handler.update(ros_timestamp)
+            actor_handler.update(ros_timestamp_msg)
 
-        # 4. Update sensors
-        self.odometry_sensor.update()
-        self.object_sensor.update()
+        # 6. Update Sensors (CRITICAL: Pass the timestamp explicitly)
+        # You must update your OdometrySensor.update() method to accept this argument!
+        self.odometry_sensor.update(ros_timestamp_msg)
+        self.object_sensor.update(ros_timestamp_msg)
 
     def update_clock(self, carla_timestamp):
         """
