@@ -133,14 +133,15 @@ class CarlaRosBridge(Node):
         # If Synchronous AND NOT Passive: Use Thread loop (Drive)
         
         if self.params['synchronous_mode'] and not self.params['passive']:
-            self.get_logger().info("[Bridge] Starting Active Update Thread (Driving Simulation)")
+            self.get_logger().info("[Bridge] Starting Active Update Thread (Driving Simulation - MASTER)")
             self.update_thread = Thread(target=self._active_update_loop)
             self.update_thread.start()
-        elif self.params['synchronous_mode'] and self.params['passive']:
-            self.get_logger().info("[Bridge] Registering on_tick callback (Passive Listener)")
+            
+        # If NOT the Master (i.e., Passive OR Asynchronous), we just listen.
+        else: 
+            mode_name = "Passive" if self.params['synchronous_mode'] else "Asynchronous"
+            self.get_logger().info(f"[Bridge] Registering on_tick callback ({mode_name} Listener)")
             self.on_tick_id = self.carla_world.on_tick(self._on_passive_tick)
-        else:
-            self.get_logger().warn("[Bridge] Asynchronous mode is not fully supported in this port yet.")
 
     def _wait_for_ego_vehicle(self):
         """Helper to block until ego vehicle is found"""
