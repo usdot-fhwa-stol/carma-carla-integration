@@ -118,7 +118,7 @@ class CarlaRosBridge(Node):
             return # Error logged in helper
 
         # Populate remaining actors
-        self._populate_actors()
+        self._sync_actors()
 
         # Attach sensors
         self.odometry_sensor = OdometrySensor(parent_actor=self.ego_vehicle, node=self)
@@ -170,10 +170,15 @@ class CarlaRosBridge(Node):
 
         self.get_logger().error(f"[Bridge] Ego vehicle with role name '{self.params['ego_vehicle_role_name']}' not found!")
 
-    def _populate_actors(self):
+    def _sync_actors(self):
         """Helper to convert CARLA actors to bridge actors"""
-        for actor in self.carla_world.get_actors():
+        world_actors = self.carla_world.get_actors()
+        world_ids = set(a.id for a in world_actors)
+
+        for actor in world_actors:
             if actor.id == self.ego_vehicle.uid:
+                continue
+            if actor.id in self.actors:
                 continue
             elif isinstance(actor, carla.Vehicle):
                 self.actors[actor.id] = Vehicle(
@@ -185,6 +190,14 @@ class CarlaRosBridge(Node):
                     uid=actor.id, name=f"walker_{actor.id}",
                     parent=None, node=self, carla_actor=actor
                 )
+        
+        for dead_id in list(self.actors.keys()):
+            if dead_id == (self.ego_vehicle.uid if self.ego_vehicle else -1):
+                continue
+            if dead_id not in world_ids:
+                dead = self.actors.pop(dead_id, None)
+                if dead:
+                    dead.destroy()
 
     def _active_update_loop(self):
         """
@@ -237,7 +250,8 @@ class CarlaRosBridge(Node):
             self._broadcast_ego_transform(ros_timestamp_msg)
 
         # 5. Update Actors
-        for actor_handler in self.actors.values():
+        self._sync_actors()
+        for actor_handler in list(self.actors.values()):
             actor_handler.update(ros_timestamp_msg)
 
         # 6. Update Sensors (CRITICAL: Pass the timestamp explicitly)

@@ -60,11 +60,9 @@ class ObjectSensor(object):
         # The header is created using the parent's (ego vehicle's) methods
         ros_objects.header = self.parent.get_msg_header(frame_id="map", timestamp=timestamp)
         
-        for actor_id in self.actor_list.keys():
+        for actor_id, actor in list(self.actor_list.items()):
             # Exclude the ego vehicle itself from the list of detected objects
             if self.parent is None or self.parent.uid != actor_id:
-                actor = self.actor_list[actor_id]
-                
                 # The core logic here works because our Vehicle and Walker classes
                 # inherit from TrafficParticipant, which has get_object_info().
                 if isinstance(actor, Vehicle):
