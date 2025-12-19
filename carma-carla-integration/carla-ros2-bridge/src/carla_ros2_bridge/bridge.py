@@ -79,6 +79,11 @@ class CarlaRosBridge(Node):
         # Get the role_name for the ego vehicle
         params['ego_vehicle_role_name'] = self.declare_parameter(
             'ego_vehicle_role_name', 'hero').get_parameter_value().string_value
+        
+        # _sync_actors frequency
+        params['sync_actors_every_n_frames'] = self.declare_parameter(
+            'sync_actors_every_n_frames', 10
+        ).get_parameter_value().integer_value
 
         return params
 
@@ -176,7 +181,7 @@ class CarlaRosBridge(Node):
         world_ids = set(a.id for a in world_actors)
 
         for actor in world_actors:
-            if actor.id == self.ego_vehicle.uid:
+            if self.ego_vehicle and actor.id == self.ego_vehicle.uid:
                 continue
             if actor.id in self.actors:
                 continue
@@ -250,7 +255,10 @@ class CarlaRosBridge(Node):
             self._broadcast_ego_transform(ros_timestamp_msg)
 
         # 5. Update Actors
-        self._sync_actors()
+        n = int(self.params.get('sync_actors_every_n_frames', 1))
+        if n <= 1 or (frame_id % n) == 0:
+            self._sync_actors()
+
         for actor_handler in list(self.actors.values()):
             actor_handler.update(ros_timestamp_msg)
 
