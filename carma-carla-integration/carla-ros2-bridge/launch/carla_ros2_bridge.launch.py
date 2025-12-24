@@ -124,6 +124,7 @@ def generate_launch_description():
                 {'synchronous_mode_wait_for_vehicle_control_command': LaunchConfiguration('synchronous_mode_wait_for_vehicle_control_command')},
                 {'fixed_delta_seconds': LaunchConfiguration('fixed_delta_seconds')},
                 {'ego_vehicle_role_name': LaunchConfiguration('role_name')},
+                {'passive': LaunchConfiguration('passive')},
             ]
         ),
 
@@ -158,12 +159,13 @@ def generate_launch_description():
             emulate_tty=True,
             parameters=[
                 {'role_name': LaunchConfiguration('role_name')},
-                {'speed_Kp': 0.4},
-                {'speed_Ki': 0.03},
-                {'speed_Kd': 0.0},
+                {'speed_Kp': 0.15},
                 {'accel_Kp': 0.05},
+                {'speed_Ki': 0.00},
                 {'accel_Ki': 0.0},
-                {'accel_Kd': 0.05},
+                {'speed_Kd': 0.05},
+                {'accel_Kd': 0.05}
+                ,
             ],
             condition=IfCondition(LaunchConfiguration('launch_ackermann_control')),
         ),

@@ -47,23 +47,22 @@ class ObjectSensor(object):
         self.actor_list = None
         self.node.destroy_publisher(self.object_publisher)
 
-    def update(self):
+    def update(self, timestamp=None):
         """
         Function to update this object.
         On update, it iterates through all actors, creates an ObjectArray, and publishes it.
         """
         # Gets timestamp from the node's clock now
-        timestamp = self.node.get_clock().now().to_msg()
+        if timestamp is None:            
+            timestamp = self.node.get_clock().now().to_msg()
 
         ros_objects = ObjectArray()
         # The header is created using the parent's (ego vehicle's) methods
         ros_objects.header = self.parent.get_msg_header(frame_id="map", timestamp=timestamp)
         
-        for actor_id in self.actor_list.keys():
+        for actor_id, actor in list(self.actor_list.items()):
             # Exclude the ego vehicle itself from the list of detected objects
             if self.parent is None or self.parent.uid != actor_id:
-                actor = self.actor_list[actor_id]
-                
                 # The core logic here works because our Vehicle and Walker classes
                 # inherit from TrafficParticipant, which has get_object_info().
                 if isinstance(actor, Vehicle):
