@@ -23,7 +23,7 @@ def wait_for_carla(args):
     
     while not connected:
         try:
-            logging.info(f"Attempting to connect to CARLA at {args.carla_host}:{args.carla_port}" )
+            # logging.info(f"Attempting to connect to CARLA at {args.carla_host}:{args.carla_port}" )
             carla_client = carla.Client(
                     args.carla_host,
                     args.carla_port)
@@ -31,7 +31,8 @@ def wait_for_carla(args):
             carla_world = carla_client.get_world()
             connected = True
         except (IOError, RuntimeError) as e:
-            logging.warning("Error connecting to carla: {}".format(e))
+            # logging.warning("Error connecting to carla: {}".format(e))
+            continue
         except KeyboardInterrupt:
             pass
     logging.info("CARLA Connection successful ... ")
@@ -39,7 +40,7 @@ logging.getLogger().setLevel(logging.INFO)
 arg_parser = argparse.ArgumentParser(description=wait_for_carla.__doc__)
 arg_parser.add_argument(
         "--carla-host",
-        default="172.2.0.2",
+        default="172.2.0.3",
         type=str,
         help="CARLA host. (default: \"localhost\")")
 

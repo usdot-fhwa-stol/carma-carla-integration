@@ -13,7 +13,7 @@ def generate_launch_description():
         # Declare arguments
         DeclareLaunchArgument(
             name='host',
-            default_value='localhost',
+            default_value='172.2.0.3',
             description='IP of the CARLA server'
         ),
         DeclareLaunchArgument(
@@ -114,9 +114,9 @@ def generate_launch_description():
         DeclareLaunchArgument('max_steering_degree', default_value='70.0'),
 
         # enable sensor external
-        DeclareLaunchArgument('enable_sensor_objects', default_value='false'),
+        DeclareLaunchArgument('enable_sensor_objects', default_value='true'),
         DeclareLaunchArgument('sensor_object_pub_rate', default_value='10'),
-        DeclareLaunchArgument('host', default_value='127.0.0.1'),
+        DeclareLaunchArgument('host', default_value='172.2.0.3'),
         DeclareLaunchArgument('port', default_value='2000'),
         DeclareLaunchArgument('sensor_id', default_value='1'),
         DeclareLaunchArgument('detection_cycle_delay_seconds', default_value='0.1'),

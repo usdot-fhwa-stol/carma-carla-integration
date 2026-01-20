@@ -45,13 +45,14 @@ class VehicleSpawner(Node):
         super().__init__('spawn_vehicle_node')
 
         self.declare_parameter('config_file', '')
-        self.declare_parameter('host', 'localhost')
+        self.declare_parameter('host', '172.2.0.3')
         self.declare_parameter('port', 2000)
         self.declare_parameter('autopilot', False)
         self.declare_parameter('spawn_point', '')
 
         self.config_file = self.get_parameter('config_file').get_parameter_value().string_value
-        self.host = self.get_parameter('host').get_parameter_value().string_value
+        # self.host = self.get_parameter('host').get_parameter_value().string_value
+        self.host = "172.2.0.3"
         self.port = self.get_parameter('port').get_parameter_value().integer_value
         self.use_autopilot = self.get_parameter('autopilot').get_parameter_value().bool_value
         self.spawn_point = self.get_parameter('spawn_point').get_parameter_value().string_value
@@ -65,10 +66,11 @@ class VehicleSpawner(Node):
             self.client.set_timeout(10.0)
             self.world = self.client.get_world()
             self.get_logger().info(f"[Spawner] Connected to CARLA at {self.host}:{self.port}")
-
+            
             self.spawn_from_file(self.config_file)
 
             if self.use_autopilot and self.vehicle:
+                self.get_logger().info(f"[Spawner] Starting autopilot for vehicle '{self.vehicle.attributes.get('role_name')}'")
                 self.vehicle.set_autopilot(True)
                 self.get_logger().info(f"[Spawner] Autopilot enabled for vehicle '{self.vehicle.attributes.get('role_name')}'")
 
@@ -87,8 +89,16 @@ class VehicleSpawner(Node):
         with open(file_path, 'r') as f:
             config = json.load(f)
 
+        # log the config
+        self.get_logger().info(f"[Spawner] Config: {config}")
+
         self.vehicle = self._spawn_vehicle(config)
+
+        self.get_logger().info(f"[Spawner] Finished spawning vehicle")
+
         self.sensors = self._spawn_sensors(config.get("sensors", []), self.vehicle)
+
+        self.get_logger().info(f"[Spawner] Finished spawning sensors")
 
     def _spawn_vehicle(self, config):
         bp_library = self.world.get_blueprint_library()

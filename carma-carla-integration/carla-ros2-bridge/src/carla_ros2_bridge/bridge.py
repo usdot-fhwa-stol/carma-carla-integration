@@ -68,7 +68,7 @@ class CarlaRosBridge(Node):
         Reads the ROS 2 parameters and returns them as a dictionary.
         """
         params = {}
-        params['host'] = self.declare_parameter('host', 'localhost').get_parameter_value().string_value
+        params['host'] = self.declare_parameter('host', "172.2.0.3").get_parameter_value().string_value
         params['port'] = self.declare_parameter('port', 2000).get_parameter_value().integer_value
         params['timeout'] = self.declare_parameter('timeout', 2.0).get_parameter_value().double_value
         params['synchronous_mode'] = self.declare_parameter('synchronous_mode', True).get_parameter_value().bool_value
@@ -380,7 +380,9 @@ def main(args=None):
         params = carla_bridge.params
 
         carla_bridge.get_logger().info(f"Connecting to CARLA at {params['host']}:{params['port']}...")
-        carla_client = carla.Client(host=params['host'], port=params['port'])
+        act_host = "172.2.0.3"
+        carla_bridge.get_logger().info(f"Testing actual host: {act_host}")
+        carla_client = carla.Client(host=act_host, port=params['port'])
         carla_client.set_timeout(params['timeout'])
 
         # Initialize the bridge with the CARLA client
