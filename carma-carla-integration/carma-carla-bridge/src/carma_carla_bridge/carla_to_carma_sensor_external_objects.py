@@ -144,8 +144,10 @@ class CarlaToCarmaSensorExternalObjectsNode(Node):
 
     def create_sensor_for_sensorlib(self, world, api, parent_actor_id, sensor_config, noise_model_config):
         # Log sensor parameters
-        self.declare_parameter('sensor_id', 'sim_lidar_1')
-        self.declare_parameter('detection_cycle_delay_seconds', 1.0)
+        if not self.has_parameter('sensor_id'):
+            self.declare_parameter('sensor_id', 1)
+        if not self.has_parameter('detection_cycle_delay_seconds'):
+            self.declare_parameter('detection_cycle_delay_seconds', 1.0)
 
         sensor_id = self.get_parameter('sensor_id').value
         delay = self.get_parameter('detection_cycle_delay_seconds').value

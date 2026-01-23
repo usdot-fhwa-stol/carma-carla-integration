@@ -65,7 +65,6 @@ class VehicleSpawner(Node):
             self.client.set_timeout(10.0)
             self.world = self.client.get_world()
             self.get_logger().info(f"[Spawner] Connected to CARLA at {self.host}:{self.port}")
-
             self.spawn_from_file(self.config_file)
 
             if self.use_autopilot and self.vehicle:
@@ -87,8 +86,16 @@ class VehicleSpawner(Node):
         with open(file_path, 'r') as f:
             config = json.load(f)
 
+        # log the config
+        self.get_logger().info(f"[Spawner] Config: {config}")
+
         self.vehicle = self._spawn_vehicle(config)
+
+        self.get_logger().info(f"[Spawner] Finished spawning vehicle")
+
         self.sensors = self._spawn_sensors(config.get("sensors", []), self.vehicle)
+
+        self.get_logger().info(f"[Spawner] Finished spawning sensors")
 
     def _spawn_vehicle(self, config):
         bp_library = self.world.get_blueprint_library()
