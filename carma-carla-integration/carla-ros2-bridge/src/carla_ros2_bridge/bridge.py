@@ -68,7 +68,7 @@ class CarlaRosBridge(Node):
         Reads the ROS 2 parameters and returns them as a dictionary.
         """
         params = {}
-        params['host'] = self.declare_parameter('host', 'localhost').get_parameter_value().string_value
+        params['host'] = self.declare_parameter('host', "localhost").get_parameter_value().string_value
         params['port'] = self.declare_parameter('port', 2000).get_parameter_value().integer_value
         params['timeout'] = self.declare_parameter('timeout', 2.0).get_parameter_value().double_value
         params['synchronous_mode'] = self.declare_parameter('synchronous_mode', True).get_parameter_value().bool_value

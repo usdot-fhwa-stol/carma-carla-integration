@@ -40,7 +40,7 @@ logging.getLogger().setLevel(logging.INFO)
 arg_parser = argparse.ArgumentParser(description=wait_for_carla.__doc__)
 arg_parser.add_argument(
         "--carla-host",
-        default="172.2.0.2",
+        default="127.0.0.1",
         type=str,
         help="CARLA host. (default: \"localhost\")")
 
