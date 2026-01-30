@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>carla_ros2_bridge</name>
+  <version>1.0.0</version>
+  <description>The foundational ROS 2 bridge for CARLA, providing core actor management.</description>
+  <maintainer email="will.varner@uga.edu">Will Varner</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>carla_msgs</depend>
+  <depend>derived_object_msgs</depend>
+  <depend>shape_msgs</depend>
+  <depend>carla_ackermann_msgs</depend>
+  <depend>rosgraph_msgs</depend>
+
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

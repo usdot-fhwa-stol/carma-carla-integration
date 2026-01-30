@@ -3,7 +3,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   push:
-    branches: [develop, master]
+    branches: [develop, master, develop-ros2,]
 jobs:
   determine_docker_org_and_tag:
     runs-on: ubuntu-latest
@@ -14,7 +14,8 @@ jobs:
       - id: docker-org-and-tag
         uses: usdot-fhwa-stol/actions/docker-org-and-tag@main
         with:
-          docker_tag_suffix: noetic
+          docker_tag_suffix: humble
+          replace_suffix: true
   build:
     needs: determine_docker_org_and_tag
     defaults:
@@ -52,10 +53,10 @@ jobs:
     # TODO (SIM-6) Missing build wrapper call for C++ builds necessary for sonar static anaysis
       run: |
         source "$INIT_ENV"
-        sed -i '/colcon build/ s/$/ --packages-up-to carla_sensors_integration carma_carla_agent carma_carla_bridge/' /home/carma/.ci-image/engineering_tools/code_coverage/make_with_coverage.bash
+        sed -i '/colcon build/ s/$/ --packages-up-to carla_ros2_bridge carma_carla_bridge/' /home/carma/.ci-image/engineering_tools/code_coverage/make_with_coverage.bash
         make_with_coverage.bash -m -e /opt/carma/ -o ./coverage_reports/gcov
     - name: Run SonarScanner
       uses: usdot-fhwa-stol/actions/sonar-scanner@main
       with:
         sonar-token: ${{ secrets.SONAR_TOKEN }}
-        working-dir: "/opt/carma/src/${{ github.event.repository.name }}"
+        working-dir: /opt/carma/src/${{ github.event.repository.name }}
