@@ -3,7 +3,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   push:
-    branches: [develop, master, develop-ros2]
+    branches: [develop, master, develop-ros2,]
 jobs:
   determine_docker_org_and_tag:
     runs-on: ubuntu-latest
@@ -59,4 +59,4 @@ jobs:
       uses: usdot-fhwa-stol/actions/sonar-scanner@main
       with:
         sonar-token: ${{ secrets.SONAR_TOKEN }}
-        working-dir: "/opt/carma/src/${{ github.event.repository.name }}"
+        working-dir: /opt/carma/src/${{ github.event.repository.name }}
