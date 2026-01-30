@@ -65,7 +65,6 @@ class CarlaToCarmaLocalization(Node):
     def timer_callback(self):
         # Publish only if we have a valid odometry message
         if self.latest_odom is None:
-            self.get_logger().warn('No odometry data received yet')
             return
 
         # Convert Odometry to PoseStamped for current and GNSS
