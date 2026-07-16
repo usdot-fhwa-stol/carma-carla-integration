@@ -22,7 +22,7 @@ rm -rf ~/carma-carla-integration/build ~/carma-carla-integration/install ~/carma
 
 # Install System Dependencies
 echo "Installing system dependencies..."
-sudo apt-get update && sudo apt-get install -y --no-install-recommends \
+sudo apt-get update && sudo apt-get install -y --no-install-recommends --no-upgrade \
     python3-pip \
     python3-distutils \
     libgps-dev \
