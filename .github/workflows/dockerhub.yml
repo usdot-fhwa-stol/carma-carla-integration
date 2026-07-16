@@ -10,14 +10,18 @@ on:
         default: 'Manual'
   push:
     branches:
-      - "develop"
-      - "master"
+      - develop
+      - develop-ro2
+      - master
       - "release/*"
 # Job to build and push the Docker image
 jobs:
   dockerhub:
     # Referenced a reusable workflow defined in actions repository
     uses: usdot-fhwa-stol/actions/.github/workflows/dockerhub.yml@main
+    with:
+      tag_name_suffix: humble
+      remove_suffix: true
     secrets:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }} # Docker Hub token for authentication

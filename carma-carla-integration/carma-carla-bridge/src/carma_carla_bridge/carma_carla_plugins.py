@@ -1,0 +1,170 @@
+#!/usr/bin/env python
+# Copyright (C) 2023 LEIDOS.
+# Migrated to ROS2 under Ryan Fleming @ UGA MSC Lab 2025
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+#
+#
+# This file is loosely based on the reference architecture developed by Intel Corporation for Leidos located here
+# https://github.com/usdot-fhwa-stol/carma-platform/blob/develop/health_monitor/src/plugin_manager.cpp
+#
+# That file has the following license and some code snippets from it may be present in this file as well and are under the same license.
+#
+# Copyright (c) 2018-2019 Intel Corporation
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://opensource.org/licenses/MIT>.
+#
+"""
+Call Services from CARMA:
+    Service :/guidance/plugins/get_registered_plugins
+            :/guidance/plugins/activate_plugin
+"""
+import rclpy
+from rclpy.node import Node
+import time
+import traceback
+from carma_planning_msgs.srv import PluginList, PluginActivation
+
+class CarmaCarlaPlugins(Node):
+    def __init__(self):
+        super().__init__('carma_carla_plugins')
+
+        # Declare parameter and retrieve it
+        self.declare_parameter('selected_plugins', '[]')
+        plugin_list_str = self.get_parameter("selected_plugins").get_parameter_value().string_value
+        
+        # Convert comma-separated string to list if we got a non-empty string
+        if plugin_list_str and plugin_list_str.strip() != "[]":
+            self.plugin_list = [p.strip() for p in plugin_list_str.split(',') if p.strip()]
+            self.get_logger().info(f"Parsed plugin list: {self.plugin_list}")
+        else:
+            self.plugin_list = []
+            self.get_logger().warn("Empty plugin list parameter received")
+
+        if not self.plugin_list or len(self.plugin_list) == 0:
+            self.get_logger().error(
+                "No input plugin found, please check the config file at /opt/carma/simulation/vehicle_config.json")
+            return
+
+        self.activation_client = self.create_client(PluginActivation,
+                                                    '/guidance/plugins/activate_plugin')
+        self.registration_client = self.create_client(PluginList,
+                                                      '/guidance/plugins/get_registered_plugins')
+
+        while not self.activation_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('Waiting for activate_plugin service...')
+
+        while not self.registration_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('Waiting for get_registered_plugins service...')
+
+        self.activate_plugins()
+
+    def activate_plugins(self):
+        """
+        main loop
+        """
+        while rclpy.ok():
+            try:
+                request = PluginList.Request()
+                future = self.registration_client.call_async(request)
+                rclpy.spin_until_future_complete(self, future, timeout_sec=2.0)
+
+                if not future.done():
+                    self.get_logger().warn(f"Service call to {self.registration_client.srv_name} timed out.")
+                    continue
+
+                response = future.result()
+                registered_plugins = response.plugins
+            except Exception as e:
+                self.get_logger().warn(f"Service call to {self.registration_client.srv_name} failed: {e}"
+                    "Service call can sometimes fail due to ROS, but please make sure the platform has started without any error."
+                    "Retrying in 1 second..")
+                time.sleep(1)
+                continue
+            
+            # check if selected plugins and required plugins are listed in registered plugins
+            # if not, sleep loop for a second and recall the registered plugin ROS service for updating
+            if not self.check_registration_plugin(registered_plugins, self.plugin_list):
+                time.sleep(1)
+                continue
+
+            while self.plugin_list and rclpy.ok():
+                plugin_name = self.plugin_list[-1]
+                try:
+                    request = PluginActivation.Request()
+                    request.plugin_name = plugin_name
+                    request.activated = True
+
+                    future = self.activation_client.call_async(request)
+                    rclpy.spin_until_future_complete(self, future, timeout_sec=3.0)
+
+                    if not future.done():
+                        self.get_logger().warn(f"Service call to {self.activation_client.srv_name} timed out.")
+                        continue
+
+                    response = future.result()
+                except Exception as e:
+                    self.get_logger().warn(f"Service call to {self.activation_client.srv_name} failed: {e}"
+                        "Service call can sometimes fail due to ROS, but "
+                        f"please make sure the plugin {plugin_name} is configured and "
+                        "ready to be activated. Retrying in 1 second...")
+                    time.sleep(1)
+                    continue
+                else:
+                    if response.newstate:
+                        self.get_logger().info(f"{plugin_name} has been activated.")
+                    else:
+                        self.get_logger().error(f"{plugin_name} was not able to be activated.")
+                    self.plugin_list.pop()
+            # Exit node after activating all plugins
+            break
+
+        rclpy.shutdown()
+
+    def check_registration_plugin(self, registered_plugins, plugin_list):
+        """
+        check registered plugin with plugin list
+        plugin_list: selected plugins + required plugins
+        registered_plugin: the PluginList in /guidance/plugins/get_registered_plugins ROS service
+        """
+        registered_plugin_name_list = [plugin.name for plugin in registered_plugins]
+
+        missing_plugins = list(set(plugin_list) - set(registered_plugin_name_list))
+        if len(missing_plugins) > 0:
+            self.get_logger().info("Selected/required plugins not found in registered plugins list:")
+            self.get_logger().info(str(missing_plugins))
+            return False
+        return True
+
+def main(args=None):
+    rclpy.init(args=args)
+    print("carma_carla_plugins")
+    node = None
+    try:
+        node = CarmaCarlaPlugins()
+    except KeyboardInterrupt:
+        if node: node.get_logger().info(f"{node.get_name()} shutting down due to KeyboardInterrupt.")
+    except Exception as e:
+        # Ensure logger is available or use print
+        logger = rclpy.logging.get_logger("carma_carla_plugins_main")
+        if node : logger = node.get_logger()
+        logger.error(f"Unhandled exception in {node.get_name() if node else 'carma_carla_plugins'}: {e}\n{traceback.format_exc()}")
+    finally:
+        if node:
+            node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
