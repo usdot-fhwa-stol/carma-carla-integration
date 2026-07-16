@@ -11,10 +11,10 @@ on:
   push:
     branches:
       - develop
-      - develop-ro2
       - master
       - "release/*"
-# Job to build and push the Docker image
+    tags:
+      - "carma-system-*"
 jobs:
   dockerhub:
     # Referenced a reusable workflow defined in actions repository
