@@ -49,12 +49,14 @@ class VehicleSpawner(Node):
         self.declare_parameter('port', 2000)
         self.declare_parameter('autopilot', False)
         self.declare_parameter('spawn_point', '')
+        self.declare_parameter('role_name', '')
 
         self.config_file = self.get_parameter('config_file').get_parameter_value().string_value
         self.host = self.get_parameter('host').get_parameter_value().string_value
         self.port = self.get_parameter('port').get_parameter_value().integer_value
         self.use_autopilot = self.get_parameter('autopilot').get_parameter_value().bool_value
         self.spawn_point = self.get_parameter('spawn_point').get_parameter_value().string_value
+        self.role_name = self.get_parameter('role_name').get_parameter_value().string_value
 
         self.vehicle = None
         self.sensors = []
@@ -100,8 +102,9 @@ class VehicleSpawner(Node):
     def _spawn_vehicle(self, config):
         bp_library = self.world.get_blueprint_library()
         bp = bp_library.filter(config.get("type"))[0]
-        bp.set_attribute("role_name", config.get("id"))
-        bp.set_attribute("ros_name", config.get("id"))
+        role_name = self.role_name or config.get("id")
+        bp.set_attribute("role_name", role_name)
+        bp.set_attribute("ros_name", role_name)
 
         # Extract spawn point values
         self.get_logger().info(f"[Spawner] Received spawn_point parameter: '{self.spawn_point}'")
@@ -129,7 +132,7 @@ class VehicleSpawner(Node):
             transform = self.world.get_map().get_spawn_points()[0]
             
         vehicle = self.world.spawn_actor(bp, transform)
-        self.get_logger().info(f"[Spawner] Spawned vehicle '{config.get('id')}'")
+        self.get_logger().info(f"[Spawner] Spawned vehicle '{role_name}'")
         return vehicle
 
     def _spawn_sensors(self, sensors_config, vehicle):

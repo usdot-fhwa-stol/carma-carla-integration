@@ -142,6 +142,7 @@ def generate_launch_description():
                         {'host': LaunchConfiguration('host')},
                         {'port': LaunchConfiguration('port')},
                         {'config_file': LaunchConfiguration('hero_config_path')},
+                        {'role_name': LaunchConfiguration('role_name')},
                         {'autopilot': LaunchConfiguration('autopilot')},
                         {'spawn_point': LaunchConfiguration('spawn_point')},
                     ],
