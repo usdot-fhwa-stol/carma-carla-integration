@@ -2,6 +2,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, GroupAction
 from launch.conditions import IfCondition, UnlessCondition
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
@@ -232,7 +233,12 @@ def generate_launch_description():
                     {'sensor_object_pub_rate': LaunchConfiguration('robot_status_pub_rate')},
                     {'host': LaunchConfiguration('host')},
                     {'port': LaunchConfiguration('port')},
-                    {'sensor_id': LaunchConfiguration('sensor_id')},
+                    {
+                        'sensor_id': ParameterValue(
+                            LaunchConfiguration('sensor_id'),
+                            value_type=str
+                        )
+                    },
                     {'detection_cycle_delay_seconds': LaunchConfiguration('detection_cycle_delay_seconds')}
                 ]
             )

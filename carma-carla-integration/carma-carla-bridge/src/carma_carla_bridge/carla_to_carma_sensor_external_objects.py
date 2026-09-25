@@ -253,6 +253,7 @@ def get_data_from_sensorlib(sensor, node):
     node.publish(object_msg_list)
 
 def main(args=None):
+    node = None
     rclpy.init(args=args)
     print("carla_to_carma_sensor_external_objects")
     try:
