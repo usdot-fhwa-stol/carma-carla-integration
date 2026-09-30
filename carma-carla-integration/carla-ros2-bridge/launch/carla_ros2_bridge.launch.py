@@ -71,7 +71,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             name='role_name',
             default_value='carma_1',
-            description='Role name to identify ego vehicle, should match role_name in config at hero_config_path'
+            description='Role name to identify the ego vehicle'
         ),
         DeclareLaunchArgument(
             name='vehicle_filter',
@@ -103,7 +103,7 @@ def generate_launch_description():
             default_value=PathJoinSubstitution([
                 FindPackageShare('carla_ros2_bridge'),
                 'configs',
-                'stack.json'  # vehicle role_name is hardcoded in this file, it should match the role_name argument
+                'stack.json'
             ]),
             description='Path to the hero vehicle JSON config'
         ),
