@@ -18,6 +18,12 @@
 Subscribe from CARMA :geometry_msgs::PoseStamped
     Topic: /localization/current_pose
 
+Subscribe :std_msgs::Empty (demo_restart_count != 0 only)
+    Topic: /carla_loop/cycle_reset
+    While restarts remain, the node idles after the route is set instead of exiting;
+    each message on this topic restarts the route selection. demo_restart_count > 0
+    limits the number of restarts, < 0 restarts indefinitely.
+
 Call Services from CARMA:
     Service: /guidance/get_available_routes
              /guidance/set_active_route
@@ -28,7 +34,7 @@ import traceback
 
 from geometry_msgs.msg import PoseStamped
 from carma_planning_msgs.srv import GetAvailableRoutes, SetActiveRoute
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Empty
 
 
 class CarmaCarlaRoute(Node):
@@ -37,12 +43,7 @@ class CarmaCarlaRoute(Node):
         super().__init__('carma_carla_route')
 
         # Internal state
-        self.received_pose = False
-        self.is_guidance_bridge_node_active = False
-        self.route_set = False
-        self.get_available_routes_future = None
-        self.set_route_future = None
-        self.available_route_ids = []
+        self.reset_state()
 
         # Declare and get selected_route parameter
         self.selected_route_id = self.declare_parameter('selected_route', '').get_parameter_value().string_value
@@ -53,12 +54,39 @@ class CarmaCarlaRoute(Node):
 
         self.get_logger().info(f"Selected route: {self.selected_route_id}")
 
+        # Number of times to restart route selection on /carla_loop/cycle_reset before exiting.
+        # 0 exits after the first route set, negative restarts indefinitely.
+        self.restarts_remaining = self.declare_parameter('demo_restart_count', 0).get_parameter_value().integer_value
+        self.get_logger().info(f"Demo restart count: {self.restarts_remaining}")
+
         # Subscriptions
         self.create_subscription(PoseStamped, '/localization/current_pose', self.pose_cb, 10)
         self.create_subscription(Bool, '/carla/guidance_bridge_node/active_status', self.guidance_bridge_node_status_callback, 10)
+        if self.restarts_remaining != 0:
+            self.create_subscription(Empty, '/carla_loop/cycle_reset', self.cycle_reset_cb, 10)
 
         # Timer-based loop (1 Hz)
-        self.create_timer(1.0, self.timer_cb)
+        self.timer = self.create_timer(1.0, self.timer_cb)
+
+    def reset_state(self):
+        self.received_pose = False
+        self.is_guidance_bridge_node_active = False
+        self.route_set = False
+        self.get_available_routes_future = None
+        self.set_route_future = None
+        self.available_route_ids = []
+
+    def cycle_reset_cb(self, msg):
+        if self.restarts_remaining == 0:
+            self.get_logger().info("Received /carla_loop/cycle_reset, but no restarts remain; ignoring.")
+            return
+        if self.restarts_remaining > 0:
+            self.restarts_remaining -= 1
+        self.get_logger().info(
+            f"Received /carla_loop/cycle_reset, restarting route selection (restarts remaining: {self.restarts_remaining}).")
+        self.reset_state()
+        # Restarts the timer if it was cancelled after the previous route set
+        self.timer.reset()
 
     def pose_cb(self, msg):
         self.received_pose = True
@@ -68,10 +96,16 @@ class CarmaCarlaRoute(Node):
 
     def timer_cb(self):
         if self.route_set:
+            if self.restarts_remaining != 0:
+                # Idle until the next /carla_loop/cycle_reset
+                self.get_logger().info("Route set, waiting for /carla_loop/cycle_reset.")
+                self.timer.cancel()
+                return
             # Clean shutdown
             self.get_logger().info("Shutting down after successful route set.")
             self.destroy_node()
             rclpy.shutdown()
+            return
 
         if not self.received_pose:
             self.get_logger().info("Waiting for /localization/current_pose...")
@@ -110,6 +144,9 @@ class CarmaCarlaRoute(Node):
             self.get_logger().info("Waiting for SetActiveRoute service call to finish")
 
     def get_available_routes_cb(self, future):
+        # Ignore responses to requests made before a cycle reset
+        if future is not self.get_available_routes_future:
+            return
         try:
             result = future.result()
             self.available_route_ids = [r.route_id for r in result.available_routes]
@@ -125,6 +162,9 @@ class CarmaCarlaRoute(Node):
                 self.get_available_routes_future = None
 
     def set_route_cb(self, future):
+        # Ignore responses to requests made before a cycle reset
+        if future is not self.set_route_future:
+            return
         try:
             result = future.result()
             if result and not result.error_status:
