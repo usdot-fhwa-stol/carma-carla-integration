@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2023 LEIDOS.
+# Copyright (C) 2026 LEIDOS.
 # Migrated to ROS2 under Ryan Fleming @ UGA MSC Lab 2025
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
