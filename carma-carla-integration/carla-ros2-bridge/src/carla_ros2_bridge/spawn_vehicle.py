@@ -102,7 +102,9 @@ class VehicleSpawner(Node):
     def _spawn_vehicle(self, config):
         bp_library = self.world.get_blueprint_library()
         bp = bp_library.filter(config.get("type"))[0]
-        role_name = self.role_name or config.get("id")
+        role_name = self.role_name
+        if not role_name:
+            raise ValueError("role_name parameter is required")
         bp.set_attribute("role_name", role_name)
         bp.set_attribute("ros_name", role_name)
 
