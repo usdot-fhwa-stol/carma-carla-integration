@@ -112,6 +112,9 @@ def generate_launch_description():
             default_value='0',
             description='Number of times carma_carla_route and carma_carla_guidance redo their run on /carla_loop/cycle_reset before exiting. 0 exits after the initial run, negative (e.g. -1) restarts indefinitely'
         ),
+        DeclareLaunchArgument(
+            'reset_vehicle_on_loop', default_value='true',
+            description='Return the ego vehicle to spawn_point before each demo restart'),
 
         # ackermann control params
         DeclareLaunchArgument('init_speed', default_value='5.0'),
@@ -291,7 +294,7 @@ def generate_launch_description():
             ]
         ),
 
-        # Notify reset subscribers once each route completes.
+        # Reset the vehicle before notifying route and guidance subscribers.
         Node(
             package='carma_carla_bridge',
             executable='carma_carla_cycle_reset',
@@ -300,7 +303,16 @@ def generate_launch_description():
             condition=IfCondition(PythonExpression([
                 LaunchConfiguration('demo_restart_count'), ' != 0'
             ])),
-            output='screen'
+            output='screen',
+            parameters=[{
+                'demo_restart_count': ParameterValue(LaunchConfiguration('demo_restart_count'), value_type=int),
+                'reset_vehicle_on_loop': ParameterValue(LaunchConfiguration('reset_vehicle_on_loop'), value_type=bool),
+                'host': LaunchConfiguration('host'),
+                'port': ParameterValue(LaunchConfiguration('port'), value_type=int),
+                'timeout': ParameterValue(LaunchConfiguration('timeout'), value_type=float),
+                'role_name': role_name,
+                'spawn_point': ParameterValue(LaunchConfiguration('spawn_point'), value_type=str),
+            }]
         ),
 
         # route #
