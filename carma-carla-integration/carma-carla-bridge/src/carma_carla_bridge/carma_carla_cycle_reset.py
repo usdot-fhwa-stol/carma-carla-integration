@@ -44,6 +44,10 @@ class CarmaCarlaCycleReset(Node):
         super().__init__('cycle_reset', namespace='/carla_loop')
 
         self.restarts_remaining = self.declare_parameter('demo_restart_count', 0).value
+        self.get_logger().info(
+            f'Cycle reset parameter: demo_restart_count='
+            f'{self.get_parameter("demo_restart_count").value}; '
+            f'initialized restarts_remaining={self.restarts_remaining}')
         self.reset_vehicle = self.declare_parameter('reset_vehicle_on_loop', True).value
         self.host = self.declare_parameter('host', 'localhost').value
         self.port = self.declare_parameter('port', 2000).value
