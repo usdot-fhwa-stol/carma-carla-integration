@@ -61,21 +61,37 @@ class CarmaCarlaCycleReset(Node):
         self.route_event_sub = self.create_subscription(
             RouteEvent, '/guidance/route_event', self.route_event_callback, 10
         )
+        self.get_logger().info(
+            f'Cycle reset ready: listening on /guidance/route_event; '
+            f'ROUTE_COMPLETED={RouteEvent.ROUTE_COMPLETED}; '
+            f'demo_restart_count={self.restarts_remaining}; '
+            f'reset_vehicle_on_loop={self.reset_vehicle}; '
+            f'CARLA={self.host}:{self.port}; role_name={self.role_name!r}; '
+            f'spawn_point={self.spawn_point!r}')
 
     def route_event_callback(self, msg):
+        if msg.event == RouteEvent.ROUTE_COMPLETED:
+            self.get_logger().info('ROUTE_COMPLETED received on /guidance/route_event.')
         # Rearm when the next route starts.
         if msg.event == RouteEvent.ROUTE_STARTED:
             self.completion_published = False
+            self.get_logger().info('ROUTE_STARTED received; cycle reset rearmed.')
+        elif msg.event == RouteEvent.ROUTE_COMPLETED and self.completion_published:
+            self.get_logger().info('Duplicate ROUTE_COMPLETED ignored; waiting for ROUTE_STARTED.')
         elif msg.event == RouteEvent.ROUTE_COMPLETED and not self.completion_published:
             if self.restarts_remaining == 0:
+                self.get_logger().info('Vehicle reset skipped: no demo restarts remain.')
                 return
             if self.reset_vehicle:
+                self.get_logger().info('Resetting actual CARLA vehicle to spawn point...')
                 try:
                     self.reset_vehicle_to_spawn()
                 except (ImportError, RuntimeError, ValueError, IndexError) as error:
                     self.get_logger().error(
                         f'Cannot reset vehicle; loop restart withheld: {error}')
                     return
+            else:
+                self.get_logger().info('Vehicle reset skipped: reset_vehicle_on_loop=false.')
             # Publish once per route and suppress repeated completion events.
             self.reset_pub.publish(Empty())
             self.completion_published = True
