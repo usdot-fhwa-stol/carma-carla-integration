@@ -76,40 +76,44 @@ class CarmaCarlaCycleReset(Node):
             f'spawn_point={self.spawn_point!r}')
 
     def route_event_callback(self, msg):
-        if msg.event == RouteEvent.ROUTE_COMPLETED:
-            self.get_logger().info('ROUTE_COMPLETED received on /guidance/route_event.')
         # Rearm when the next route starts.
         if msg.event == RouteEvent.ROUTE_STARTED:
             self.completion_published = False
             self.completion_counted = False
             self.get_logger().info('ROUTE_STARTED received; cycle reset rearmed.')
-        elif msg.event == RouteEvent.ROUTE_COMPLETED and self.completion_published:
+            return
+        if msg.event != RouteEvent.ROUTE_COMPLETED:
+            return
+
+        self.get_logger().info('ROUTE_COMPLETED received on /guidance/route_event.')
+        if self.completion_published:
             self.get_logger().info('Duplicate ROUTE_COMPLETED ignored; waiting for ROUTE_STARTED.')
-        elif msg.event == RouteEvent.ROUTE_COMPLETED and not self.completion_published:
-            # Count the finished route even when no restart remains or reset fails.
-            if not self.completion_counted:
-                self.completed_runs += 1
-                self.completion_counted = True
-                self.get_logger().info(f'Completed runs so far: {self.completed_runs}')
-            if self.restarts_remaining == 0:
-                self.get_logger().info('Vehicle reset skipped: no demo restarts remain.')
+            return
+
+        # Count the finished route even when no restart remains or reset fails.
+        if not self.completion_counted:
+            self.completed_runs += 1
+            self.completion_counted = True
+            self.get_logger().info(f'Completed runs so far: {self.completed_runs}')
+        if self.restarts_remaining == 0:
+            self.get_logger().info('Vehicle reset skipped: no demo restarts remain.')
+            return
+        if self.reset_vehicle:
+            self.get_logger().info('Resetting actual CARLA vehicle to spawn point...')
+            try:
+                self.reset_vehicle_to_spawn()
+            except (ImportError, RuntimeError, ValueError, IndexError) as error:
+                self.get_logger().error(
+                    f'Cannot reset vehicle; loop restart withheld: {error}')
                 return
-            if self.reset_vehicle:
-                self.get_logger().info('Resetting actual CARLA vehicle to spawn point...')
-                try:
-                    self.reset_vehicle_to_spawn()
-                except (ImportError, RuntimeError, ValueError, IndexError) as error:
-                    self.get_logger().error(
-                        f'Cannot reset vehicle; loop restart withheld: {error}')
-                    return
-            else:
-                self.get_logger().info('Vehicle reset skipped: reset_vehicle_on_loop=false.')
-            # Publish once per route and suppress repeated completion events.
-            self.reset_pub.publish(Empty())
-            self.completion_published = True
-            if self.restarts_remaining > 0:
-                self.restarts_remaining -= 1
-            self.get_logger().info('Route completed; published /carla_loop/cycle_reset.')
+        else:
+            self.get_logger().info('Vehicle reset skipped: reset_vehicle_on_loop=false.')
+        # Publish once per route and suppress repeated completion events.
+        self.reset_pub.publish(Empty())
+        self.completion_published = True
+        if self.restarts_remaining > 0:
+            self.restarts_remaining -= 1
+        self.get_logger().info('Route completed; published /carla_loop/cycle_reset.')
 
     def reset_vehicle_to_spawn(self):
         """Reset the existing actor, preserving its attached sensors.
