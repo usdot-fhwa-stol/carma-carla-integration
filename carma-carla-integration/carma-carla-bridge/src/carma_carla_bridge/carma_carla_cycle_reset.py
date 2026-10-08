@@ -57,6 +57,8 @@ class CarmaCarlaCycleReset(Node):
 
         # Internal state: allow the first completion even if route start was missed.
         self.completion_published = False
+        self.completion_counted = False
+        self.completed_runs = 0
 
         # Publisher
         self.reset_pub = self.create_publisher(Empty, '/carla_loop/cycle_reset', 10)
@@ -79,10 +81,16 @@ class CarmaCarlaCycleReset(Node):
         # Rearm when the next route starts.
         if msg.event == RouteEvent.ROUTE_STARTED:
             self.completion_published = False
+            self.completion_counted = False
             self.get_logger().info('ROUTE_STARTED received; cycle reset rearmed.')
         elif msg.event == RouteEvent.ROUTE_COMPLETED and self.completion_published:
             self.get_logger().info('Duplicate ROUTE_COMPLETED ignored; waiting for ROUTE_STARTED.')
         elif msg.event == RouteEvent.ROUTE_COMPLETED and not self.completion_published:
+            # Count the finished route even when no restart remains or reset fails.
+            if not self.completion_counted:
+                self.completed_runs += 1
+                self.completion_counted = True
+                self.get_logger().info(f'Completed runs so far: {self.completed_runs}')
             if self.restarts_remaining == 0:
                 self.get_logger().info('Vehicle reset skipped: no demo restarts remain.')
                 return
