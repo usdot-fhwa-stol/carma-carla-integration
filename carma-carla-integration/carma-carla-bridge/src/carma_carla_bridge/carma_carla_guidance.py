@@ -18,6 +18,12 @@
 Subscribe from CARMA :cav_msgs::RouteEvent
     Topic: /guidance/route_event
 
+Subscribe :std_msgs::Empty (demo_restart_count != 0 only)
+    Topic: /carla_loop/cycle_reset
+    While restarts remain, the node idles after guidance is engaged instead of exiting;
+    each message on this topic restarts the engagement. demo_restart_count > 0
+    limits the number of restarts, < 0 restarts indefinitely.
+
 Call Services from CARMA:
     Service: /guidance/set_guidance_active
              /guidance/plugins/get_active_plugins
@@ -30,7 +36,7 @@ import traceback
 from carma_planning_msgs.msg import RouteEvent
 from carma_planning_msgs.msg import Plugin
 from carma_planning_msgs.srv import SetGuidanceActive, PluginList
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Empty
 
 class CarmaCarlaGuidance(Node):
     def __init__(self):
@@ -38,7 +44,9 @@ class CarmaCarlaGuidance(Node):
 
         # Get Parameters
         self.declare_parameter("selected_plugins", "[]")
-        self.declare_parameter("start_delay_in_seconds", 15.0)
+        # Number of times to restart engagement on /carla_loop/cycle_reset before exiting.
+        # 0 exits after the first engagement, negative restarts indefinitely.
+        self.declare_parameter("demo_restart_count", 0)
         
         # Get and log the raw parameter value
         plugin_list_str = self.get_parameter("selected_plugins").get_parameter_value().string_value
@@ -52,7 +60,7 @@ class CarmaCarlaGuidance(Node):
             self.selected_plugin_list = []
             self.get_logger().warn("Empty plugin list parameter received")
         
-        self.start_delay = self.get_parameter("start_delay_in_seconds").get_parameter_value().double_value
+        self.restarts_remaining = self.get_parameter("demo_restart_count").get_parameter_value().integer_value
 
         if len(self.selected_plugin_list) == 0 or not self.selected_plugin_list:
             self.get_logger().error(
@@ -60,30 +68,20 @@ class CarmaCarlaGuidance(Node):
             )
             return
         
-         # route selected state
-        self.route_selected = False
+        self.reset_state()
 
         # Publishers/Subscribers
         self.status_pub = self.create_publisher(Bool, '/carla/guidance_bridge_node/active_status', 10)
         self.create_subscription(RouteEvent, '/guidance/route_event', self.route_event_callback, 10)
+        if self.restarts_remaining != 0:
+            self.create_subscription(Empty, '/carla_loop/cycle_reset', self.cycle_reset_cb, 10)
 
         # CARMA Services
         self.set_guidance_active_client = self.create_client(SetGuidanceActive, '/guidance/set_guidance_active')
         self.get_active_plugins_client = self.create_client(PluginList, '/guidance/plugins/get_active_plugins')
 
-        # futures for aysnc CARMA service calls
-        self.plugin_list_future = None
-        self.engage_guidance_future = None
-        self.attempting_engage = False
-        self.engage_delay_waited_seconds = 0
-
-        # store results of service calls
-        self.active_plugins = []
-        self.guidance_status = False
-        self.selected_plugins_active = False
-
         # Logging
-        self.get_logger().info(f"Start delay in seconds: {self.start_delay}")
+        self.get_logger().info(f"Demo restart count: {self.restarts_remaining}")
         self.get_logger().info(f"List of plugins from config: {self.selected_plugin_list}")
 
         # Wait for required services
@@ -94,17 +92,48 @@ class CarmaCarlaGuidance(Node):
             self.get_logger().info('waiting for set_guidance_active service...')
 
         # create timer
-        self.create_timer(1.0, self.timer_cb)
+        self.timer = self.create_timer(1.0, self.timer_cb)
+
+    def reset_state(self):
+        # route selected state
+        self.route_selected = False
+
+        # futures for aysnc CARMA service calls
+        self.plugin_list_future = None
+        self.engage_guidance_future = None
+
+        # store results of service calls
+        self.active_plugins = []
+        self.guidance_status = False
+        self.selected_plugins_active = False
+
+    def cycle_reset_cb(self, msg):
+        if self.restarts_remaining == 0:
+            self.get_logger().info("Received /carla_loop/cycle_reset, but no restarts remain; ignoring.")
+            return
+        if self.restarts_remaining > 0:
+            self.restarts_remaining -= 1
+        self.get_logger().info(
+            f"Received /carla_loop/cycle_reset, restarting guidance engagement (restarts remaining: {self.restarts_remaining}).")
+        self.reset_state()
+        # Restarts the timer if it was cancelled after the previous engagement
+        self.timer.reset()
     
     def timer_cb(self):
+        if self.guidance_status:
+            if self.restarts_remaining != 0:
+                # Idle until the next /carla_loop/cycle_reset
+                self.get_logger().info("Guidance engaged, waiting for /carla_loop/cycle_reset.")
+                self.timer.cancel()
+                return
+            self.destroy_node()
+            rclpy.shutdown()
+            return
+
         # publish node active status
         status_msg = Bool()
         status_msg.data = True
         self.status_pub.publish(status_msg)
-
-        if self.guidance_status:
-            self.destroy_node()
-            rclpy.shutdown()
 
         if not self.plugin_list_future:
             try:
@@ -128,24 +157,19 @@ class CarmaCarlaGuidance(Node):
             self.get_logger().warn(f"Active plugins: {active_names}")
             self.plugin_list_future = None
         else:
-            if not self.attempting_engage:
-                if self.engage_delay_waited_seconds >= self.start_delay:
-                    self.attempting_engage = True
-                    return
-                self.get_logger().info(f"Engaging the guidance in: {self.start_delay - self.engage_delay_waited_seconds:.0f}")
-                self.engage_delay_waited_seconds += 1.0
+            if not self.engage_guidance_future:
+                request = SetGuidanceActive.Request()
+                request.guidance_active = True
+                self.engage_guidance_future = self.set_guidance_active_client.call_async(request)
+                self.engage_guidance_future.add_done_callback(self.engage_guidance_cb)
                 return
-            else:
-                if not self.engage_guidance_future:
-                    request = SetGuidanceActive.Request()
-                    request.guidance_active = True
-                    self.engage_guidance_future = self.set_guidance_active_client.call_async(request)
-                    self.engage_guidance_future.add_done_callback(self.engage_guidance_cb)
-                    return
-                elif not self.engage_guidance_future.done():
-                    self.get_logger().info("Waiting for SetEngageGuidance service response...")
+            elif not self.engage_guidance_future.done():
+                self.get_logger().info("Waiting for SetEngageGuidance service response...")
     
     def pluginlist_cb(self, future):
+        # Ignore responses to requests made before a cycle reset
+        if future is not self.plugin_list_future:
+            return
         try:
             response = future.result()
             self.active_plugins = response.plugins
@@ -158,6 +182,9 @@ class CarmaCarlaGuidance(Node):
                 self.plugin_list_future = None
     
     def engage_guidance_cb(self, future):
+        # Ignore responses to requests made before a cycle reset
+        if future is not self.engage_guidance_future:
+            return
         try:
             result = future.result()
             if result.guidance_status:
@@ -169,8 +196,6 @@ class CarmaCarlaGuidance(Node):
             self.get_logger().warn(f"Service call to {self.set_guidance_active_client.srv_name} failed: {e}")
             self.get_logger().warn("Service call can sometimes fail due to ROS, but please make sure the platform has started without any error. Retrying in 1 second..")  
         finally:
-            self.attempting_engage = False
-            self.engage_delay_waited_seconds = 0.0
             self.engage_guidance_future = None
 
     def check_plugin_status(self, active_plugins):

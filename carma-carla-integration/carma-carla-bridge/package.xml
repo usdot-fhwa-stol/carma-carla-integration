@@ -17,6 +17,7 @@
   <build_depend>carma_driver_msgs</build_depend>
   <build_depend>carma_perception_msgs</build_depend>
   <build_depend>carma_planning_msgs</build_depend>
+  <build_depend>std_msgs</build_depend>
 
   <!-- Execution/runtime dependencies -->
   <exec_depend>rclpy</exec_depend>
@@ -25,6 +26,7 @@
   <exec_depend>carma_driver_msgs</exec_depend>
   <exec_depend>carma_perception_msgs</exec_depend>
   <exec_depend>carma_planning_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
 
   <export>
     <!-- Ensure Python entry points are exported properly -->

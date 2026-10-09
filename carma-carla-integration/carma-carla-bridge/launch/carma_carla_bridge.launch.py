@@ -1,8 +1,10 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, GroupAction
 from launch.conditions import IfCondition, UnlessCondition
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, PythonExpression
 from launch_ros.parameter_descriptions import ParameterValue
+
 from launch_ros.substitutions import FindPackageShare
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
@@ -105,7 +107,14 @@ def generate_launch_description():
         # route and plugins params
         DeclareLaunchArgument('selected_route', default_value=''),
         DeclareLaunchArgument('selected_plugins', default_value='/guidance/plugins/route_following_plugin,/guidance/plugins/inlanecruising_plugin,/guidance/plugins/stop_and_wait_plugin,/guidance/plugins/pure_pursuit_wrapper'),
-        DeclareLaunchArgument('start_delay_in_seconds', default_value='10.0'),
+        DeclareLaunchArgument(
+            name='demo_restart_count',
+            default_value='0',
+            description='Number of times carma_carla_route and carma_carla_guidance redo their run on /carla_loop/cycle_reset before exiting. 0 exits after the initial run, negative (e.g. -1) restarts indefinitely'
+        ),
+        DeclareLaunchArgument(
+            'reset_vehicle_on_loop', default_value='true',
+            description='Return the ego vehicle to spawn_point before each demo restart'),
 
         # ackermann control params
         DeclareLaunchArgument('init_speed', default_value='5.0'),
@@ -285,6 +294,27 @@ def generate_launch_description():
             ]
         ),
 
+        # Reset the vehicle before notifying route and guidance subscribers.
+        Node(
+            package='carma_carla_bridge',
+            executable='carma_carla_cycle_reset',
+            namespace='/carla_loop',
+            name='cycle_reset',
+            condition=IfCondition(PythonExpression([
+                LaunchConfiguration('demo_restart_count'), ' != 0'
+            ])),
+            output='screen',
+            parameters=[{
+                'demo_restart_count': ParameterValue(LaunchConfiguration('demo_restart_count'), value_type=int),
+                'reset_vehicle_on_loop': ParameterValue(LaunchConfiguration('reset_vehicle_on_loop'), value_type=bool),
+                'host': LaunchConfiguration('host'),
+                'port': ParameterValue(LaunchConfiguration('port'), value_type=int),
+                'timeout': ParameterValue(LaunchConfiguration('timeout'), value_type=float),
+                'role_name': role_name,
+                'spawn_point': ParameterValue(LaunchConfiguration('spawn_point'), value_type=str),
+            }]
+        ),
+
         # route #
         # Set the vehicle route after localization.
         Node(
@@ -292,7 +322,10 @@ def generate_launch_description():
             executable='carma_carla_route',
             name='carma_carla_route',
             output='screen',
-            parameters=[{'selected_route': LaunchConfiguration('selected_route')}]
+            parameters=[
+                {'selected_route': LaunchConfiguration('selected_route')},
+                {'demo_restart_count': LaunchConfiguration('demo_restart_count')}
+            ]
         ),
 
         # plugins #
@@ -315,7 +348,7 @@ def generate_launch_description():
             parameters=[
                 {'selected_route': LaunchConfiguration('selected_route')},
                 {'selected_plugins': LaunchConfiguration('selected_plugins')},
-                {'start_delay_in_seconds': LaunchConfiguration('start_delay_in_seconds')}
+                {'demo_restart_count': LaunchConfiguration('demo_restart_count')}
             ]
         ),
 
