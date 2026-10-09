@@ -58,7 +58,7 @@ source /opt/ros/humble/setup.bash
 
 # Clone ROS 2 message packages
 mkdir -p ~/msgs
-if [ "${CARMA_VERSION}" = "develop-ros2" ]; then
+if [ "${CARMA_VERSION}" = "develop-ros2" ] || [ "${CARMA_VERSION}" = "TRB2027" ]; then
   echo "Cloning carma-msgs (develop branch, ROS 2 compatible)..."
   cd ~/msgs && git clone --depth 1 --branch develop https://github.com/usdot-fhwa-stol/carma-msgs.git
 else
@@ -73,7 +73,7 @@ git clone --depth 1 --branch master https://github.com/carla-simulator/ros-carla
 
 # Clone CARMA utils (ROS 2)
 mkdir -p ~/utils && cd ~/utils
-if [ "${CARMA_VERSION}" = "develop-ros2" ]; then
+if [ "${CARMA_VERSION}" = "develop-ros2" ] || [ "${CARMA_VERSION}" = "TRB2027" ]; then
   git clone --depth 1 --branch develop https://github.com/usdot-fhwa-stol/carma-utils.git
 else
   git clone --depth 1 --branch ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-utils.git
@@ -81,7 +81,7 @@ fi
 
 # Clone CARLA Sensor Lib
 cd ~
-if [ "${CARMA_VERSION}" = "develop-ros2" ]; then
+if [ "${CARMA_VERSION}" = "develop-ros2" ] || [ "${CARMA_VERSION}" = "TRB2027" ]; then
   git clone --depth 1 --branch develop https://github.com/usdot-fhwa-stol/carla-sensor-lib.git
 else
   git clone --depth 1 --branch ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carla-sensor-lib.git
