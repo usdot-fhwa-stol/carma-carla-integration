@@ -20,12 +20,12 @@ Class that handles communication between CARLA and ROS (Ported to ROS 2)
 """
 import carla
 import rclpy
+from rclpy.clock import Clock as RclpyClock, ClockType
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.time import Time
 from threading import Thread, Lock, Event
 from math import sin, cos, radians
-import time
 
 from rosgraph_msgs.msg import Clock
 import tf2_ros
@@ -54,6 +54,11 @@ class CarlaRosBridge(Node):
         self.ego_vehicle = None # Special handle for the ego vehicle
         self.tf_broadcaster = tf2_ros.TransformBroadcaster(self)
         self.timestamp_last_run = 0.0
+        self.vehicle_processing_ready = False
+        self.ego_lifecycle_lock = Lock()
+        self.ego_monitor_timer = None
+        self.odometry_sensor = None
+        self.object_sensor = None
 
         # Clock publisher to keep ROS time synced with CARLA time (critical for odometry)
         self.clock_publisher = self.create_publisher(Clock, 'clock', 10)
@@ -89,7 +94,10 @@ class CarlaRosBridge(Node):
 
     def initialize_bridge(self, carla_client):
         """
-        Connects to the CARLA world and waits for the ego vehicle before initializing actors.
+        Connects to CARLA and starts independent world and ego lifecycles.
+
+        World ticks publish /clock immediately. Ego-specific ROS interfaces are
+        attached and detached as the configured role appears and disappears.
         """
         self.carla_world = carla_client.get_world()
         settings = self.carla_world.get_settings()
@@ -116,22 +124,6 @@ class CarlaRosBridge(Node):
         traffic_manager.set_synchronous_mode(self.params['synchronous_mode'])
         self.get_logger().info("[Bridge] Configured traffic manager")
 
-        # --- Ego Vehicle Discovery ---
-        self._wait_for_ego_vehicle()
-
-        if not self.ego_vehicle:
-            return # Error logged in helper
-
-        # Populate remaining actors
-        self._sync_actors()
-
-        # Attach sensors
-        self.odometry_sensor = OdometrySensor(parent_actor=self.ego_vehicle, node=self)
-        self.object_sensor = ObjectSensor(parent_actor=self.ego_vehicle, node=self, actor_list=self.actors)
-        
-        # Publish static TF for sensors
-        self._publish_static_transforms()
-
         # --- Start Execution Loop ---
         # Logic derived from legacy bridge:
         # If Synchronous AND Passive: Use on_tick callback (Listen)
@@ -148,32 +140,113 @@ class CarlaRosBridge(Node):
             self.get_logger().info(f"[Bridge] Registering on_tick callback ({mode_name} Listener)")
             self.on_tick_id = self.carla_world.on_tick(self._on_passive_tick)
 
-    def _wait_for_ego_vehicle(self):
-        """Helper to block until ego vehicle is found"""
-        timeout_seconds = 30
-        poll_interval = 1.0
-        waited = 0
+        # Use a steady wall clock so discovery keeps running even before the
+        # first simulation tick. Keep monitoring after attachment so an ego
+        # actor that is destroyed and respawned can be reattached.
+        self.ego_monitor_timer = self.create_timer(
+            1.0,
+            self._monitor_ego_vehicle,
+            clock=RclpyClock(clock_type=ClockType.STEADY_TIME),
+        )
+        self._monitor_ego_vehicle()
 
-        self.get_logger().info(f"[Bridge] Waiting for ego vehicle with role_name '{self.params['ego_vehicle_role_name']}'")
+    def _monitor_ego_vehicle(self):
+        """Attach, detach, or reattach the configured ego without blocking."""
+        if self.shutdown.is_set() or self.carla_world is None:
+            return
 
-        while rclpy.ok() and waited < timeout_seconds:
-            actors = self.carla_world.get_actors()
-            for actor in actors:
-                if hasattr(actor, 'attributes'):
-                    role_name = actor.attributes.get('role_name', 'None')
-                    if role_name == self.params['ego_vehicle_role_name']:
-                        self.ego_vehicle = EgoVehicle(
-                            uid=actor.id, name=actor.attributes.get('role_name', 'ego'),
-                            parent=None, node=self, carla_actor=actor,
-                            vehicle_control_applied_callback=lambda id: None
-                        )
-                        self.actors[actor.id] = self.ego_vehicle
-                        self.get_logger().info(f"[Bridge] Found ego vehicle with role_name '{self.ego_vehicle.name}'")
-                        return
-            time.sleep(poll_interval)
-            waited += poll_interval
+        role_name = self.params['ego_vehicle_role_name']
+        try:
+            matches = [
+                actor for actor in self.carla_world.get_actors()
+                if isinstance(actor, carla.Vehicle)
+                and hasattr(actor, 'attributes')
+                and actor.attributes.get('role_name') == role_name
+            ]
+        except RuntimeError as exc:
+            self.get_logger().warning(
+                f"[Bridge] Failed to inspect CARLA actors: {exc}"
+            )
+            return
 
-        self.get_logger().error(f"[Bridge] Ego vehicle with role name '{self.params['ego_vehicle_role_name']}' not found!")
+        with self.ego_lifecycle_lock:
+            current_id = self.ego_vehicle.uid if self.ego_vehicle else None
+            matching_ids = {actor.id for actor in matches}
+
+            if current_id in matching_ids:
+                return
+
+            if self.ego_vehicle:
+                self.get_logger().warning(
+                    f"[Bridge] Ego vehicle '{role_name}' (actor {current_id}) "
+                    "disappeared; detaching ROS interfaces"
+                )
+                self._detach_ego_vehicle()
+
+            if not matches:
+                return
+
+            if len(matches) > 1:
+                self.get_logger().error(
+                    f"[Bridge] Multiple CARLA actors use ego role_name "
+                    f"'{role_name}'; refusing to choose one"
+                )
+                return
+
+            try:
+                self._attach_ego_vehicle(matches[0])
+            except (AttributeError, RuntimeError) as exc:
+                self.get_logger().error(
+                    f"[Bridge] Failed to attach ego vehicle '{role_name}': "
+                    f"{exc}"
+                )
+                self._detach_ego_vehicle()
+
+    def _attach_ego_vehicle(self, actor):
+        """Create the ROS data and control interfaces for one CARLA ego."""
+        role_name = self.params['ego_vehicle_role_name']
+        self.ego_vehicle = EgoVehicle(
+            uid=actor.id,
+            name=actor.attributes.get('role_name', 'ego'),
+            parent=None,
+            node=self,
+            carla_actor=actor,
+            vehicle_control_applied_callback=lambda actor_id: None,
+        )
+        self.actors[actor.id] = self.ego_vehicle
+        self._sync_actors()
+
+        self.odometry_sensor = OdometrySensor(
+            parent_actor=self.ego_vehicle,
+            node=self,
+        )
+        self.object_sensor = ObjectSensor(
+            parent_actor=self.ego_vehicle,
+            node=self,
+            actor_list=self.actors,
+        )
+        self._publish_static_transforms()
+        self.vehicle_processing_ready = True
+        self.get_logger().info(
+            f"[Bridge] Attached ego vehicle '{role_name}' (actor {actor.id})"
+        )
+
+    def _detach_ego_vehicle(self):
+        """Remove interfaces associated with the current ego actor."""
+        self.vehicle_processing_ready = False
+
+        if self.odometry_sensor:
+            self.odometry_sensor.destroy()
+            self.odometry_sensor = None
+        if self.object_sensor:
+            self.object_sensor.destroy()
+            self.object_sensor = None
+
+        if self.ego_vehicle:
+            ego_id = self.ego_vehicle.uid
+            self.actors.pop(ego_id, None)
+            self.ego_vehicle.destroy()
+            self.ego_vehicle = None
 
     def _sync_actors(self):
         """Helper to convert CARLA actors to bridge actors"""
@@ -242,30 +315,35 @@ class CarlaRosBridge(Node):
         clock_msg.clock = current_ros_time.to_msg()
         self.clock_publisher.publish(clock_msg)
 
-        # 3. Use the EXACT same time for headers
-        # Do NOT use self.get_clock().now() here!
-        ros_timestamp_msg = current_ros_time.to_msg() 
+        # Clock represents the CARLA world and must not depend on whether an
+        # ego actor currently exists. Vehicle-specific processing begins only
+        # after all of its interfaces have been initialized.
+        with self.ego_lifecycle_lock:
+            if not self.vehicle_processing_ready:
+                return
 
-        self.get_logger().debug(
-            f"Processing frame={frame_id} sim_time={carla_timestamp.elapsed_seconds:.3f}"
-        )
+            # 3. Use the EXACT same time for headers
+            # Do NOT use self.get_clock().now() here!
+            ros_timestamp_msg = current_ros_time.to_msg()
 
-        # 4. Broadcast Transforms
-        if self.ego_vehicle:
+            self.get_logger().debug(
+                f"Processing frame={frame_id} sim_time={carla_timestamp.elapsed_seconds:.3f}"
+            )
+
+            # 4. Broadcast Transforms
             self._broadcast_ego_transform(ros_timestamp_msg)
 
-        # 5. Update Actors
-        n = int(self.params.get('sync_actors_every_n_frames', 1))
-        if n <= 1 or (frame_id % n) == 0:
-            self._sync_actors()
+            # 5. Update Actors
+            n = int(self.params.get('sync_actors_every_n_frames', 1))
+            if n <= 1 or (frame_id % n) == 0:
+                self._sync_actors()
 
-        for actor_handler in list(self.actors.values()):
-            actor_handler.update(ros_timestamp_msg)
+            for actor_handler in list(self.actors.values()):
+                actor_handler.update(ros_timestamp_msg)
 
-        # 6. Update Sensors (CRITICAL: Pass the timestamp explicitly)
-        # You must update your OdometrySensor.update() method to accept this argument!
-        self.odometry_sensor.update(ros_timestamp_msg)
-        self.object_sensor.update(ros_timestamp_msg)
+            # 6. Update Sensors (CRITICAL: Pass the timestamp explicitly)
+            self.odometry_sensor.update(ros_timestamp_msg)
+            self.object_sensor.update(ros_timestamp_msg)
 
     def update_clock(self, carla_timestamp):
         """
@@ -349,23 +427,24 @@ class CarlaRosBridge(Node):
         """
         self.get_logger().info("Shutting down CARLA ROS 2 Bridge...")
         self.shutdown.set()
+        if self.ego_monitor_timer:
+            self.destroy_timer(self.ego_monitor_timer)
+            self.ego_monitor_timer = None
         if self.update_thread and self.update_thread.is_alive():
             self.update_thread.join()
         
         # Cleanup Passive Callback
-        if self.on_tick_id:
+        if self.on_tick_id is not None:
             try:
                 self.carla_world.remove_on_tick(self.on_tick_id)
             except:
                 pass
 
-        for actor in self.actors.values():
-            actor.destroy()
-
-        if hasattr(self, 'odometry_sensor') and self.odometry_sensor:
-            self.odometry_sensor.destroy()
-        if hasattr(self, 'object_sensor') and self.object_sensor:
-            self.object_sensor.destroy()
+        with self.ego_lifecycle_lock:
+            self._detach_ego_vehicle()
+            for actor in list(self.actors.values()):
+                actor.destroy()
+            self.actors.clear()
 
         super().destroy_node()
 
