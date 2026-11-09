@@ -14,7 +14,11 @@
 import carla
 import logging
 import argparse
+import os
+import sys
 import time
+
+
 def wait_for_carla(args):
     """
     This is a simple python script to standup a CARLA client that only terminates onces a successful connection to CARLA is established. This avoids timeout issues with the CARLA Ros Bridge described here (https://github.com/usdot-fhwa-stol/carma-carla-integration/issues/65). This script can simply be called as a precursor to CARLA depedent services to ensure that CARLA is healthy before launching.
@@ -36,6 +40,16 @@ def wait_for_carla(args):
         except KeyboardInterrupt:
             pass
     logging.info("CARLA Connection successful ... ")
+
+    # The CARLA Python client owns native C++ resources. During rapid multi-client
+    # startup, normal interpreter teardown can intermittently segfault after the
+    # readiness check has already succeeded. This process is only a one-shot
+    # probe, so exit directly and let the OS release its native resources.
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(0)
+
+
 logging.getLogger().setLevel(logging.INFO)
 arg_parser = argparse.ArgumentParser(description=wait_for_carla.__doc__)
 arg_parser.add_argument(
