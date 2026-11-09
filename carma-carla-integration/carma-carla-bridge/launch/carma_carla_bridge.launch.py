@@ -107,6 +107,7 @@ def generate_launch_description():
         # route and plugins params
         DeclareLaunchArgument('selected_route', default_value=''),
         DeclareLaunchArgument('selected_plugins', default_value='/guidance/plugins/route_following_plugin,/guidance/plugins/inlanecruising_plugin,/guidance/plugins/stop_and_wait_plugin,/guidance/plugins/pure_pursuit_wrapper'),
+        DeclareLaunchArgument('start_delay_in_seconds', default_value='10.0'),
         DeclareLaunchArgument(
             name='demo_restart_count',
             default_value='0',
@@ -348,6 +349,7 @@ def generate_launch_description():
             parameters=[
                 {'selected_route': LaunchConfiguration('selected_route')},
                 {'selected_plugins': LaunchConfiguration('selected_plugins')},
+                {'start_delay_in_seconds': ParameterValue(LaunchConfiguration('start_delay_in_seconds'), value_type=float)},
                 {'demo_restart_count': LaunchConfiguration('demo_restart_count')}
             ]
         ),

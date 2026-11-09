@@ -44,6 +44,7 @@ class CarmaCarlaGuidance(Node):
 
         # Get Parameters
         self.declare_parameter("selected_plugins", "[]")
+        self.start_delay = self.declare_parameter("start_delay_in_seconds", 15.0).value
         # Number of times to restart engagement on /carla_loop/cycle_reset before exiting.
         # 0 exits after the first engagement, negative restarts indefinitely.
         self.declare_parameter("demo_restart_count", 0)
@@ -81,6 +82,7 @@ class CarmaCarlaGuidance(Node):
         self.get_active_plugins_client = self.create_client(PluginList, '/guidance/plugins/get_active_plugins')
 
         # Logging
+        self.get_logger().info(f"Start delay in seconds: {self.start_delay}")
         self.get_logger().info(f"Demo restart count: {self.restarts_remaining}")
         self.get_logger().info(f"List of plugins from config: {self.selected_plugin_list}")
 
@@ -101,6 +103,8 @@ class CarmaCarlaGuidance(Node):
         # futures for aysnc CARMA service calls
         self.plugin_list_future = None
         self.engage_guidance_future = None
+        self.attempting_engage = False
+        self.engage_delay_waited_seconds = 0.0
 
         # store results of service calls
         self.active_plugins = []
@@ -157,6 +161,14 @@ class CarmaCarlaGuidance(Node):
             self.get_logger().warn(f"Active plugins: {active_names}")
             self.plugin_list_future = None
         else:
+            if not self.attempting_engage:
+                if self.engage_delay_waited_seconds >= self.start_delay:
+                    self.attempting_engage = True
+                    return
+                self.get_logger().info(
+                    f"Engaging the guidance in: {self.start_delay - self.engage_delay_waited_seconds:.0f}")
+                self.engage_delay_waited_seconds += 1.0
+                return
             if not self.engage_guidance_future:
                 request = SetGuidanceActive.Request()
                 request.guidance_active = True
@@ -196,6 +208,8 @@ class CarmaCarlaGuidance(Node):
             self.get_logger().warn(f"Service call to {self.set_guidance_active_client.srv_name} failed: {e}")
             self.get_logger().warn("Service call can sometimes fail due to ROS, but please make sure the platform has started without any error. Retrying in 1 second..")  
         finally:
+            self.attempting_engage = False
+            self.engage_delay_waited_seconds = 0.0
             self.engage_guidance_future = None
 
     def check_plugin_status(self, active_plugins):
