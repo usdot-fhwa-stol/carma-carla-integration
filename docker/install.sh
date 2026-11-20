@@ -84,7 +84,7 @@ cd ~
 if [ "${CARMA_VERSION}" = "develop-ros2" ]; then
   git clone --depth 1 --branch develop https://github.com/usdot-fhwa-stol/carla-sensor-lib.git
 else
-  git clone --depth 1 --branch ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carla-sensor-lib.git
+  git clone --depth 1 --branch carma-system-4.13.0 https://github.com/usdot-fhwa-stol/carla-sensor-lib.git
 fi
 
 # Clone autoware_msgs package (includes jsk_recognition_msgs)
