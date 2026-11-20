@@ -36,6 +36,7 @@ setup(
             'carma_carla_route = carma_carla_bridge.carma_carla_route:main',
             'carma_carla_plugins = carma_carla_bridge.carma_carla_plugins:main',
             'carma_carla_guidance = carma_carla_bridge.carma_carla_guidance:main',
+            'carma_carla_cycle_reset = carma_carla_bridge.carma_carla_cycle_reset:main',
             'carma_carla_ackermann_logger = carma_carla_bridge.debug.carma_carla_ackermann_logger:main',
         ],
     },

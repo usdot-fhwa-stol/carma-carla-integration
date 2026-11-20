@@ -40,6 +40,27 @@ carma config set usdotfhwastol/carma-config:[tag]
 
 ## Run CARMA-CARLA Integration Tool with CARMA Platform
 
+For the ROS 2 bridge, repeat a demo with:
+
+```sh
+ros2 launch carma_carla_bridge carma_carla_bridge.launch.py demo_restart_count:=4
+```
+
+This runs the route five times total (one initial run plus four restarts).
+Use `demo_restart_count:=-1` for indefinite looping or `0` for a single run.
+When multiple runs are enabled, the cycle reset node logs
+`Completed runs so far: N` after each completed route, including the initial
+and final runs. Duplicate completion events do not increase the count.
+Before each restart, the vehicle is returned to `spawn_point`, including its
+heading, and its linear and angular velocities are cleared. Attached sensors
+stay on the same vehicle. The final run stays at the finish. `spawn_point`
+uses CARLA coordinates in `x,y,z,roll,pitch,yaw` order; when omitted, the first
+map spawn point is used, matching the vehicle spawner. Set
+`reset_vehicle_on_loop:=false` to restart route and guidance without teleporting.
+The reset node needs the CARLA Python API available in the ROS environment.
+If the reset fails, it logs an error and withholds the restart signal.
+These arguments apply to `carma_carla_bridge.launch.py`, not the ROS 1 `.launch` file.
+
 1. Run CARMA Platform with separated terminal
 ```
 carma start all
