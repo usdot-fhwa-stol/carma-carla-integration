@@ -7,7 +7,7 @@ from launch_ros.parameter_descriptions import ParameterValue
 
 from launch_ros.substitutions import FindPackageShare
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch_ros.actions import Node
+from launch_ros.actions import Node, SetParameter
 
 def generate_launch_description():
     role_name = LaunchConfiguration('role_name')
@@ -125,6 +125,7 @@ def generate_launch_description():
         DeclareLaunchArgument('max_steering_degree', default_value='70.0'),
 
         # enable sensor external
+        DeclareLaunchArgument('enable_external_objects', default_value='true'),
         DeclareLaunchArgument('enable_sensor_objects', default_value='true'),
         DeclareLaunchArgument('sensor_object_pub_rate', default_value='10'),
         DeclareLaunchArgument('host', default_value='127.0.0.1'),
@@ -139,7 +140,15 @@ def generate_launch_description():
         DeclareLaunchArgument('accel_Kp', default_value='0.05'),
         DeclareLaunchArgument('accel_Ki', default_value='0.0'),
         DeclareLaunchArgument('accel_Kd', default_value='0.5'),
-        
+
+        # Common simulation time flag for every node launched below (CARLA ROS bridge, ackermann
+        # control and all carma_carla_bridge nodes). When true, nodes use the CARLA /clock, so the
+        # stamps they publish (e.g. /localization/current_pose) match the CARMA Platform sim time.
+        DeclareLaunchArgument(
+            'use_sim_time', default_value='true',
+            description='True to make all CARMA-CARLA integration nodes use CARLA simulation time (/clock)'),
+        SetParameter(name='use_sim_time', value=LaunchConfiguration('use_sim_time')),
+
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(PathJoinSubstitution([
                 FindPackageShare('carla_ros2_bridge'),
@@ -232,6 +241,8 @@ def generate_launch_description():
 
         # external objects #
         # Extract the external objects from carla ObjectArray
+        # Whole block can be disabled with enable_external_objects:=false
+        GroupAction([
         GroupAction([
             Node(
                 package='carma_carla_bridge',
@@ -262,6 +273,7 @@ def generate_launch_description():
                 parameters=[{'role_name': role_name}]
             )
         ], condition=UnlessCondition(LaunchConfiguration('enable_sensor_objects'))),
+        ], condition=IfCondition(LaunchConfiguration('enable_external_objects'))),
 
         # convert the vehicle status from carla to carma
         Node(
