@@ -25,18 +25,30 @@ Publish :std_msgs::Empty
     The message itself signals completion; Empty has no boolean data field.
     Route and guidance subscribers use this signal to restart their work.
 
+Service :std_srvs::Trigger
+    Service: /carla_loop/reset_vehicle
+    Manually triggers the same reset at any time: aborts the active CARMA route
+    (/guidance/abort_active_route), resets the vehicle to spawn_point and publishes
+    /carla_loop/cycle_reset. Each call consumes one demo restart.
+    e.g. ros2 service call /carla_loop/reset_vehicle std_srvs/srv/Trigger
+
 Launch behavior:
     The bridge launch file starts this node only when demo_restart_count != 0.
     This node and the route and guidance subscribers enforce the restart limit.
 """
 
 import math
+import time
 
 import rclpy
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 
 from carma_planning_msgs.msg import RouteEvent
+from carma_planning_msgs.srv import AbortActiveRoute
 from std_msgs.msg import Empty
+from std_srvs.srv import Trigger
 
 
 class CarmaCarlaCycleReset(Node):
@@ -67,6 +79,14 @@ class CarmaCarlaCycleReset(Node):
         self.route_event_sub = self.create_subscription(
             RouteEvent, '/guidance/route_event', self.route_event_callback, 10
         )
+
+        # Manual reset service; reentrant so it can wait on the abort route client
+        reset_srv_group = ReentrantCallbackGroup()
+        self.abort_route_client = self.create_client(
+            AbortActiveRoute, '/guidance/abort_active_route', callback_group=reset_srv_group)
+        self.reset_srv = self.create_service(
+            Trigger, '/carla_loop/reset_vehicle', self.reset_service_callback,
+            callback_group=reset_srv_group)
         self.get_logger().info(
             f'Cycle reset ready: listening on /guidance/route_event; '
             f'ROUTE_COMPLETED={RouteEvent.ROUTE_COMPLETED}; '
@@ -98,22 +118,59 @@ class CarmaCarlaCycleReset(Node):
         if self.restarts_remaining == 0:
             self.get_logger().info('Vehicle reset skipped: no demo restarts remain.')
             return
-        if self.reset_vehicle:
+        if self.reset_and_publish(self.reset_vehicle):
+            self.get_logger().info('Route completed; published /carla_loop/cycle_reset.')
+
+    def reset_service_callback(self, request, response):
+        """Manually reset the vehicle to spawn_point and restart the route and guidance."""
+        self.get_logger().info('Manual reset requested on /carla_loop/reset_vehicle.')
+        if self.restarts_remaining == 0:
+            response.success = False
+            response.message = 'No demo restarts remain; route and guidance would not restart.'
+            self.get_logger().warn(response.message)
+            return response
+        self.abort_active_route()
+        response.success = self.reset_and_publish(True)
+        response.message = ('Vehicle reset to spawn point; published /carla_loop/cycle_reset.'
+                            if response.success else 'Vehicle reset failed; see node log.')
+        self.get_logger().info(response.message)
+        return response
+
+    def abort_active_route(self, timeout_sec=5.0):
+        """Abort the active CARMA route so the route can be set again after the reset."""
+        if not self.abort_route_client.wait_for_service(timeout_sec=timeout_sec):
+            self.get_logger().warn('/guidance/abort_active_route unavailable; continuing reset.')
+            return
+        future = self.abort_route_client.call_async(AbortActiveRoute.Request())
+        deadline = time.monotonic() + timeout_sec
+        while not future.done() and time.monotonic() < deadline:
+            time.sleep(0.05)
+        if not future.done() or future.result() is None:
+            self.get_logger().warn('Abort active route did not respond; continuing reset.')
+        elif future.result().error_status == AbortActiveRoute.Response.NO_ACTIVE_ROUTE:
+            self.get_logger().info('No active route to abort.')
+        else:
+            self.get_logger().info('Active route aborted.')
+
+    def reset_and_publish(self, reset_vehicle):
+        """Reset the vehicle (optional), publish one cycle reset and consume one restart."""
+        if reset_vehicle:
             self.get_logger().info('Resetting actual CARLA vehicle to spawn point...')
             try:
                 self.reset_vehicle_to_spawn()
             except (ImportError, RuntimeError, ValueError, IndexError) as error:
                 self.get_logger().error(
                     f'Cannot reset vehicle; loop restart withheld: {error}')
-                return
+                return False
         else:
             self.get_logger().info('Vehicle reset skipped: reset_vehicle_on_loop=false.')
-        # Publish once per route and suppress repeated completion events.
+        # Publish once per route and suppress repeated completion events until ROUTE_STARTED.
         self.reset_pub.publish(Empty())
         self.completion_published = True
+        self.completion_counted = True
         if self.restarts_remaining > 0:
             self.restarts_remaining -= 1
-        self.get_logger().info('Route completed; published /carla_loop/cycle_reset.')
+        return True
 
     def reset_vehicle_to_spawn(self):
         """Reset the existing actor, preserving its attached sensors.
@@ -165,7 +222,7 @@ def main(args=None):
     rclpy.init(args=args)
     node = CarmaCarlaCycleReset()
     try:
-        rclpy.spin(node)
+        rclpy.spin(node, executor=MultiThreadedExecutor())
     except KeyboardInterrupt:
         pass
     finally:
