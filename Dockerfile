@@ -17,8 +17,8 @@
 # ================================
 ARG DOCKER_ORG="usdotfhwastoldev"
 ARG DOCKER_TAG="develop-humble"
-FROM ${DOCKER_ORG}/carma-base:${DOCKER_TAG}
-ARG GIT_BRANCH="develop-ros2"
+FROM usdotfhwastol/carma-base:carma-system-4.14.0-humble
+ENV GIT_BRANCH="carma-system-4.14.0"
 ENV CARMA_VERSION=${GIT_BRANCH}
 
 LABEL Description="Dockerized CARMA-CARLA integration (ROS 2 + CARLA ROS 2 Bridge UE5 0.10.0)"

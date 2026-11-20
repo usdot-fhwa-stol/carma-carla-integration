@@ -24,7 +24,7 @@ jobs:
         working-directory: "/opt/carma/"
     runs-on: ubuntu-latest
     container:
-      image: ${{ needs.determine_docker_org_and_tag.outputs.docker_organization }}/carma-base:${{ needs.determine_docker_org_and_tag.outputs.docker_image_tag }}
+      image: usdotfhwastol/carma-base:carma-system-4.14.0-humble
       env:
         INIT_ENV: "/home/carma/.base-image/init-env.sh"
         TERM: xterm
@@ -48,7 +48,7 @@ jobs:
     - name: Checkout dependencies
       run: |
         source "$INIT_ENV"
-        ./src/${{ github.event.repository.name }}/docker/checkout.sh -r /opt/carma/ -b ${{ steps.determine-base-branch.outputs.git_branch }}
+        ./src/${{ github.event.repository.name }}/docker/checkout.sh -r /opt/carma/ -b carma-system-4.14.0
     - name: Build and Test
     # TODO (SIM-6) Missing build wrapper call for C++ builds necessary for sonar static anaysis
       run: |
