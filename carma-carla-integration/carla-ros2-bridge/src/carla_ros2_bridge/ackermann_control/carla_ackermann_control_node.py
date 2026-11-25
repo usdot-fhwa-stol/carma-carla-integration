@@ -435,7 +435,10 @@ class CarlaAckermannControl(Node):
         self.info.status.accel_control_pedal_target = numpy.clip(
             self.info.status.accel_control_pedal_target +
             self.info.status.accel_control_pedal_delta,
-            -self.info.restrictions.max_pedal, self.info.restrictions.max_pedal)
+            # Allow braking down to max_decel instead of the symmetric max_pedal (= max_accel, 3 m/s^2),
+            # which capped emergency stops at ~80% brake. Brake scaling below is unchanged, so normal
+            # braking is the same and the final brake output is still clipped to 1.0.
+            -self.info.restrictions.max_decel, self.info.restrictions.max_pedal)
 
     def update_drive_vehicle_control_command(self):
         """
